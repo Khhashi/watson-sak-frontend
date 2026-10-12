@@ -125,3 +125,26 @@ describe("Filtre – koblet kategori/misbrukstype", () => {
     expect(search).not.toContain("FIKTIVT_ARBEIDSFORHOLD");
   });
 });
+
+describe("Filtre – valgte verdier utenfor kodeverket", () => {
+  it("viser en valgt enhet som mangler i kodeverket, og lar brukeren velge den bort", () => {
+    function LocationSearch() {
+      return <div data-testid="search">{useLocation().search}</div>;
+    }
+    render(
+      <MemoryRouter initialEntries={["/?enhet=4812&enhet=ky153k"]}>
+        <Filtre alternativer={{ ...ALTERNATIVER, enhet: [{ label: "Øst", value: "ky153k" }] }} />
+        <LocationSearch />
+      </MemoryRouter>,
+    );
+
+    const ukjent = screen.getByRole("button", { name: "4812" });
+    expect(ukjent.getAttribute("aria-pressed")).toBe("true");
+    expect(screen.getByRole("button", { name: "Øst" }).getAttribute("aria-pressed")).toBe("true");
+
+    fireEvent.click(ukjent);
+    const params = new URLSearchParams(screen.getByTestId("search").textContent ?? "");
+    expect(params.getAll("enhet")).toEqual(["ky153k"]);
+    expect(screen.queryByRole("button", { name: "4812" })).toBeNull();
+  });
+});
