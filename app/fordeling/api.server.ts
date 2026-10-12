@@ -5,10 +5,10 @@ import { logger } from "~/logging/logging";
 import { kontrollsakPageResponseSchema } from "~/saker/types.backend";
 import { ALLE_STEG } from "~/saker/steg";
 import type { KontrollsakPageResponse } from "./types.backend";
+import type { Aldersvarsel, ANSVARLIG_MEG } from "~/alle-saker/aldersfilter";
 
 type KontrollsakerFilter = {
   ansvarligNavIdent?: string;
-  tilknyttetNavIdent?: string;
   steg?: string[];
   kategori?: string[];
   misbruktype?: string[];
@@ -26,12 +26,19 @@ type HentKontrollsakerArgs = {
   token: string;
   page: number;
   size: number;
+  aldersvarsel?: Aldersvarsel;
+  /** «Meg»: backend utleder identen fra tokenet, så identen havner ikke i URL-en. */
+  ansvarlig?: typeof ANSVARLIG_MEG;
+  /** Saker der innlogget bruker er ansvarlig eller delt med. Identen utledes av backend. */
+  tilknyttet?: typeof ANSVARLIG_MEG;
 } & KontrollsakerFilter;
 
 function byggKontrollsakerParams(args: HentKontrollsakerArgs): URLSearchParams {
   const params = new URLSearchParams({ page: String(args.page), size: String(args.size) });
   if (args.ansvarligNavIdent) params.set("ansvarligNavIdent", args.ansvarligNavIdent);
-  if (args.tilknyttetNavIdent) params.set("tilknyttetNavIdent", args.tilknyttetNavIdent);
+  if (args.aldersvarsel) params.set("aldersvarsel", args.aldersvarsel);
+  if (args.ansvarlig) params.set("ansvarlig", args.ansvarlig);
+  if (args.tilknyttet) params.set("tilknyttet", args.tilknyttet);
   if (args.utenAnsvarlig != null) params.set("utenAnsvarlig", String(args.utenAnsvarlig));
   if (args.utenStatus != null) params.set("utenStatus", String(args.utenStatus));
   for (const v of args.steg ?? []) params.append("steg", v);

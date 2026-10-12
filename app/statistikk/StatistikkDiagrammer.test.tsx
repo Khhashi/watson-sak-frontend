@@ -88,19 +88,82 @@ describe("StatistikkDiagrammer", () => {
     expect(screen.getByText("Info/I bero/Forvaltning/Politi")).toBeDefined();
   });
 
-  it("viderefører enheter og saksbehandler fra det valgte statistikkomfanget", () => {
+  it("viderefører enheter og bruker MEG i stedet for saksbehandlerident", () => {
     renderMedRouter((data) => ({
       ...data,
       omfangEnheter: ["ky153k", "je679z"],
-      omfangAnsvarligNavIdent: "Z123456",
+      valgtOmfang: "meg",
     }));
 
     expect(screen.getByRole("link", { name: /Totalt/ }).getAttribute("href")).toBe(
-      "/alle-saker?steg=OPPRETTET&steg=UTREDNING&steg=FORVALTNING&steg=STRAFFERETTSLIG_VURDERING&steg=POLITI&enhet=ky153k&enhet=je679z&saksbehandler=Z123456",
+      "/alle-saker?steg=OPPRETTET&steg=UTREDNING&steg=FORVALTNING&steg=STRAFFERETTSLIG_VURDERING&steg=POLITI&enhet=ky153k&enhet=je679z&ansvarlig=MEG",
     );
     expect(screen.getByRole("link", { name: /Aktive/ }).getAttribute("href")).toBe(
-      "/alle-saker?steg=UTREDNING&steg=STRAFFERETTSLIG_VURDERING&status=AKTIV&enhet=ky153k&enhet=je679z&saksbehandler=Z123456",
+      "/alle-saker?steg=UTREDNING&steg=STRAFFERETTSLIG_VURDERING&status=AKTIV&enhet=ky153k&enhet=je679z&ansvarlig=MEG",
     );
+    expect(
+      screen.getAllByRole("link").every((link) => !link.getAttribute("href")?.includes("Z123456")),
+    ).toBe(true);
+  });
+
+  it("lenker varsler med aldersfilter og valgt omfang uten NAV-ident", () => {
+    renderMedRouter((data) => ({
+      ...data,
+      omfangEnheter: ["ky153k", "je679z"],
+      valgtOmfang: "meg",
+      varsler: data.varsler.slice(0, 2).map((varsel, index) => ({
+        ...varsel,
+        filter: index === 0 ? "nærmer-seg-frist" : "over-30-dager",
+      })),
+    }));
+
+    const varselLenker = screen.getAllByRole("button", { name: /^Se alle saker/ });
+    expect(varselLenker[0].getAttribute("href")).toBe(
+      "/alle-saker?aldersvarsel=NAERMER_SEG_12_MAANEDER&enhet=ky153k&enhet=je679z&ansvarlig=MEG",
+    );
+    expect(varselLenker[1].getAttribute("href")).toBe(
+      "/alle-saker?aldersvarsel=FRA_30_DAGER&enhet=ky153k&enhet=je679z&ansvarlig=MEG",
+    );
+    expect(
+      screen.getAllByRole("link").every((link) => !link.getAttribute("href")?.includes("Z123456")),
+    ).toBe(true);
+  });
+
+  it("gir varsellenkene ulike tilgjengelige navn som starter med den synlige teksten", () => {
+    renderMedRouter((data) => ({
+      ...data,
+      varsler: [
+        {
+          tone: "warning",
+          tekst: "2 saker nærmer seg 12 måneder",
+          lenkeTekst: "",
+          filter: "nærmer-seg-frist",
+        },
+        {
+          tone: "info",
+          tekst: "5 saker overskrider 30 dager",
+          lenkeTekst: "",
+          filter: "over-30-dager",
+        },
+      ],
+    }));
+
+    expect(
+      screen.getByRole("button", { name: "Se alle saker: 2 saker nærmer seg 12 måneder" }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: "Se alle saker: 5 saker overskrider 30 dager" }),
+    ).toBeDefined();
+  });
+
+  it("viser ikke lenke for varsler uten kjent filter", () => {
+    renderMedRouter((data) => ({
+      ...data,
+      varsler: [{ tone: "info", tekst: "Ukjent varsel", lenkeTekst: "", filter: "noe-nytt" }],
+    }));
+
+    expect(screen.getByText("Ukjent varsel")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /^Se alle saker/ })).toBeNull();
   });
 
   it("lar brukeren skjule et steg i stablede stolper", () => {

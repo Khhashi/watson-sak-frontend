@@ -4,6 +4,7 @@ import { ChipsFiltergruppe } from "~/filtre/ChipsFiltergruppe";
 import { Filterpanel } from "~/filtre/Filterpanel";
 import { useFilterParam } from "~/filtre/useFilterParam";
 import { parseMultiValueParam } from "~/filtre/parseMultiValueParam";
+import { ALDERSVARSEL_VALG, ANSVARLIG_MEG } from "./aldersfilter";
 
 type SaksbehandlerAlternativ = {
   label: string;
@@ -41,6 +42,36 @@ export function Filtre({ alternativer }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
   const valgtSaksbehandler = searchParams.get("saksbehandler") ?? "";
   const valgteKategorier = parseMultiValueParam(searchParams, "kategori");
+  const valgtAldersvarsel = searchParams.get("aldersvarsel");
+  const erMegValgt = searchParams.get("ansvarlig") === ANSVARLIG_MEG;
+
+  // «Meg» og valgt saksbehandler utelukker hverandre, ellers avviser loaderen URL-en.
+  function toggleMeg() {
+    setSearchParams((forrige) => {
+      const neste = new URLSearchParams(forrige);
+      neste.delete("side");
+      if (forrige.get("ansvarlig") === ANSVARLIG_MEG) {
+        neste.delete("ansvarlig");
+      } else {
+        neste.set("ansvarlig", ANSVARLIG_MEG);
+        neste.delete("saksbehandler");
+      }
+      return neste;
+    });
+  }
+
+  function toggleAldersvarsel(verdi: string) {
+    setSearchParams((forrige) => {
+      const neste = new URLSearchParams(forrige);
+      neste.delete("side");
+      if (forrige.get("aldersvarsel") === verdi) {
+        neste.delete("aldersvarsel");
+      } else {
+        neste.set("aldersvarsel", verdi);
+      }
+      return neste;
+    });
+  }
 
   const filtrerteMisbrukstyper =
     valgteKategorier.length === 0
@@ -53,6 +84,7 @@ export function Filtre({ alternativer }: Props) {
       neste.delete("side");
       if (erValgt) {
         neste.set("saksbehandler", verdi);
+        neste.delete("ansvarlig");
       } else {
         neste.delete("saksbehandler");
       }
@@ -171,6 +203,22 @@ export function Filtre({ alternativer }: Props) {
           alternativer={alternativer.status}
         />
       )}
+
+      <ChipsFiltergruppe
+        tittel="Ansvarlig"
+        alternativer={[{ verdi: ANSVARLIG_MEG, etikett: "Meg" }]}
+        valgteVerdier={erMegValgt ? [ANSVARLIG_MEG] : []}
+        onToggle={toggleMeg}
+        size="small"
+      />
+
+      <ChipsFiltergruppe
+        tittel="Aldersvarsel"
+        alternativer={ALDERSVARSEL_VALG}
+        valgteVerdier={valgtAldersvarsel ? [valgtAldersvarsel] : []}
+        onToggle={toggleAldersvarsel}
+        size="small"
+      />
     </Filterpanel>
   );
 }

@@ -113,7 +113,7 @@ describe("MineSakerSide loader — backend-sti", () => {
     );
   }, 15000);
 
-  it("kaller backend med både ansvarligNavIdent og tilknyttetNavIdent", async () => {
+  it("kaller backend med ansvarlig=MEG og tilknyttet=MEG uten ident", async () => {
     mockHentKontrollsaker.mockResolvedValue(tomSideResponse);
     const { loader } = await import("./MineSakerSide.route");
 
@@ -125,11 +125,12 @@ describe("MineSakerSide loader — backend-sti", () => {
 
     expect(mockHentKontrollsaker).toHaveBeenCalledTimes(2);
     expect(mockHentKontrollsaker).toHaveBeenCalledWith(
-      expect.objectContaining({ ansvarligNavIdent: "Z999999" }),
+      expect.objectContaining({ ansvarlig: "MEG" }),
     );
     expect(mockHentKontrollsaker).toHaveBeenCalledWith(
-      expect.objectContaining({ tilknyttetNavIdent: "Z999999" }),
+      expect.objectContaining({ tilknyttet: "MEG" }),
     );
+    expect(JSON.stringify(mockHentKontrollsaker.mock.calls)).not.toContain("Z999999");
   }, 15000);
 
   it("ekskluderer egne saker fra deltMedSaker", async () => {

@@ -31,14 +31,18 @@ function lagSaksfilterUrl(parametre: Record<string, string>) {
   return `${RouteConfig.ALLE_SAKER}?${searchParams.toString()}`;
 }
 
+function leggTilOmfang(searchParams: URLSearchParams, data: Statistikk) {
+  data.omfangEnheter.forEach((enhet) => searchParams.append("enhet", enhet));
+  if (data.valgtOmfang === "meg") {
+    searchParams.set("ansvarlig", "MEG");
+  }
+}
+
 function lagStegfilterUrl(steg: string[], data: Statistikk, status?: string[]): string {
   const searchParams = new URLSearchParams();
   steg.forEach((verdi) => searchParams.append("steg", verdi));
   status?.forEach((verdi) => searchParams.append("status", verdi));
-  data.omfangEnheter.forEach((enhet) => searchParams.append("enhet", enhet));
-  if (data.omfangAnsvarligNavIdent) {
-    searchParams.set("saksbehandler", data.omfangAnsvarligNavIdent);
-  }
+  leggTilOmfang(searchParams, data);
   return `${RouteConfig.ALLE_SAKER}?${searchParams.toString()}`;
 }
 
@@ -69,11 +73,40 @@ function lenkeForNøkkeltall(
   }
 }
 
-/** Varslene er basert på behandlingstid, som ikke har et tilsvarende saksfilter ennå.
- * Vi lenker derfor til saksoversikten uten filter i stedet for å love en filtrering vi ikke kan innfri. */
-function LenkeTilSaker() {
+const ALDERSVARSEL_FOR_VARSELFILTER: Record<string, string> = {
+  "nærmer-seg-frist": "NAERMER_SEG_12_MAANEDER",
+  "over-30-dager": "FRA_30_DAGER",
+};
+
+/** Lenke til saksoversikten med samme utvalg som varslet, eller `null` for ukjente varsler.
+ * Uten kjent filter ville lenken vist et bredere utvalg enn varslet lover. */
+function lagVarselUrl(filter: string, data: Statistikk): string | null {
+  const aldersvarsel = ALDERSVARSEL_FOR_VARSELFILTER[filter];
+  if (!aldersvarsel) return null;
+  const searchParams = new URLSearchParams({ aldersvarsel });
+  leggTilOmfang(searchParams, data);
+  return `${RouteConfig.ALLE_SAKER}?${searchParams.toString()}`;
+}
+
+function LenkeTilSaker({
+  varsel,
+  data,
+}: {
+  varsel: Statistikk["varsler"][number];
+  data: Statistikk;
+}) {
+  const url = lagVarselUrl(varsel.filter, data);
+  if (!url) return null;
+  // Det tilgjengelige navnet tar med varselteksten, så lenkene kan skilles i en skjermlesers
+  // lenkeliste. Navnet starter med den synlige teksten (WCAG 2.5.3 Label in Name).
   return (
-    <Button as={RouterLink} to={RouteConfig.ALLE_SAKER} variant="tertiary" size="small">
+    <Button
+      as={RouterLink}
+      to={url}
+      variant="tertiary"
+      size="small"
+      aria-label={`Se alle saker: ${varsel.tekst}`}
+    >
       Se alle saker →
     </Button>
   );
@@ -148,7 +181,7 @@ export function StatistikkDiagrammer({
           >
             <HStack justify="space-between" align="center" gap="space-8" wrap>
               <BodyShort size="small">{varsel.tekst}</BodyShort>
-              <LenkeTilSaker />
+              <LenkeTilSaker varsel={varsel} data={data} />
             </HStack>
           </Box>
         ))}
