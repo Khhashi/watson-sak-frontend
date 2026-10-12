@@ -73,24 +73,40 @@ function lenkeForNøkkeltall(
   }
 }
 
-function lagVarselUrl(filter: string, data: Statistikk): string {
-  const aldersvarsel =
-    filter === "nærmer-seg-frist"
-      ? "NAERMER_SEG_12_MAANEDER"
-      : filter === "over-30-dager"
-        ? "FRA_30_DAGER"
-        : null;
-  const searchParams = new URLSearchParams();
-  if (aldersvarsel) {
-    searchParams.set("aldersvarsel", aldersvarsel);
-  }
+const ALDERSVARSEL_FOR_VARSELFILTER: Record<string, string> = {
+  "nærmer-seg-frist": "NAERMER_SEG_12_MAANEDER",
+  "over-30-dager": "FRA_30_DAGER",
+};
+
+/** Lenke til saksoversikten med samme utvalg som varslet, eller `null` for ukjente varsler.
+ * Uten kjent filter ville lenken vist et bredere utvalg enn varslet lover. */
+function lagVarselUrl(filter: string, data: Statistikk): string | null {
+  const aldersvarsel = ALDERSVARSEL_FOR_VARSELFILTER[filter];
+  if (!aldersvarsel) return null;
+  const searchParams = new URLSearchParams({ aldersvarsel });
   leggTilOmfang(searchParams, data);
   return `${RouteConfig.ALLE_SAKER}?${searchParams.toString()}`;
 }
 
-function LenkeTilSaker({ filter, data }: { filter: string; data: Statistikk }) {
+function LenkeTilSaker({
+  varsel,
+  data,
+}: {
+  varsel: Statistikk["varsler"][number];
+  data: Statistikk;
+}) {
+  const url = lagVarselUrl(varsel.filter, data);
+  if (!url) return null;
+  // Det tilgjengelige navnet tar med varselteksten, så lenkene kan skilles i en skjermlesers
+  // lenkeliste. Navnet starter med den synlige teksten (WCAG 2.5.3 Label in Name).
   return (
-    <Button as={RouterLink} to={lagVarselUrl(filter, data)} variant="tertiary" size="small">
+    <Button
+      as={RouterLink}
+      to={url}
+      variant="tertiary"
+      size="small"
+      aria-label={`Se alle saker: ${varsel.tekst}`}
+    >
       Se alle saker →
     </Button>
   );
@@ -165,7 +181,7 @@ export function StatistikkDiagrammer({
           >
             <HStack justify="space-between" align="center" gap="space-8" wrap>
               <BodyShort size="small">{varsel.tekst}</BodyShort>
-              <LenkeTilSaker filter={varsel.filter} data={data} />
+              <LenkeTilSaker varsel={varsel} data={data} />
             </HStack>
           </Box>
         ))}

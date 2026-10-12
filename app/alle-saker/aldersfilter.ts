@@ -38,7 +38,11 @@ export function parseAlderOgAnsvarlig(searchParams: URLSearchParams): {
     throw data("Ugyldig verdi for ansvarlig", { status: 400 });
   }
   const ansvarligMeg = ansvarligverdier.length === 1;
-  if (ansvarligMeg && searchParams.get("saksbehandler")) {
+  // getAll, ikke get: `saksbehandler=&saksbehandler=Z…` skal også gi konflikt.
+  const harValgtSaksbehandler = searchParams
+    .getAll("saksbehandler")
+    .some((verdi) => verdi.trim() !== "");
+  if (ansvarligMeg && harValgtSaksbehandler) {
     throw data("Kan ikke filtrere på både «Meg» og valgt saksbehandler", { status: 400 });
   }
   return { aldersvarsel: aldersvarsel as Aldersvarsel | undefined, ansvarligMeg };

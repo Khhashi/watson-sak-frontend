@@ -36,7 +36,7 @@ describe("lagMockStatistikk", () => {
     });
   });
 
-  it("binder «meg»-omfanget til innlogget NAV-ident", () => {
+  it("returnerer «meg»-omfanget uten enheter og uten NAV-ident", () => {
     const resultat = lagMockStatistikk(
       { nivaa: "meg", fra: "2026-09-01", til: "2026-09-30" },
       "Øst",

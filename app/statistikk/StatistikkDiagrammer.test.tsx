@@ -117,7 +117,7 @@ describe("StatistikkDiagrammer", () => {
       })),
     }));
 
-    const varselLenker = screen.getAllByRole("button", { name: "Se alle saker →" });
+    const varselLenker = screen.getAllByRole("button", { name: /^Se alle saker/ });
     expect(varselLenker[0].getAttribute("href")).toBe(
       "/alle-saker?aldersvarsel=NAERMER_SEG_12_MAANEDER&enhet=ky153k&enhet=je679z&ansvarlig=MEG",
     );
@@ -127,6 +127,43 @@ describe("StatistikkDiagrammer", () => {
     expect(
       screen.getAllByRole("link").every((link) => !link.getAttribute("href")?.includes("Z123456")),
     ).toBe(true);
+  });
+
+  it("gir varsellenkene ulike tilgjengelige navn som starter med den synlige teksten", () => {
+    renderMedRouter((data) => ({
+      ...data,
+      varsler: [
+        {
+          tone: "warning",
+          tekst: "2 saker nærmer seg 12 måneder",
+          lenkeTekst: "",
+          filter: "nærmer-seg-frist",
+        },
+        {
+          tone: "info",
+          tekst: "5 saker overskrider 30 dager",
+          lenkeTekst: "",
+          filter: "over-30-dager",
+        },
+      ],
+    }));
+
+    expect(
+      screen.getByRole("button", { name: "Se alle saker: 2 saker nærmer seg 12 måneder" }),
+    ).toBeDefined();
+    expect(
+      screen.getByRole("button", { name: "Se alle saker: 5 saker overskrider 30 dager" }),
+    ).toBeDefined();
+  });
+
+  it("viser ikke lenke for varsler uten kjent filter", () => {
+    renderMedRouter((data) => ({
+      ...data,
+      varsler: [{ tone: "info", tekst: "Ukjent varsel", lenkeTekst: "", filter: "noe-nytt" }],
+    }));
+
+    expect(screen.getByText("Ukjent varsel")).toBeDefined();
+    expect(screen.queryByRole("button", { name: /^Se alle saker/ })).toBeNull();
   });
 
   it("lar brukeren skjule et steg i stablede stolper", () => {

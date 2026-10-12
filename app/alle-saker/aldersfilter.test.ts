@@ -82,6 +82,7 @@ describe("parseAlderOgAnsvarlig", () => {
     "ansvarlig=meg",
     "ansvarlig=Z123456",
     "ansvarlig=MEG&saksbehandler=Z123456",
+    "ansvarlig=MEG&saksbehandler=&saksbehandler=Z123456",
   ])("avviser %s med 400 uten å gjenta verdien", (søk) => {
     try {
       parseAlderOgAnsvarlig(new URLSearchParams(søk));
