@@ -18,14 +18,16 @@ function velgTilfeldig<T>(verdier: readonly T[], tilfeldig: () => number): T {
   return verdi;
 }
 
-/** Aldri i prod, styrt av feature-flagg i dev, og alltid i lokale miljøer og demo */
+/** Aldri i prod, styrt av separate feature-flagg i dev og demo, og alltid lokalt */
 export function skalViseTilfeldigSak(
   miljø: string | undefined,
-  erFeatureFlaggPåskrudd: boolean,
+  erDevFeatureFlaggPåskrudd: boolean,
+  erDemoFeatureFlaggPåskrudd: boolean,
 ): boolean {
   if (miljø === "prod") return false;
-  if (miljø === "dev") return erFeatureFlaggPåskrudd;
-  return miljø?.startsWith("local") === true || miljø === "demo";
+  if (miljø === "dev") return erDevFeatureFlaggPåskrudd;
+  if (miljø === "demo") return erDemoFeatureFlaggPåskrudd;
+  return miljø?.startsWith("local") === true;
 }
 
 export function lagTilfeldigSak(
