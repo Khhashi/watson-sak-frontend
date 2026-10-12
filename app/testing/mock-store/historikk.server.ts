@@ -96,6 +96,7 @@ export function leggTilHendelse(
     | "beskrivelse"
     | "tittel"
     | "opprettetAvNavn"
+    | "opprettetVedSaksopprettelse"
   >,
 ) {
   return leggTilBackendHendelse(

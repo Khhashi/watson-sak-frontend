@@ -2,12 +2,13 @@ import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { BACKEND_API_URL, skalBrukeMockdata } from "~/config/env.server";
 import { logger } from "~/logging/logging";
 import { hentMockMigreringKandidater } from "~/migrering/mock-data.server";
+import { leggTilHendelse as leggTilMockHendelse } from "~/saker/historikk/mock-data.server";
 import { leggTilFil } from "~/saker/filer/mock-data-filer.server";
 import {
   opprettDokument as opprettMockDokument,
   lagreDokument as lagreMockDokument,
 } from "~/saker/filer/mock-data.server";
-import { leggTilMockSakIFordeling } from "~/saker/mock-alle-saker.server";
+import { hentAlleSaker, leggTilMockSakIFordeling } from "~/saker/mock-alle-saker.server";
 import { lagIsoTidspunktFraNorskDatoTid } from "~/utils/date-utils";
 
 export type OpprettKontrollsakRequest = {
@@ -192,12 +193,13 @@ export async function lastOppFil(
   token: string,
   sakId: string,
   fil: File,
+  opprettetVedSaksopprettelse = false,
 ): Promise<void> {
   if (skalBrukeMockdata) {
+    let opprettetAv = "Saks Behandlersen";
     try {
       const innlogget = await hentInnloggetBruker({ request, oboToken: token });
-      leggTilFil(request, sakId, fil, innlogget.name || "Saks Behandlersen");
-      return;
+      opprettetAv = innlogget.name || opprettetAv;
     } catch (error) {
       if (error instanceof Response) {
         throw error;
@@ -207,9 +209,21 @@ export async function lastOppFil(
         filnavn: fil.name,
         error,
       });
-      leggTilFil(request, sakId, fil, "Saks Behandlersen");
-      return;
     }
+
+    leggTilFil(request, sakId, fil, opprettetAv);
+    if (opprettetVedSaksopprettelse) {
+      const sak = hentAlleSaker(request).find((kandidat) => String(kandidat.id) === sakId);
+      if (!sak) {
+        throw new Error(`Fant ikke sak ${sakId} for historikkhendelse ved filopplasting.`);
+      }
+      leggTilMockHendelse(request, sak, "FIL_LASTET_OPP", undefined, {
+        beskrivelse: fil.name,
+        opprettetAvNavn: opprettetAv,
+        opprettetVedSaksopprettelse: true,
+      });
+    }
+    return;
   }
 
   if (!BACKEND_API_URL) {
@@ -221,7 +235,11 @@ export async function lastOppFil(
   formData.append("fil", fil);
 
   try {
-    const respons = await fetch(`${BACKEND_API_URL}/api/v1/kontrollsaker/${sakId}/filer`, {
+    const url = new URL(`${BACKEND_API_URL}/api/v1/kontrollsaker/${sakId}/filer`);
+    if (opprettetVedSaksopprettelse) {
+      url.searchParams.set("opprettetVedSaksopprettelse", "true");
+    }
+    const respons = await fetch(url, {
       method: "POST",
       headers: { Authorization: `Bearer ${token}` },
       body: formData,

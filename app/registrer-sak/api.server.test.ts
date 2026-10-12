@@ -7,6 +7,7 @@ import {
 } from "~/testing/mock-store/alle-saker.server";
 import { hentDokumenttreForSak } from "~/testing/mock-store/dokumenter.server";
 import { hentFilerForSak } from "~/testing/mock-store/filer.server";
+import { hentHistorikk } from "~/testing/mock-store/historikk.server";
 import { søkSaker } from "~/søk/søk.server";
 import { lastOppFil, opprettKontrollsak } from "./api.server";
 
@@ -358,6 +359,29 @@ describe("opprettKontrollsak", () => {
     expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
+  it("merker filopplasting ved saksopprettelse til backend", async () => {
+    vi.resetModules();
+    vi.doMock("~/config/env.server", () => ({
+      BACKEND_API_URL: "https://backend.test",
+      skalBrukeMockdata: false,
+    }));
+    const fetchMock = vi.fn().mockResolvedValue({ ok: true, status: 201 });
+    vi.stubGlobal("fetch", fetchMock);
+    const { lastOppFil: lastOppFilBackend } = await import("./api.server");
+
+    await lastOppFilBackend(
+      testRequest,
+      "token-123",
+      "42",
+      new File(["innhold"], "vedlegg.pdf", { type: "application/pdf" }),
+      true,
+    );
+
+    expect(String(fetchMock.mock.calls[0]?.[0])).toBe(
+      "https://backend.test/api/v1/kontrollsaker/42/filer?opprettetVedSaksopprettelse=true",
+    );
+  });
+
   it("setter innlogget bruker som eier når mock-saken opprettes fra migrering", async () => {
     const svar = await opprettKontrollsak({
       request: testRequest,
@@ -493,6 +517,44 @@ describe("opprettKontrollsak", () => {
           filnavn: "vedlegg.pdf",
           storrelse: 7,
           contentType: "application/pdf",
+        }),
+      ]),
+    );
+  });
+
+  it("registrerer mock-historikk for filer lastet opp ved saksopprettelse", async () => {
+    const opprettetSak = await opprettKontrollsak({
+      request: testRequest,
+      token: "token-123",
+      payload: {
+        personIdent: "12345678901",
+        saksbehandlere: { eier: null, deltMed: [] },
+        kategori: "SAMLIV",
+        kilde: "NAV_KONTROLL",
+        prioritet: "NORMAL",
+        enhet: "ky153k",
+        misbruktype: ["SKJULT_SAMLIV"],
+        merking: [],
+        ytelser: [],
+      },
+    });
+
+    if (!opprettetSak.ok) throw new Error("Forventet ok svar");
+    await lastOppFil(
+      testRequest,
+      "token-123",
+      opprettetSak.sak.id,
+      new File(["innhold"], "vedlegg.pdf", { type: "application/pdf" }),
+      true,
+    );
+
+    expect(hentHistorikk(state(), opprettetSak.sak.id)).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          hendelsesType: "FIL_LASTET_OPP",
+          beskrivelse: "vedlegg.pdf",
+          opprettetAvNavn: "Saks Behandlersen",
+          opprettetVedSaksopprettelse: true,
         }),
       ]),
     );

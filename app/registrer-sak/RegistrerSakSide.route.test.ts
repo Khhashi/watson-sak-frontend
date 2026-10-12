@@ -11,6 +11,7 @@ vi.mock("./api.server", () => ({
   opprettKontrollsak: vi
     .fn()
     .mockResolvedValue({ ok: true, sak: { id: "00000000-0000-4000-8000-000000301000" } }),
+  lastOppFil: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("~/saker/api.server", () => ({
@@ -102,6 +103,45 @@ describe("OpprettSakSide action", () => {
     expect(response).toMatchObject({
       data: { ok: true, sakId: "00000000-0000-4000-8000-000000301000" },
     });
+  }, 15000);
+
+  it("merker filer lastet opp ved saksopprettelse i mockmodus", async () => {
+    const { action } = await import("./RegistrerSakSide.server");
+    const { lastOppFil } = await import("./api.server");
+    const filer = [
+      new File(["første"], "første.pdf", { type: "application/pdf" }),
+      new File(["andre"], "andre.pdf", { type: "application/pdf" }),
+    ];
+    const formData = lagFormDataMedMinimum();
+    filer.forEach((fil) => formData.append("filer", fil));
+    const request = new Request("http://localhost/registrer-sak", {
+      method: "POST",
+      body: formData,
+    });
+    vi.spyOn(request, "formData").mockResolvedValue(formData);
+
+    const response = await action({ request, params: {}, context: {} } as Route.ActionArgs);
+
+    expect(response).toMatchObject({
+      data: { ok: true, sakId: "00000000-0000-4000-8000-000000301000" },
+    });
+
+    expect(lastOppFil).toHaveBeenNthCalledWith(
+      1,
+      request,
+      "demo",
+      "00000000-0000-4000-8000-000000301000",
+      filer[0],
+      true,
+    );
+    expect(lastOppFil).toHaveBeenNthCalledWith(
+      2,
+      request,
+      "demo",
+      "00000000-0000-4000-8000-000000301000",
+      filer[1],
+      true,
+    );
   }, 15000);
 
   it("sender notat bare sammen med migreringsnøkkel i opprett-kallet", async () => {
