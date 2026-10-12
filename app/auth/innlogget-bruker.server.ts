@@ -25,6 +25,9 @@ export interface InnloggetBruker {
  * Enhetene "Øst" (ky153k) og "Vest" (gu301n) har to saksbehandlere hver, slik at man
  * kan teste overføring av saker mellom saksbehandlere i samme enhet, i tillegg til
  * overføring på tvers av enheter (Øst/Vest/Analyse).
+ *
+ * Tipsmottak er en enhet som bare finnes i Watson. I NOM tilhører Tina Øst og Tor Vest,
+ * men watson-admin-api gir dem enheten "tipsmottak" fordi de står på Tipsmottak-listen.
  */
 const LOKALE_BRUKERPROFILER: Record<string, InnloggetBruker> = {
   "saksbehandler-analyse": {
@@ -74,6 +77,22 @@ const LOKALE_BRUKERPROFILER: Record<string, InnloggetBruker> = {
     enhet: "Øst",
     enhetId: "ky153k",
     erLeder: false,
+  },
+  "saksbehandler-tipsmottak": {
+    preferredUsername: "tina.tipsmottaker",
+    name: "Tina Tipsmottaker",
+    navIdent: "L900007",
+    enhet: "Tipsmottak",
+    enhetId: "tipsmottak",
+    erLeder: false,
+  },
+  "leder-tipsmottak": {
+    preferredUsername: "tor.tipssjef",
+    name: "Tor Tipssjef",
+    navIdent: "L900008",
+    enhet: "Tipsmottak",
+    enhetId: "tipsmottak",
+    erLeder: true,
   },
   "saksbehandler-vest-1": {
     preferredUsername: "kjell.kontrollsen",
