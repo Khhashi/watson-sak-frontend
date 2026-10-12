@@ -3,22 +3,31 @@ import { mockKodeverk } from "~/testing/mock-store/kodeverk.server";
 import { lagTilfeldigSak, skalViseTilfeldigSak } from "./tilfeldig-sak";
 
 describe("skalViseTilfeldigSak", () => {
-  it.each(["local-backend", "local-dev", "local-mock", "demo"])(
-    "viser alltid tilfeldig sak i %s",
+  it.each(["local-backend", "local-dev", "local-mock"])(
+    "viser alltid tilfeldig sak lokalt i %s",
     (miljø) => {
-      expect(skalViseTilfeldigSak(miljø, false)).toBe(true);
-      expect(skalViseTilfeldigSak(miljø, true)).toBe(true);
+      expect(skalViseTilfeldigSak(miljø, false, false)).toBe(true);
+      expect(skalViseTilfeldigSak(miljø, true, true)).toBe(true);
     },
   );
 
-  it("viser tilfeldig sak i dev bare når feature-flagget er påskrudd", () => {
-    expect(skalViseTilfeldigSak("dev", true)).toBe(true);
-    expect(skalViseTilfeldigSak("dev", false)).toBe(false);
+  it("styrer tilfeldig sak i dev bare med dev-flagget", () => {
+    expect(skalViseTilfeldigSak("dev", true, false)).toBe(true);
+    expect(skalViseTilfeldigSak("dev", true, true)).toBe(true);
+    expect(skalViseTilfeldigSak("dev", false, true)).toBe(false);
+    expect(skalViseTilfeldigSak("dev", false, false)).toBe(false);
+  });
+
+  it("styrer tilfeldig sak i demo bare med demo-flagget", () => {
+    expect(skalViseTilfeldigSak("demo", false, true)).toBe(true);
+    expect(skalViseTilfeldigSak("demo", true, true)).toBe(true);
+    expect(skalViseTilfeldigSak("demo", true, false)).toBe(false);
+    expect(skalViseTilfeldigSak("demo", false, false)).toBe(false);
   });
 
   it("viser aldri tilfeldig sak i prod", () => {
-    expect(skalViseTilfeldigSak("prod", true)).toBe(false);
-    expect(skalViseTilfeldigSak("prod", false)).toBe(false);
+    expect(skalViseTilfeldigSak("prod", true, true)).toBe(false);
+    expect(skalViseTilfeldigSak("prod", false, false)).toBe(false);
   });
 });
 

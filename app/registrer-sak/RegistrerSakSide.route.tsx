@@ -64,7 +64,8 @@ export default function OpprettSakSide() {
   const innloggetBruker = useInnloggetBrukerValgfri();
   const kodeverk = useKodeverk();
   const miljø = useMiljø();
-  const erTilfeldigSakFlaggPåskrudd = useEnkeltFeatureFlagg(FeatureFlagg.TILFELDIG_SAK_I_DEV);
+  const erTilfeldigSakDevFlaggPåskrudd = useEnkeltFeatureFlagg(FeatureFlagg.TILFELDIG_SAK_I_DEV);
+  const erTilfeldigSakDemoFlaggPåskrudd = useEnkeltFeatureFlagg(FeatureFlagg.TILFELDIG_SAK_I_DEMO);
   const lastResult = useActionData<typeof action>();
   const submit = useSubmit();
   const navigation = useNavigation();
@@ -340,7 +341,11 @@ export default function OpprettSakSide() {
                   Grunnleggende saksinformasjon
                 </Heading>
 
-                {skalViseTilfeldigSak(miljø, erTilfeldigSakFlaggPåskrudd) && (
+                {skalViseTilfeldigSak(
+                  miljø,
+                  erTilfeldigSakDevFlaggPåskrudd,
+                  erTilfeldigSakDemoFlaggPåskrudd,
+                ) && (
                   <HStack>
                     <Button type="button" variant="secondary" onClick={fyllUtTilfeldigSak}>
                       Fyll ut en tilfeldig sak
