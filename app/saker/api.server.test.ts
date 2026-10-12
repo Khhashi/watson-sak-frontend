@@ -286,6 +286,30 @@ describe("tillatte handlinger og resultatkall", () => {
     );
   });
 
+  it("sender ny ansvarlig ved videresending til annen enhet", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => kontrollsak,
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { videresend } = await import("./api.server");
+    await videresend("token-123", "42", "vest-id", "Videresendes", "Z123456");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://backend.test/api/v1/kontrollsaker/42/videresend",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({
+          enhet: "vest-id",
+          beskrivelse: "Videresendes",
+          ansvarligNavIdent: "Z123456",
+        }),
+      }),
+    );
+  });
+
   it("lagrer politiets resultat med PUT uten stegbytte", async () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,

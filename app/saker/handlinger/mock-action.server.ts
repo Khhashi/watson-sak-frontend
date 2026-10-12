@@ -141,6 +141,12 @@ export async function mockAction(
       break;
     }
     case "FRISTILL": {
+      if (sak.steg !== "OPPRETTET") {
+        throw data("Ansvarlig saksbehandler kan bare fjernes i steget Opprettet", { status: 409 });
+      }
+      if (!sak.saksbehandlere.eier) {
+        throw data("Saken har ingen ansvarlig saksbehandler å fjerne", { status: 409 });
+      }
       sak.saksbehandlere.eier = null;
       break;
     }
@@ -150,6 +156,11 @@ export async function mockAction(
       krevTillattHandling(tillatte, "FLYTT_TIL_NESTE_STEG");
       if (!hentVisbareSteg(tillatte).includes(nyttSteg as KontrollsakSteg)) {
         throw data("Steget er ikke tillatt for saken i gjeldende tilstand", { status: 409 });
+      }
+      if (nyttSteg !== "OPPRETTET" && !sak.saksbehandlere.eier) {
+        throw data("Saken må ha en ansvarlig saksbehandler før den kan forlate steget Opprettet", {
+          status: 409,
+        });
       }
       try {
         validerResultatFeltNavn(formData, tillatte.feltskjema, tillatte.tilstand.ytelser);
@@ -292,16 +303,30 @@ export async function mockAction(
     }
     case "send_til_annen_enhet": {
       const nySeksjon = hentTekstfelt(formData, "seksjon", "Ugyldig enhet");
+      const ansvarligNavIdent = hentValgfriTekst(formData, "ansvarligNavIdent");
 
       if (nySeksjon === getSaksenhet(sak)) {
         throw data("Velg en annen enhet", { status: 400 });
+      }
+      if (sak.steg !== "OPPRETTET" && !ansvarligNavIdent) {
+        throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
+      }
+
+      const nyAnsvarlig = ansvarligNavIdent
+        ? finnSaksbehandlerDetalj(mockSaksbehandlerDetaljer, ansvarligNavIdent)
+        : null;
+      if (ansvarligNavIdent && !nyAnsvarlig) {
+        throw data("Ugyldig saksbehandler", { status: 400 });
+      }
+      if (nyAnsvarlig?.navIdent === sak.saksbehandlere.eier?.navIdent) {
+        throw data("Velg en annen ansvarlig saksbehandler", { status: 409 });
       }
 
       sak.saksbehandlere.opprettetAv = {
         ...sak.saksbehandlere.opprettetAv,
         enhet: nySeksjon,
       };
-      sak.saksbehandlere.eier = null;
+      sak.saksbehandlere.eier = nyAnsvarlig;
       leggTilBrukerhendelse(sak, "MOTTAKSENHET_ENDRET");
       break;
     }

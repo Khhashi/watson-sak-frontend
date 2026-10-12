@@ -60,6 +60,7 @@ describe("TildelSaksbehandlerModal", () => {
         saksbehandlere={[]}
         saksbehandlerDetaljer={saksbehandlerDetaljer}
         nåværendeSaksbehandler={saksbehandlerDetaljer[0]}
+        kanFristille={true}
         åpen={true}
         onClose={onClose}
       />,
@@ -77,5 +78,24 @@ describe("TildelSaksbehandlerModal", () => {
     );
     expect(document.querySelector<HTMLInputElement>('input[type="hidden"]')?.value).toBe("");
     expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("viser nåværende saksbehandler, men ikke fristilling når saken ikke tillater det", async () => {
+    await act(async () => {
+      render(
+        <TildelSaksbehandlerModal
+          sakId="101"
+          saksbehandlere={[]}
+          saksbehandlerDetaljer={saksbehandlerDetaljer}
+          nåværendeSaksbehandler={saksbehandlerDetaljer[0]}
+          kanFristille={false}
+          åpen={true}
+          onClose={vi.fn()}
+        />,
+      );
+    });
+
+    expect(screen.getByText(/Nåværende saksbehandler:/)).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
   });
 });

@@ -237,7 +237,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
-        sak={lagKontrollsak()}
+        sak={lagKontrollsak({ steg: "UTREDNING" })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler()}
       />,
@@ -374,13 +374,17 @@ describe("SaksbehandlereKort", () => {
         erEier={true}
         sak={lagKontrollsak({
           enhet: "ky153k",
+          steg: "UTREDNING",
           saksbehandlere: {
             eier: lagSaksbehandler({ enhet: "NAV Øst" }),
             deltMed: [],
             opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "NAV Øst" },
           },
         })}
-        saksbehandlerDetaljer={[lagSaksbehandler({ enhet: "NAV Øst" })]}
+        saksbehandlerDetaljer={[
+          lagSaksbehandler({ enhet: "NAV Øst" }),
+          lagSaksbehandler({ navIdent: "Z999999", navn: "Ny Saksbehandler", enhet: "NAV Vest" }),
+        ]}
         ansvarligSaksbehandler={lagSaksbehandler({ enhet: "NAV Øst" })}
       />,
     );
@@ -393,7 +397,13 @@ describe("SaksbehandlereKort", () => {
     expect(screen.getByRole("option", { name: "Nord" })).toBeDefined();
     fireEvent.change(screen.getByLabelText("Ny enhet"), { target: { value: "hu424t" } });
     fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
+    expect(screen.getByText("Velg en ny ansvarlig saksbehandler")).toBeDefined();
+    fireEvent.change(screen.getByLabelText("Ny ansvarlig saksbehandler"), {
+      target: { value: "Z999999" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     await waitFor(() => {});
+    expect(screen.getAllByText("Ny Saksbehandler (Z999999)").length).toBeGreaterThan(1);
     const sendKnapper = screen.getAllByRole("button", { name: "Send til annen enhet" });
     const sendKnapp = sendKnapper.at(-1);
     if (!sendKnapp) {
@@ -407,6 +417,7 @@ describe("SaksbehandlereKort", () => {
     expect(formData).toBeInstanceOf(FormData);
     expect(formData.get("handling")).toBe("send_til_annen_enhet");
     expect(formData.get("seksjon")).toBe("hu424t");
+    expect(formData.get("ansvarligNavIdent")).toBe("Z999999");
     expect(options).toEqual(expect.objectContaining({ method: "post" }));
   });
 
@@ -437,7 +448,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
-        sak={lagKontrollsak()}
+        sak={lagKontrollsak({ steg: "OPPRETTET" })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler({
           navIdent: "Z999999",
@@ -464,7 +475,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
-        sak={lagKontrollsak()}
+        sak={lagKontrollsak({ steg: "OPPRETTET" })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler({
           navIdent: "Z123456",
@@ -492,7 +503,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
-        sak={lagKontrollsak()}
+        sak={lagKontrollsak({ steg: "OPPRETTET" })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler()}
       />,
@@ -526,7 +537,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
-        sak={lagKontrollsak()}
+        sak={lagKontrollsak({ steg: "OPPRETTET" })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler()}
       />,
@@ -553,7 +564,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={false}
-        sak={lagKontrollsak()}
+        sak={lagKontrollsak({ steg: "OPPRETTET" })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler()}
       />,
@@ -575,5 +586,19 @@ describe("SaksbehandlereKort", () => {
 
     expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeNull();
+  });
+
+  it("skjuler Fjern saksbehandler utenfor steget Opprettet", async () => {
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={true}
+        sak={lagKontrollsak({ steg: "UTREDNING" })}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 });

@@ -384,11 +384,12 @@ export async function videresend(
   sakId: string,
   enhet: string,
   beskrivelse?: string,
+  ansvarligNavIdent?: string,
 ): Promise<void> {
   const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/videresend`), {
     method: "POST",
     headers: authHeaders(token),
-    body: JSON.stringify({ enhet, beskrivelse }),
+    body: JSON.stringify({ enhet, beskrivelse, ansvarligNavIdent }),
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke videresende kontrollsak");
 }

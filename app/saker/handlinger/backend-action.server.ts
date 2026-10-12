@@ -280,7 +280,20 @@ export async function backendAction(
     case "send_til_annen_enhet": {
       const enhet = hentTekstfelt(formData, "seksjon", "Ugyldig enhet");
       const beskrivelse = hentValgfriTekst(formData, "beskrivelse");
-      await backendApi.videresend(token, sakId, enhet, beskrivelse ?? undefined);
+      const ansvarligNavIdent = hentValgfriTekst(formData, "ansvarligNavIdent");
+      if (!ansvarligNavIdent) {
+        const nåværendeSak = await backendApi.hentKontrollsak(token, sakId);
+        if (nåværendeSak.steg !== "OPPRETTET") {
+          throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
+        }
+      }
+      await backendApi.videresend(
+        token,
+        sakId,
+        enhet,
+        beskrivelse ?? undefined,
+        ansvarligNavIdent ?? undefined,
+      );
       return { ok: true };
     }
     case "rediger_saksinformasjon": {

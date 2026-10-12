@@ -17,6 +17,7 @@ const mockHentFiler = vi.fn();
 const mockHentMapper = vi.fn().mockResolvedValue([]);
 const mockEndreSteg = vi.fn();
 const mockTildelKontrollsak = vi.fn();
+const mockVideresend = vi.fn();
 const mockHentTillatteHandlinger = vi.fn().mockResolvedValue({
   versjon: 1,
   tilstand: { steg: "OPPRETTET", status: null, statusFørBero: null, resultat: null, ytelser: [] },
@@ -76,6 +77,7 @@ vi.mock("~/saker/api.server", () => ({
   hentTillatteHandlinger: mockHentTillatteHandlinger,
   endreSteg: mockEndreSteg,
   tildelKontrollsak: mockTildelKontrollsak,
+  videresend: mockVideresend,
   søkKontrollsaker: mockSøkKontrollsaker,
 }));
 
@@ -193,6 +195,35 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(mockTildelKontrollsak).toHaveBeenCalledWith("mock-token", "1", "Z999999");
     expect(mockEndreSteg).not.toHaveBeenCalled();
     expect(resultat).toMatchObject({ ok: true, sak: { steg: "OPPRETTET" } });
+  });
+
+  it("avviser videresending uten ny ansvarlig utenfor Opprettet i backend-stien", async () => {
+    mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, steg: "UTREDNING" });
+    const formData = new FormData();
+    formData.set("handling", "send_til_annen_enhet");
+    formData.set("seksjon", "NORD");
+    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+    const { action } = await import("./SakDetaljSide.server");
+
+    await expect(
+      action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+    ).rejects.toMatchObject({ init: { status: 409 } });
+    expect(mockHentKontrollsak).toHaveBeenCalledWith("mock-token", "1");
+    expect(mockVideresend).not.toHaveBeenCalled();
+  });
+
+  it("lar saken i Opprettet videresendes uten ny ansvarlig", async () => {
+    mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
+    const formData = new FormData();
+    formData.set("handling", "send_til_annen_enhet");
+    formData.set("seksjon", "NORD");
+    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+    const { action } = await import("./SakDetaljSide.server");
+
+    expect(
+      await action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+    ).toMatchObject({ ok: true });
+    expect(mockVideresend).toHaveBeenCalledWith("mock-token", "1", "NORD", undefined, undefined);
   });
 
   it("skjuler filområdet stille når hentFiler gir 403 (mangler fil-tilgang)", async () => {
