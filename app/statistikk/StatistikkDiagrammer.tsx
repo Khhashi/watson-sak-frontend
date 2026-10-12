@@ -31,14 +31,18 @@ function lagSaksfilterUrl(parametre: Record<string, string>) {
   return `${RouteConfig.ALLE_SAKER}?${searchParams.toString()}`;
 }
 
+function leggTilOmfang(searchParams: URLSearchParams, data: Statistikk) {
+  data.omfangEnheter.forEach((enhet) => searchParams.append("enhet", enhet));
+  if (data.valgtOmfang === "meg") {
+    searchParams.set("ansvarlig", "MEG");
+  }
+}
+
 function lagStegfilterUrl(steg: string[], data: Statistikk, status?: string[]): string {
   const searchParams = new URLSearchParams();
   steg.forEach((verdi) => searchParams.append("steg", verdi));
   status?.forEach((verdi) => searchParams.append("status", verdi));
-  data.omfangEnheter.forEach((enhet) => searchParams.append("enhet", enhet));
-  if (data.omfangAnsvarligNavIdent) {
-    searchParams.set("saksbehandler", data.omfangAnsvarligNavIdent);
-  }
+  leggTilOmfang(searchParams, data);
   return `${RouteConfig.ALLE_SAKER}?${searchParams.toString()}`;
 }
 
@@ -69,11 +73,24 @@ function lenkeForNøkkeltall(
   }
 }
 
-/** Varslene er basert på behandlingstid, som ikke har et tilsvarende saksfilter ennå.
- * Vi lenker derfor til saksoversikten uten filter i stedet for å love en filtrering vi ikke kan innfri. */
-function LenkeTilSaker() {
+function lagVarselUrl(filter: string, data: Statistikk): string {
+  const aldersvarsel =
+    filter === "nærmer-seg-frist"
+      ? "NAERMER_SEG_12_MAANEDER"
+      : filter === "over-30-dager"
+        ? "FRA_30_DAGER"
+        : null;
+  const searchParams = new URLSearchParams();
+  if (aldersvarsel) {
+    searchParams.set("aldersvarsel", aldersvarsel);
+  }
+  leggTilOmfang(searchParams, data);
+  return `${RouteConfig.ALLE_SAKER}?${searchParams.toString()}`;
+}
+
+function LenkeTilSaker({ filter, data }: { filter: string; data: Statistikk }) {
   return (
-    <Button as={RouterLink} to={RouteConfig.ALLE_SAKER} variant="tertiary" size="small">
+    <Button as={RouterLink} to={lagVarselUrl(filter, data)} variant="tertiary" size="small">
       Se alle saker →
     </Button>
   );
@@ -148,7 +165,7 @@ export function StatistikkDiagrammer({
           >
             <HStack justify="space-between" align="center" gap="space-8" wrap>
               <BodyShort size="small">{varsel.tekst}</BodyShort>
-              <LenkeTilSaker />
+              <LenkeTilSaker filter={varsel.filter} data={data} />
             </HStack>
           </Box>
         ))}

@@ -53,8 +53,8 @@ export async function loader({ request }: Route.LoaderArgs) {
       utenStatus: harIngenStatus ? true : undefined,
     };
     const [mineSakerResultat, tilknyttedeSakerResultat] = await Promise.all([
-      hentKontrollsaker({ ...felles, ansvarligNavIdent: innloggetBruker.navIdent }),
-      hentKontrollsaker({ ...felles, tilknyttetNavIdent: innloggetBruker.navIdent }),
+      hentKontrollsaker({ ...felles, ansvarlig: "MEG" }),
+      hentKontrollsaker({ ...felles, tilknyttet: "MEG" }),
     ]);
     saker = mineSakerResultat.items;
     deltMedSaker = tilknyttedeSakerResultat.items.filter(

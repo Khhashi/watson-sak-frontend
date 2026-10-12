@@ -44,7 +44,7 @@ async function lastSaksbehandlerData(
         token,
         page: 1,
         size: 200,
-        ansvarligNavIdent: innloggetBruker.navIdent,
+        ansvarlig: "MEG",
       }),
       hentOppsummeringUtenAaFelleSiden(token),
     ]);

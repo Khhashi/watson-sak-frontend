@@ -4,7 +4,6 @@ export function lagMockStatistikk(
   spørring: StatistikkSpørring,
   avdeling: string,
   avdelingId: string | null,
-  navIdent?: string,
 ): Statistikk {
   const statuser = [
     ["Opprettet", "OPPRETTET"],
@@ -41,7 +40,6 @@ export function lagMockStatistikk(
         ? `enhet:${spørring.enhetId ?? avdelingId}`
         : spørring.nivaa,
     omfangEnheter,
-    omfangAnsvarligNavIdent: spørring.nivaa === "meg" ? (navIdent ?? null) : null,
     organisasjonsvalg: [
       { verdi: "meg", label: "Meg selv", type: "meg" },
       {

@@ -10,6 +10,7 @@ import { matcherSteg } from "~/saker/steg";
 import { formaterSteg, hentStatusTag } from "~/saker/visning";
 import { getSaksreferanse } from "~/saker/id";
 import { matcherStatusfilter, type Statusfilter } from "./statusfilter";
+import { type Aldersvarsel, matcherAldersvarsel } from "./aldersfilter";
 
 export const sorteringskolonner = [
   "saksid",
@@ -33,6 +34,7 @@ type FilterState = {
   merking: string[];
   steg: KontrollsakSteg[];
   status?: Statusfilter[];
+  aldersvarsel?: Aldersvarsel;
 };
 
 export function normaliserFilterVerdier(verdier: string[]): string[] {
@@ -69,6 +71,7 @@ export function filtrerSaker(
       return false;
     if (!matcherSteg(sak.steg, filter.steg)) return false;
     if (!matcherStatusfilter(sak, filter.status ?? [])) return false;
+    if (filter.aldersvarsel && !matcherAldersvarsel(sak, filter.aldersvarsel)) return false;
     return true;
   });
 }

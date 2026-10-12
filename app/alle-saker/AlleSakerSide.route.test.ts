@@ -90,4 +90,58 @@ describe("AlleSakerSide loader", () => {
     },
     15000,
   );
+
+  async function kjørLoader(params: URLSearchParams) {
+    const { loader } = await import("./AlleSakerSide.route");
+    const url = `http://localhost/alle-saker?${params}`;
+    return loader({
+      request: new Request(url),
+      url: new URL(url),
+      pattern: "/alle-saker",
+      params: {},
+      context: new RouterContextProvider(),
+    });
+  }
+
+  it("sender aldersvarsel og ansvarlig=MEG til backend uten ident", async () => {
+    hentKontrollsakerMock.mockResolvedValue({ items: [], page: 1, totalPages: 0, totalItems: 0 });
+
+    await kjørLoader(
+      new URLSearchParams({
+        aldersvarsel: "NAERMER_SEG_12_MAANEDER",
+        ansvarlig: "MEG",
+        enhet: "ky153k",
+      }),
+    );
+
+    const args = hentKontrollsakerMock.mock.calls[0][0];
+    expect(args).toMatchObject({
+      aldersvarsel: "NAERMER_SEG_12_MAANEDER",
+      ansvarlig: "MEG",
+      enhet: ["ky153k"],
+      ansvarligNavIdent: undefined,
+    });
+  }, 15000);
+
+  it.each([
+    ["ukjent aldersvarsel", { aldersvarsel: "OVER_30_DAGER" }],
+    ["ukjent ansvarlig", { ansvarlig: "Z123456" }],
+    ["MEG sammen med saksbehandler", { ansvarlig: "MEG", saksbehandler: "Z123456" }],
+  ])(
+    "avviser %s med 400",
+    async (_navn, params) => {
+      await expect(kjørLoader(new URLSearchParams(params))).rejects.toMatchObject({
+        init: { status: 400 },
+      });
+      expect(hentKontrollsakerMock).not.toHaveBeenCalled();
+    },
+    15000,
+  );
+
+  it("avviser to aldersvarsler samtidig med 400", async () => {
+    const params = new URLSearchParams();
+    params.append("aldersvarsel", "FRA_30_DAGER");
+    params.append("aldersvarsel", "NAERMER_SEG_12_MAANEDER");
+    await expect(kjørLoader(params)).rejects.toMatchObject({ init: { status: 400 } });
+  }, 15000);
 });

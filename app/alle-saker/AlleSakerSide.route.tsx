@@ -1,6 +1,7 @@
 import { Heading, HStack, Pagination, VStack } from "@navikt/ds-react";
 import { useLoaderData, useSearchParams } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
+import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { skalBrukeMockdata } from "~/config/env.server";
 import { hentKontrollsaker } from "~/fordeling/api.server";
 import { parseMultiValueParam } from "~/filtre/parseMultiValueParam";
@@ -27,6 +28,7 @@ import {
   sorterSaker,
 } from "./saker-utils";
 import { Filtre } from "./Filtre";
+import { ANSVARLIG_MEG, parseAlderOgAnsvarlig } from "./aldersfilter";
 import { parseStatusfilter, STATUSFILTER_VALG, tilBackendStatusfilter } from "./statusfilter";
 
 const STANDARD_KOLONNE: AlleSakerKolonne = "opprettet";
@@ -74,6 +76,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     normaliserFilterVerdier(parseMultiValueParam(url.searchParams, "steg")),
   );
   const filterStatus = parseStatusfilter(parseMultiValueParam(url.searchParams, "status"));
+  const { aldersvarsel, ansvarligMeg } = parseAlderOgAnsvarlig(url.searchParams);
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
@@ -83,6 +86,8 @@ export async function loader({ request }: Route.LoaderArgs) {
         page: side,
         size: RADER_PER_SIDE,
         ansvarligNavIdent: filterSaksbehandler,
+        ansvarlig: ansvarligMeg ? ANSVARLIG_MEG : undefined,
+        aldersvarsel,
         kategori: filterKategori.length > 0 ? filterKategori : undefined,
         misbruktype: filterMisbrukstype.length > 0 ? filterMisbrukstype : undefined,
         merking: filterMerking.length > 0 ? filterMerking : undefined,
@@ -109,15 +114,18 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // Mock-sti: lokal filtrering, sortering og paginering
   const alleSaker: KontrollsakResponse[] = hentAlleSaker(request);
+  // «Meg» slås opp på serveren, aldri fra URL-en, som mot backend.
+  const megIdent = ansvarligMeg ? (await hentInnloggetBruker({ request })).navIdent : undefined;
 
   const filtrerteSaker = filtrerSaker(alleSaker, {
     enhet: filterEnhet,
-    saksbehandler: filterSaksbehandler ? [filterSaksbehandler] : [],
+    saksbehandler: megIdent ? [megIdent] : filterSaksbehandler ? [filterSaksbehandler] : [],
     kategori: filterKategori,
     misbrukstype: filterMisbrukstype,
     merking: filterMerking,
     steg: filterSteg,
     status: filterStatus,
+    aldersvarsel,
   });
 
   const sorterteSaker = sorterSaker(filtrerteSaker, sorterKolonne, sorterRetning);
@@ -175,6 +183,8 @@ export default function AlleSakerSide() {
     "merking",
     "steg",
     "status",
+    "aldersvarsel",
+    "ansvarlig",
   ].some((nøkkel) => searchParams.getAll(nøkkel).some((verdi) => verdi.trim() !== ""));
   const tomTekst = harAktiveFiltre ? "Endre filtrering for å finne saker" : "Ingen saker funnet.";
 

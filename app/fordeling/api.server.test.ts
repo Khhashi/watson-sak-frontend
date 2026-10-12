@@ -61,6 +61,28 @@ describe("Fordeling api.server", () => {
     expect(url).toContain("ansvarligNavIdent=Z999999");
   }, 15000);
 
+  it("sender ansvarlig=MEG og aldersvarsel uten NAV-ident i URL-en", async () => {
+    const fetchMock = vi.fn().mockResolvedValue(tomSideSvar);
+    vi.stubGlobal("fetch", fetchMock);
+
+    const { hentKontrollsaker } = await import("./api.server");
+
+    await hentKontrollsaker({
+      token: "t",
+      page: 2,
+      size: 20,
+      ansvarlig: "MEG",
+      aldersvarsel: "FRA_30_DAGER",
+    });
+
+    const url = fetchMock.mock.calls[0][0] as string;
+    expect(url).toBe(
+      "https://backend.test/api/v1/kontrollsaker?page=2&size=20&aldersvarsel=FRA_30_DAGER&ansvarlig=MEG",
+    );
+    expect(url).not.toMatch(/[A-Z]\d{6}/);
+    expect(url).not.toContain("NavIdent");
+  }, 15000);
+
   it("sender steg som gjentatte query-parametre", async () => {
     const fetchMock = vi.fn().mockResolvedValue(tomSideSvar);
     vi.stubGlobal("fetch", fetchMock);
