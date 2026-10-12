@@ -281,6 +281,12 @@ export async function backendAction(
       const enhet = hentTekstfelt(formData, "seksjon", "Ugyldig enhet");
       const beskrivelse = hentValgfriTekst(formData, "beskrivelse");
       const ansvarligNavIdent = hentValgfriTekst(formData, "ansvarligNavIdent");
+      if (!ansvarligNavIdent) {
+        const nåværendeSak = await backendApi.hentKontrollsak(token, sakId);
+        if (nåværendeSak.steg !== "OPPRETTET") {
+          throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
+        }
+      }
       await backendApi.videresend(
         token,
         sakId,

@@ -103,7 +103,7 @@ export function TildelSaksbehandlerModal({
       <fetcher.Form method="post" {...getFormProps(form)}>
         <Modal.Body>
           <VStack gap="space-4">
-            {nåværendeSaksbehandler && kanFristille && (
+            {nåværendeSaksbehandler && (
               <BodyShort>
                 Nåværende saksbehandler:{" "}
                 <strong>
