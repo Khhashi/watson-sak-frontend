@@ -19,6 +19,7 @@ interface TildelSaksbehandlerModalProps {
   saksbehandlere: string[];
   saksbehandlerDetaljer?: KontrollsakSaksbehandler[];
   nåværendeSaksbehandler?: KontrollsakSaksbehandler | null;
+  kanFristille?: boolean;
   submitPath?: string;
   åpen: boolean;
   onClose: () => void;
@@ -29,6 +30,7 @@ export function TildelSaksbehandlerModal({
   saksbehandlere,
   saksbehandlerDetaljer = [],
   nåværendeSaksbehandler,
+  kanFristille = false,
   submitPath,
   åpen,
   onClose,
@@ -101,7 +103,7 @@ export function TildelSaksbehandlerModal({
       <fetcher.Form method="post" {...getFormProps(form)}>
         <Modal.Body>
           <VStack gap="space-4">
-            {nåværendeSaksbehandler && (
+            {nåværendeSaksbehandler && kanFristille && (
               <BodyShort>
                 Nåværende saksbehandler:{" "}
                 <strong>
@@ -132,7 +134,7 @@ export function TildelSaksbehandlerModal({
           <Button type="button" variant="secondary" onClick={handleClose}>
             Avbryt
           </Button>
-          {nåværendeSaksbehandler && (
+          {nåværendeSaksbehandler && kanFristille && (
             <Button
               type="button"
               variant="tertiary-neutral"

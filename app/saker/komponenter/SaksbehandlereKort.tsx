@@ -108,6 +108,7 @@ export function SaksbehandlereKort({
 
   // Kun sakens ansvarlige saksbehandler eller en leder kan endre eller fjerne ansvarlig saksbehandler.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
+  const kanFristilleAnsvarlig = kanEndreAnsvarlig && sak.steg === "OPPRETTET";
   const kanEndreStatus =
     erEier && tillatteHandlinger?.handlinger.some((handling) => handling.type === "ENDRE_STATUS");
   const kanEndreSteg =
@@ -218,19 +219,21 @@ export function SaksbehandlereKort({
                         ariaLabel="Endre ansvarlig saksbehandler"
                         onClick={() => setVisOverforModal(true)}
                       />
-                      <Tooltip content="Fjern saksbehandler">
-                        <Button
-                          type="button"
-                          variant="tertiary"
-                          size="xsmall"
-                          icon={<XMarkIcon aria-hidden />}
-                          aria-label="Fjern saksbehandler"
-                          onClick={handleFjernSaksbehandler}
-                          loading={fjernSaksbehandlerFetcher.state !== "idle"}
-                        >
-                          <span className="hidden xl:inline">Fjern</span>
-                        </Button>
-                      </Tooltip>
+                      {kanFristilleAnsvarlig && (
+                        <Tooltip content="Fjern saksbehandler">
+                          <Button
+                            type="button"
+                            variant="tertiary"
+                            size="xsmall"
+                            icon={<XMarkIcon aria-hidden />}
+                            aria-label="Fjern saksbehandler"
+                            onClick={handleFjernSaksbehandler}
+                            loading={fjernSaksbehandlerFetcher.state !== "idle"}
+                          >
+                            <span className="hidden xl:inline">Fjern</span>
+                          </Button>
+                        </Tooltip>
+                      )}
                     </HStack>
                   ) : null
                 }
@@ -356,13 +359,16 @@ export function SaksbehandlereKort({
         sakId={String(sak.id)}
         saksbehandlere={[]}
         saksbehandlerDetaljer={saksbehandlerDetaljer}
+        kanFristille={sak.steg === "OPPRETTET"}
         åpen={visTildelModal}
         onClose={() => setVisTildelModal(false)}
       />
       <SendTilAnnenEnhetModal
         sakId={String(sak.id)}
+        steg={sak.steg}
         nåværendeEnhet={getSaksenhet(sak)}
         ansvarligSaksbehandler={ansvarligSaksbehandler}
+        saksbehandlerDetaljer={saksbehandlerDetaljer}
         innloggetNavIdent={innloggetBruker.navIdent}
         åpen={visSendTilAnnenEnhetModal}
         onClose={() => setVisSendTilAnnenEnhetModal(false)}

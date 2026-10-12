@@ -6,27 +6,25 @@ import {
   ExclamationmarkTriangleIcon,
 } from "@navikt/aksel-icons";
 import { BodyShort, Button, HGrid, InfoCard, Modal, Select, VStack } from "@navikt/ds-react";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useFetcher, useNavigate } from "react-router";
 import { z } from "zod";
 import { sporHendelse } from "~/analytics/analytics";
 import { useKodeverk } from "~/kodeverk/useKodeverk";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
-import type { KontrollsakSaksbehandler } from "~/saker/types.backend";
+import type { KontrollsakSaksbehandler, KontrollsakSteg } from "~/saker/types.backend";
 
 interface SendTilAnnenEnhetModalProps {
   sakId: string;
+  steg: KontrollsakSteg;
   nåværendeEnhet: string;
   ansvarligSaksbehandler: KontrollsakSaksbehandler | null;
+  saksbehandlerDetaljer: KontrollsakSaksbehandler[];
   innloggetNavIdent: string;
   åpen: boolean;
   onClose: () => void;
 }
-
-const sendTilAnnenEnhetSkjema = z.object({
-  seksjon: z.string({ error: "Velg en enhet" }).min(1, "Velg en enhet"),
-});
 
 type Steg = "skjema" | "bekreft" | "suksess";
 
@@ -43,8 +41,10 @@ function SammendragRad({ label, verdi }: { label: string; verdi: React.ReactNode
 
 export function SendTilAnnenEnhetModal({
   sakId,
+  steg: sakSteg,
   nåværendeEnhet,
   ansvarligSaksbehandler,
+  saksbehandlerDetaljer,
   innloggetNavIdent,
   åpen,
   onClose,
@@ -59,8 +59,34 @@ export function SendTilAnnenEnhetModal({
   const [steg, setSteg] = useState<Steg>("skjema");
   const [innsendingFormData, setInnsendingFormData] = useState<FormData | null>(null);
   const [valgtEnhet, setValgtEnhet] = useState("");
+  const [valgtAnsvarligNavIdent, setValgtAnsvarligNavIdent] = useState("");
   const [bekreftetEnhet, setBekreftetEnhet] = useState<string | null>(null);
   const [feilmelding, setFeilmelding] = useState<string | null>(null);
+  const kreverNyAnsvarlig = sakSteg !== "OPPRETTET";
+  const valgbareSaksbehandlere = saksbehandlerDetaljer.filter(
+    (saksbehandler) => saksbehandler.navIdent !== ansvarligSaksbehandler?.navIdent,
+  );
+  const valgtAnsvarlig = valgbareSaksbehandlere.find(
+    (saksbehandler) => saksbehandler.navIdent === valgtAnsvarligNavIdent,
+  );
+  const sendTilAnnenEnhetSkjema = useMemo(
+    () =>
+      z
+        .object({
+          seksjon: z.string({ error: "Velg en enhet" }).min(1, "Velg en enhet"),
+          ansvarligNavIdent: z.string().optional(),
+        })
+        .superRefine((verdier, kontekst) => {
+          if (kreverNyAnsvarlig && !verdier.ansvarligNavIdent) {
+            kontekst.addIssue({
+              code: "custom",
+              path: ["ansvarligNavIdent"],
+              message: "Velg en ny ansvarlig saksbehandler",
+            });
+          }
+        }),
+    [kreverNyAnsvarlig],
+  );
   const tilgangsvarsel = ansvarligSaksbehandler
     ? ansvarligSaksbehandler.navIdent === innloggetNavIdent
       ? "Du fjernes da fra saken og mister tilgang til dokumentasjonen i saken."
@@ -72,6 +98,7 @@ export function SendTilAnnenEnhetModal({
       sporHendelse("send til annen enhet dialog åpnet");
       setSteg("skjema");
       setValgtEnhet("");
+      setValgtAnsvarligNavIdent("");
       setInnsendingFormData(null);
       setBekreftetEnhet(null);
       setFeilmelding(null);
@@ -144,6 +171,7 @@ export function SendTilAnnenEnhetModal({
     form.reset();
     setSteg("skjema");
     setValgtEnhet("");
+    setValgtAnsvarligNavIdent("");
     setInnsendingFormData(null);
     setFeilmelding(null);
     setBekreftetEnhet(null);
@@ -187,6 +215,24 @@ export function SendTilAnnenEnhetModal({
                   </option>
                 ))}
               </Select>
+              {kreverNyAnsvarlig && (
+                <Select
+                  key={fields.ansvarligNavIdent.key}
+                  name={fields.ansvarligNavIdent.name}
+                  id={fields.ansvarligNavIdent.id}
+                  defaultValue={fields.ansvarligNavIdent.initialValue ?? ""}
+                  onChange={(event) => setValgtAnsvarligNavIdent(event.target.value)}
+                  label="Ny ansvarlig saksbehandler"
+                  error={fields.ansvarligNavIdent.errors?.[0]}
+                >
+                  <option value="">Velg saksbehandler</option>
+                  {valgbareSaksbehandlere.map((saksbehandler) => (
+                    <option key={saksbehandler.navIdent} value={saksbehandler.navIdent}>
+                      {`${saksbehandler.navn} (${saksbehandler.navIdent})`}
+                    </option>
+                  ))}
+                </Select>
+              )}
             </VStack>
           )}
           {steg === "bekreft" && (
@@ -202,6 +248,16 @@ export function SendTilAnnenEnhetModal({
                       valgtEnhet
                     }
                   />
+                  {kreverNyAnsvarlig && (
+                    <SammendragRad
+                      label="Ny ansvarlig saksbehandler"
+                      verdi={
+                        valgtAnsvarlig
+                          ? `${valgtAnsvarlig.navn} (${valgtAnsvarlig.navIdent})`
+                          : valgtAnsvarligNavIdent
+                      }
+                    />
+                  )}
                 </HGrid>
               </div>
               {tilgangsvarsel && (
