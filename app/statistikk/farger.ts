@@ -5,33 +5,35 @@
  * og velger farger med ulik fargetone for koder som ligger ved siden av hverandre.
  *
  * `--ax-bg-info-strong` er utelatt fordi den har nøyaktig samme verdi som
- * `--ax-bg-brand-blue-strong` i både lyst og mørkt tema.
+ * `--ax-bg-brand-blue-strong` i både lyst og mørkt tema. Beige og lime er
+ * byttet ut fordi de ble brune og lå for nær warning-oransje.
+ * `--watson-data-teal` er definert i `globals.css`.
  */
 const FARGER = [
   "--ax-bg-accent-strong",
   "--ax-bg-neutral-strong",
   "--ax-bg-success-strong",
-  "--ax-bg-warning-strong",
+  "--ax-warning-500",
   "--ax-bg-danger-strong",
   "--ax-bg-brand-blue-strong",
   "--ax-bg-brand-magenta-strong",
-  "--ax-bg-brand-beige-strong",
+  "--watson-data-teal",
   "--ax-bg-meta-purple-strong",
-  "--ax-bg-meta-lime-strong",
+  "--ax-accent-900",
 ] as const;
 
 const FARGE_FOR_KODE: Record<string, (typeof FARGER)[number]> = {
   // Steg
   OPPRETTET: "--ax-bg-accent-strong",
   TILDELT: "--ax-bg-accent-strong",
-  UTREDES: "--ax-bg-warning-strong",
-  UTREDNING: "--ax-bg-warning-strong",
+  UTREDES: "--ax-warning-500",
+  UTREDNING: "--ax-warning-500",
   FORVALTNING: "--ax-bg-meta-purple-strong",
   AVSLUTTET: "--ax-bg-success-strong",
   HENLAGT: "--ax-bg-neutral-strong",
   STRAFFE: "--ax-bg-danger-strong",
   STRAFFERETTSLIG_VURDERING: "--ax-bg-danger-strong",
-  POLITI: "--ax-bg-brand-beige-strong",
+  POLITI: "--watson-data-teal",
   // Kategorier
   SAMLIV: "--ax-bg-brand-magenta-strong",
   ARBEID: "--ax-bg-brand-blue-strong",
@@ -40,7 +42,7 @@ const FARGE_FOR_KODE: Record<string, (typeof FARGER)[number]> = {
   TILTAK: "--ax-bg-accent-strong",
   DOKUMENTFALSK: "--ax-bg-danger-strong",
   ANNET: "--ax-bg-neutral-strong",
-  BEHANDLER: "--ax-bg-meta-lime-strong",
+  BEHANDLER: "--ax-accent-900",
   // Henleggelsesgrunner
   "ETTER UTREDNING": "--ax-bg-meta-purple-strong",
   "SOM STRAFFESAK": "--ax-bg-danger-strong",
