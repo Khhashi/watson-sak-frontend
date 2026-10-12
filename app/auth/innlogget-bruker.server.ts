@@ -132,12 +132,13 @@ export async function hentInnloggetBruker({
     // så vi bruker samme mock-enhet som local-mock i stedet for en placeholder-tekst.
     // Ellers vil "avdeling"-variabelen i dokumentteksteditoren vise den bokstavelige
     // teksten "Ukjent" i stedet for en gyldig enhet.
+    // Enheten må finnes i kodeverket og mock-sakene, ellers lenker statistikken til et tomt utvalg.
     return {
       preferredUsername: parseResult.preferred_username,
       name: visningsnavn(parseResult.NAVident, parseResult.name),
       navIdent: parseResult.NAVident,
-      enhet: "4812",
-      enhetId: "4812",
+      enhet: "Øst",
+      enhetId: "ky153k",
       erLeder: false,
     };
   }

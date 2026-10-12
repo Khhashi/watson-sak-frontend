@@ -255,11 +255,20 @@ function ChipsFiltergruppeForKodeAlternativ({
   alternativer: KodeAlternativ[];
 }) {
   const { valgteVerdier, toggle } = useFilterParam(paramKey, { resetKeys: RESET_KEYS });
+  // Valgte verdier som mangler i kodeverket vises med koden som etikett. Ellers ser filteret
+  // tomt ut mens listen likevel er avgrenset, og brukeren kan ikke velge verdien bort.
+  const kjenteVerdier = new Set(alternativer.map((alt) => alt.value));
+  const ukjenteValgte = valgteVerdier
+    .filter((verdi) => !kjenteVerdier.has(verdi))
+    .map((verdi) => ({ verdi, etikett: verdi }));
 
   return (
     <ChipsFiltergruppe
       tittel={tittel}
-      alternativer={alternativer.map((alt) => ({ verdi: alt.value, etikett: alt.label }))}
+      alternativer={[
+        ...alternativer.map((alt) => ({ verdi: alt.value, etikett: alt.label })),
+        ...ukjenteValgte,
+      ]}
       valgteVerdier={valgteVerdier}
       onToggle={toggle}
       size="small"
