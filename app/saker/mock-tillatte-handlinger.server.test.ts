@@ -6,6 +6,14 @@ function henleggelsesarsakerFor(felt: string, steg: "UTREDNING" | "STRAFFERETTSL
 }
 
 describe("hentMockTillatteHandlinger", () => {
+  it("tilbyr AKTIV og VENTER_PA_INFORMASJON ved strafferettslig vurdering", () => {
+    expect(lagTillatteHandlinger({ steg: "STRAFFERETTSLIG_VURDERING" }).tillatteStatuser).toEqual([
+      "AKTIV",
+      "VENTER_PA_INFORMASJON",
+      "I_BERO",
+    ]);
+  });
+
   it("tilbyr nøyaktig de fem henleggelsesårsakene for utredning, i fast rekkefølge", () => {
     expect(henleggelsesarsakerFor("utredning.henleggelsesarsak", "UTREDNING")).toEqual([
       { verdi: "IKKE_KAPASITET", etikett: "Ikke kapasitet" },
