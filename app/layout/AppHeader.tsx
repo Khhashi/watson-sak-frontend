@@ -140,7 +140,7 @@ export function AppHeader() {
           <ActionMenu.Divider />
           <ActionMenu.Item
             as="a"
-            href="https://navno.sharepoint.com/sites/45/SitePages/Holmes.aspx"
+            href="https://watson-guide.ansatt.nav.no"
             target="_blank"
             rel="noopener noreferrer"
             icon={<BooksIcon />}
