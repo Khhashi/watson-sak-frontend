@@ -32,6 +32,23 @@ describe("fargeForKode", () => {
     expect(koder.map(fargeForKode)).not.toContain("--ax-bg-info-strong");
   });
 
+  it("gir POLITI Watson-teal og BEHANDLER mørk aksent", () => {
+    expect(fargeForKode("POLITI")).toBe("--watson-data-teal");
+    expect(fargeForKode("BEHANDLER")).toBe("--ax-accent-900");
+  });
+
+  it("gir utredning tydelig oransje", () => {
+    expect(fargeForKode("UTREDNING")).toBe("--ax-warning-500");
+  });
+
+  it("bruker aldri de brune beige- og lime-fargene, heller ikke for ukjente koder", () => {
+    const koder = ["NY_KATEGORI", "X", "YZ"];
+    for (let i = 0; i < 50; i++) koder.push(`KODE_${i}`);
+
+    const farger = koder.map(fargeForKode);
+    expect(farger.some((farge) => /beige|lime/.test(farge))).toBe(false);
+  });
+
   it("normaliserer tankestrek i koder", () => {
     expect(fargeForKode("ETTER–UTREDNING")).toBe(fargeForKode("ETTER-UTREDNING"));
   });
