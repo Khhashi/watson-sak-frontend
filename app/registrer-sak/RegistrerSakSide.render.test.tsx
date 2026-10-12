@@ -8,10 +8,13 @@ const state = vi.hoisted(() => ({
   miljø: "local-backend",
   legacyPid: null as string | null,
   legacyKilde: null as string | null,
+  featureFlags: {} as Record<string, boolean>,
 }));
 vi.mock("~/miljø/useMiljø", () => ({ useMiljø: () => state.miljø }));
 vi.mock("~/kodeverk/useKodeverk", () => ({ useKodeverk: () => mockKodeverk }));
-vi.mock("~/feature-toggling/useFeatureFlagg", () => ({ useEnkeltFeatureFlagg: () => false }));
+vi.mock("~/feature-toggling/useFeatureFlagg", () => ({
+  useEnkeltFeatureFlagg: (flagg: string) => state.featureFlags[flagg] ?? false,
+}));
 vi.mock("./RegistrerSakSide.server", () => ({
   loader: () => ({ fnr: null, legacyPid: null, legacyKilde: null }),
   action: vi.fn(),
@@ -57,6 +60,7 @@ describe("Notat i Opprett sak", () => {
     state.miljø = "local-backend";
     state.legacyPid = null;
     state.legacyKilde = null;
+    state.featureFlags = {};
   });
 
   it.each(["local-mock", "local-backend"])(
@@ -141,6 +145,7 @@ describe("Nedtrekksfelt i Opprett sak", () => {
     state.miljø = "local-backend";
     state.legacyPid = null;
     state.legacyKilde = null;
+    state.featureFlags = {};
   });
 
   it("lar saksbehandler velge verdier etter en valideringsfeil", async () => {
@@ -186,4 +191,27 @@ describe("Nedtrekksfelt i Opprett sak", () => {
       expect(select.value).not.toBe("");
     }
   });
+
+  it.each([
+    { miljø: "dev", dev: true, demo: false, synlig: true },
+    { miljø: "dev", dev: false, demo: true, synlig: false },
+    { miljø: "demo", dev: false, demo: true, synlig: true },
+    { miljø: "demo", dev: true, demo: false, synlig: false },
+  ])(
+    "styrer tilfeldig sak i $miljø med riktig feature-flagg",
+    async ({ miljø, dev, demo, synlig }) => {
+      state.miljø = miljø;
+      state.featureFlags = {
+        "watson-sak-tilfeldig-sak-i-dev": dev,
+        "watson-sak-tilfeldig-sak-i-demo": demo,
+      };
+
+      renderSide();
+      await screen.findByRole("heading", { name: "Grunnleggende saksinformasjon" });
+
+      expect(screen.queryByRole("button", { name: "Fyll ut en tilfeldig sak" }) !== null).toBe(
+        synlig,
+      );
+    },
+  );
 });
