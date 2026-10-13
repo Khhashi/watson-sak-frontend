@@ -65,7 +65,33 @@ describe("hentLederStatistikk", () => {
         headers: expect.objectContaining({ Authorization: expect.any(String) }),
       }),
     );
-    expect(resultat).toEqual(gyldigRespons);
+    expect(resultat).toEqual({ ...gyldigRespons, ledetEnheter: [] });
+  });
+
+  it("sender valgt enhet som enhetId", async () => {
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({
+        ...gyldigRespons,
+        enhetId: "tipsmottak",
+        enhetNavn: "Tipsmottak",
+        ledetEnheter: [
+          { id: "hu424t", navn: "Nord" },
+          { id: "tipsmottak", navn: "Tipsmottak" },
+        ],
+      }),
+    });
+    vi.stubGlobal("fetch", fetchMock);
+    const { hentLederStatistikk } = await import("./api.server");
+
+    const resultat = await hentLederStatistikk("token-123", "tipsmottak");
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "https://backend.test/api/v1/leder/statistikk?enhetId=tipsmottak",
+      expect.anything(),
+    );
+    expect(resultat.ledetEnheter.map((enhet) => enhet.id)).toEqual(["hu424t", "tipsmottak"]);
   });
 
   it("avviser ugyldig responskontrakt", async () => {

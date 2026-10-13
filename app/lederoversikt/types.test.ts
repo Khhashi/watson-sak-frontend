@@ -45,7 +45,10 @@ const gyldigRespons = {
 
 describe("lederStatistikkResponseSchema", () => {
   it("godtar komplett lederstatistikk med ansatte uten saker", () => {
-    expect(lederStatistikkResponseSchema.parse(gyldigRespons)).toEqual(gyldigRespons);
+    expect(lederStatistikkResponseSchema.parse(gyldigRespons)).toEqual({
+      ...gyldigRespons,
+      ledetEnheter: [],
+    });
   });
 
   it("krever alle aktive steg og statuser", () => {

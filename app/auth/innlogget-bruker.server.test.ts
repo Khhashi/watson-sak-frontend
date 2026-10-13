@@ -153,6 +153,8 @@ describe("hentInnloggetBruker", () => {
     ["saksbehandler-øst-2", "Trine Trygdesen", "L900003", "Øst", "ky153k", false],
     ["saksbehandler-vest-1", "Kjell Kontrollsen", "L900004", "Vest", "gu301n", false],
     ["saksbehandler-vest-2", "Gunnar Granskeren", "L900005", "Vest", "gu301n", false],
+    ["saksbehandler-tipsmottak", "Tina Tipsmottaker", "L900007", "Tipsmottak", "tipsmottak", false],
+    ["leder-tipsmottak", "Tor Tipssjef", "L900008", "Øst", "ky153k", true],
   ] as const)(
     "logger inn med riktig identitet i local-mock for BRUKERPROFIL=%s",
     async (profil, navn, navIdent, enhet, enhetId, erLeder) => {

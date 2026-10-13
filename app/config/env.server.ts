@@ -28,6 +28,8 @@ const envSchema = z.object({
       "leder-vest",
       "saksbehandler-øst-1",
       "saksbehandler-øst-2",
+      "saksbehandler-tipsmottak",
+      "leder-tipsmottak",
       "saksbehandler-vest-1",
       "saksbehandler-vest-2",
     ])

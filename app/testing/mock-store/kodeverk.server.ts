@@ -67,5 +67,6 @@ export const mockKodeverk: Kodeverk = {
     { kode: "gu301n", beskrivelse: "Vest" },
     { kode: "hu424t", beskrivelse: "Nord" },
     { kode: "by295h", beskrivelse: "Analyse" },
+    { kode: "tipsmottak", beskrivelse: "Tipsmottak" },
   ],
 };
