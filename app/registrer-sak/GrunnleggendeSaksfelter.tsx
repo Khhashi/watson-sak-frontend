@@ -54,7 +54,7 @@ export function GrunnleggendeSaksfelter({
         id={fields.kategori.id}
         label="Kategori (må fylles ut)"
         error={fields.kategori.errors?.[0]}
-        className="w-full"
+        className="w-full max-w-[350px]"
         defaultValue={fields.kategori.initialValue as string | undefined}
         onChange={(e) => {
           const gyldige = kodeverk.misbrukstyper
@@ -107,7 +107,7 @@ export function GrunnleggendeSaksfelter({
         id={fields.kilde.id}
         label="Kilde (må fylles ut)"
         error={fields.kilde.errors?.[0]}
-        className="w-full"
+        className="w-full max-w-[350px]"
         defaultValue={fields.kilde.initialValue as string | undefined}
       >
         <option value="">Velg kilde</option>
@@ -123,7 +123,7 @@ export function GrunnleggendeSaksfelter({
         id={fields.enhet.id}
         label="Enhet (må fylles ut)"
         error={fields.enhet.errors?.[0]}
-        className="w-full"
+        className="w-full max-w-[350px]"
         defaultValue={fields.enhet.initialValue as string | undefined}
       >
         <option value="">Velg enhet</option>

@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mockKodeverk } from "~/testing/mock-store/kodeverk.server";
@@ -200,6 +200,18 @@ describe("Nedtrekksfelt i Opprett sak", () => {
       const select = screen.getByRole("combobox", { name: navn }) as HTMLSelectElement;
       expect(select.value).not.toBe("");
     }
+  });
+
+  it("normaliserer kommaseparerte organisasjonsnummer i skjemaet", async () => {
+    const { container } = renderSide();
+    const felt = await screen.findByRole("textbox", { name: "Organisasjonsnummer" });
+
+    fireEvent.change(felt, { target: { value: "123 456 789, 987654321" } });
+
+    const skjulteFelt = container.querySelectorAll<HTMLInputElement>(
+      'form[aria-label="Grunnleggende saksinformasjon"] input[name="arbeidsgivere"]',
+    );
+    expect(Array.from(skjulteFelt, (input) => input.value)).toEqual(["123456789", "987654321"]);
   });
 
   it.each([

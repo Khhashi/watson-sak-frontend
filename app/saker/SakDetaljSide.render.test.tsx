@@ -339,6 +339,18 @@ describe("SakDetaljSide render", () => {
     expect(await screen.findByLabelText("Organisasjonsnummer")).toBeDefined();
   }, 15000);
 
+  it("normaliserer kommaseparerte organisasjonsnummer i redigeringsvisningen", async () => {
+    const { container } = renderDetaljside();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Endre saksinformasjon" }));
+    fireEvent.change(await screen.findByLabelText("Organisasjonsnummer"), {
+      target: { value: "123 456 789, 987654321" },
+    });
+
+    const skjulteFelt = container.querySelectorAll<HTMLInputElement>('input[name="arbeidsgivere"]');
+    expect(Array.from(skjulteFelt, (input) => input.value)).toEqual(["123456789", "987654321"]);
+  }, 15000);
+
   it("viser Diskresjon-badge når saken har adresseskjermet=true", async () => {
     const { hentMockState } = await import("~/testing/mock-store/session.server");
     const { hentAlleSaker } = await import("~/testing/mock-store/alle-saker.server");

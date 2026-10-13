@@ -232,6 +232,40 @@ describe("opprettSakSchema", () => {
     expect(resultat.success).toBe(false);
   });
 
+  it("viser en feil på arbeidsgivere når ett av flere organisasjonsnummer er ugyldig", () => {
+    const formData = new FormData();
+    formData.set("personIdent", minimaltGyldigSkjema.personIdent);
+    formData.set("kategori", minimaltGyldigSkjema.kategori);
+    formData.set("kilde", minimaltGyldigSkjema.kilde);
+    formData.set("enhet", minimaltGyldigSkjema.enhet);
+    formData.append("arbeidsgivere", "123456789");
+    formData.append("arbeidsgivere", "12345");
+
+    const submission = parseWithZod(formData, { schema: opprettSakSchema });
+    expect(submission.status).toBe("error");
+    if (submission.status === "error") {
+      expect(submission.error?.arbeidsgivere).toEqual([
+        "Organisasjonsnummer må bestå av 9 siffer. Skill flere med komma.",
+      ]);
+    }
+  });
+
+  it("godtar flere gyldige organisasjonsnummer via skjemainnsending", () => {
+    const formData = new FormData();
+    formData.set("personIdent", minimaltGyldigSkjema.personIdent);
+    formData.set("kategori", minimaltGyldigSkjema.kategori);
+    formData.set("kilde", minimaltGyldigSkjema.kilde);
+    formData.set("enhet", minimaltGyldigSkjema.enhet);
+    formData.append("arbeidsgivere", "123456789");
+    formData.append("arbeidsgivere", "987654321");
+
+    const submission = parseWithZod(formData, { schema: opprettSakSchema });
+    expect(submission.status).toBe("success");
+    if (submission.status === "success") {
+      expect(submission.value.arbeidsgivere).toEqual(["123456789", "987654321"]);
+    }
+  });
+
   it("krever enhet", () => {
     const resultat = opprettSakSchema.safeParse({
       ...minimaltGyldigSkjema,
