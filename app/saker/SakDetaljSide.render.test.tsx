@@ -76,18 +76,18 @@ describe("SakDetaljSide render", () => {
 
     expect(await screen.findByRole("button", { name: "Lagre" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Avbryt" })).toBeDefined();
-    expect(screen.getByLabelText("Kategori")).toBeDefined();
+    expect(screen.getByLabelText("Kategori (må fylles ut)")).toBeDefined();
   }, 15000);
 
   it("viser misbruktype når kategori byttes til en kategori med misbrukstyper", async () => {
     renderDetaljside();
 
     fireEvent.click(await screen.findByRole("button", { name: "Endre saksinformasjon" }));
-    fireEvent.change(await screen.findByLabelText("Kategori"), {
+    fireEvent.change(await screen.findByLabelText("Kategori (må fylles ut)"), {
       target: { value: "ARBEID" },
     });
 
-    expect(await screen.findByLabelText("Misbruktype")).toBeDefined();
+    expect(await screen.findByLabelText("Misbrukstype")).toBeDefined();
   }, 15000);
 
   it("viser saksbehandler med delte brukere, men skjuler handlinger og fjern-knapper for ikke-eier", async () => {
@@ -336,7 +336,19 @@ describe("SakDetaljSide render", () => {
 
     fireEvent.click(await screen.findByRole("button", { name: "Endre saksinformasjon" }));
 
-    expect(await screen.findByText("Organisasjonsnummer (valgfritt)")).toBeDefined();
+    expect(await screen.findByLabelText("Organisasjonsnummer")).toBeDefined();
+  }, 15000);
+
+  it("normaliserer kommaseparerte organisasjonsnummer i redigeringsvisningen", async () => {
+    const { container } = renderDetaljside();
+
+    fireEvent.click(await screen.findByRole("button", { name: "Endre saksinformasjon" }));
+    fireEvent.change(await screen.findByLabelText("Organisasjonsnummer"), {
+      target: { value: "123 456 789, 987654321" },
+    });
+
+    const skjulteFelt = container.querySelectorAll<HTMLInputElement>('input[name="arbeidsgivere"]');
+    expect(Array.from(skjulteFelt, (input) => input.value)).toEqual(["123456789", "987654321"]);
   }, 15000);
 
   it("viser Diskresjon-badge når saken har adresseskjermet=true", async () => {

@@ -64,6 +64,15 @@ function lagValgfrittDatofelt() {
 
 const merkingSchema = z.string().trim().min(1, "Merking kan ikke være tom");
 
+const arbeidsgivereSchema = z
+  .array(z.string())
+  .refine((numre) => numre.every((nummer) => /^\d{9}$/.test(nummer)), {
+    message: "Organisasjonsnummer må bestå av 9 siffer. Skill flere med komma.",
+  })
+  .max(10, "Maks 10 arbeidsgivere")
+  .optional()
+  .default([]);
+
 const valgfrittBeløpSchema = z.preprocess(
   (verdi) => {
     if (verdi === "" || verdi === null || verdi === undefined) return undefined;
@@ -133,11 +142,7 @@ export const opprettSakSchema = z
       .default([]),
     merking: z.array(merkingSchema).optional().default([]),
     enhet: påkrevdTekst("Velg enhet"),
-    arbeidsgivere: z
-      .array(z.string().regex(/^\d{9}$/, "Organisasjonsnummer må bestå av 9 siffer"))
-      .max(10, "Maks 10 arbeidsgivere")
-      .optional()
-      .default([]),
+    arbeidsgivere: arbeidsgivereSchema,
     ytelser: z.array(ytelseRadSchema).optional().default([]),
     /**
      * Fylles ut av `forhåndsutfyll.api.ts` når saken opprettes fra
@@ -176,11 +181,7 @@ export const redigerSaksinformasjonSchema = z
       .optional()
       .default([]),
     merking: z.array(merkingSchema).optional().default([]),
-    arbeidsgivere: z
-      .array(z.string().regex(/^\d{9}$/, "Organisasjonsnummer må bestå av 9 siffer"))
-      .max(10, "Maks 10 arbeidsgivere")
-      .optional()
-      .default([]),
+    arbeidsgivere: arbeidsgivereSchema,
     ytelser: z.array(ytelseRadSchema).optional().default([]),
   })
   .transform((data) => ({

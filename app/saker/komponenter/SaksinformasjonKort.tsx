@@ -9,6 +9,7 @@ import {
   HStack,
   Select,
   Tag,
+  TextField,
   Tooltip,
   UNSAFE_Combobox,
   VStack,
@@ -28,7 +29,7 @@ import type { YtelseRadVerdier } from "~/registrer-sak/skjema-helpers";
 import { merkingEtikett } from "~/saker/kategorier";
 import type { KontrollsakResponse } from "~/saker/types.backend";
 import { formaterIsoTilNorskDato, getPersonIdent } from "~/saker/visning";
-import { formaterOrganisasjonsnummer } from "~/utils/string-utils";
+import { formaterOrganisasjonsnummer, parseOrganisasjonsnumre } from "~/utils/string-utils";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
 import { ResponsivEndreKnapp } from "./ResponsivEndreKnapp";
 import { SakDetaljerFelter } from "./SakDetaljerFelter";
@@ -130,6 +131,9 @@ export function SaksinformasjonKort({
   const [lokaleVerdier, setLokaleVerdier] = useState<RedigerSaksinformasjonData>(() =>
     lagRedigeringsdata(sak),
   );
+  const [organisasjonsnummerTekst, setOrganisasjonsnummerTekst] = useState(() =>
+    (sak.arbeidsgivere ?? []).map(formaterOrganisasjonsnummer).join(", "),
+  );
   const utgangspunkt = useMemo(() => lagRedigeringsdata(sak), [sak]);
   const ytelseAlternativer = useMemo(
     () => kodeverk.ytelseTyper.map((ytelse) => ({ value: ytelse.kode, label: ytelse.beskrivelse })),
@@ -203,6 +207,9 @@ export function SaksinformasjonKort({
   }
 
   function startRedigering() {
+    setOrganisasjonsnummerTekst(
+      utgangspunkt.arbeidsgivere.map(formaterOrganisasjonsnummer).join(", "),
+    );
     setRedigeringsøkt((gjeldende) => gjeldende + 1);
     setVisFeil(false);
     setRedigerer(true);
@@ -210,6 +217,9 @@ export function SaksinformasjonKort({
   }
 
   function avbrytRedigering() {
+    setOrganisasjonsnummerTekst(
+      utgangspunkt.arbeidsgivere.map(formaterOrganisasjonsnummer).join(", "),
+    );
     setVisFeil(false);
     setRedigerer(false);
     setLokaleVerdier(utgangspunkt);
@@ -294,7 +304,7 @@ export function SaksinformasjonKort({
                   <Select
                     id={ankerIdForFelt("kategori")}
                     name="kategori"
-                    label="Kategori"
+                    label="Kategori (må fylles ut)"
                     size="small"
                     value={lokaleVerdier.kategori}
                     error={førsteFeilForFelt(feil, "kategori")}
@@ -326,7 +336,7 @@ export function SaksinformasjonKort({
                   <Select
                     id={ankerIdForFelt("kilde")}
                     name="kilde"
-                    label="Kilde"
+                    label="Kilde (må fylles ut)"
                     size="small"
                     value={lokaleVerdier.kilde}
                     error={førsteFeilForFelt(feil, "kilde")}
@@ -345,7 +355,7 @@ export function SaksinformasjonKort({
 
                 <div id={ankerIdForFelt("misbruktype")} className="w-fit">
                   <UNSAFE_Combobox
-                    label="Misbruktype"
+                    label="Misbrukstype"
                     size="small"
                     options={misbrukstypeAlternativer.map((kode) => ({
                       value: kode,
@@ -383,35 +393,16 @@ export function SaksinformasjonKort({
                 </div>
 
                 <div className="w-fit">
-                  <UNSAFE_Combobox
+                  <TextField
                     id={ankerIdForFelt("arbeidsgivere")}
-                    label="Organisasjonsnummer (valgfritt)"
+                    label="Organisasjonsnummer"
+                    description="Dersom en bedrift bør knyttes til saken"
                     size="small"
-                    isMultiSelect
-                    allowNewValues
-                    options={[]}
-                    selectedOptions={lokaleVerdier.arbeidsgivere.map((orgnr) => ({
-                      label: formaterOrganisasjonsnummer(orgnr),
-                      value: orgnr,
-                    }))}
-                    onToggleSelected={(option, isSelected) => {
-                      setLokaleVerdier((gjeldende) => {
-                        if (isSelected && !gjeldende.arbeidsgivere.includes(option)) {
-                          return {
-                            ...gjeldende,
-                            arbeidsgivere: [...gjeldende.arbeidsgivere, option],
-                          };
-                        }
-                        if (!isSelected) {
-                          return {
-                            ...gjeldende,
-                            arbeidsgivere: gjeldende.arbeidsgivere.filter(
-                              (verdi) => verdi !== option,
-                            ),
-                          };
-                        }
-                        return gjeldende;
-                      });
+                    value={organisasjonsnummerTekst}
+                    onChange={(event) => {
+                      const tekst = event.target.value;
+                      setOrganisasjonsnummerTekst(tekst);
+                      oppdaterLokaleVerdier("arbeidsgivere", parseOrganisasjonsnumre(tekst));
                     }}
                     error={førsteFeilForFelt(feil, "arbeidsgivere")}
                   />
@@ -425,6 +416,7 @@ export function SaksinformasjonKort({
                 <div id={ankerIdForFelt("merking")} className="w-fit">
                   <UNSAFE_Combobox
                     label="Merking"
+                    description="A-krimenhet eller andre definerte kategorier"
                     size="small"
                     options={kodeverk.merker.map((merke) => ({
                       label: merkingEtikett(merke),
