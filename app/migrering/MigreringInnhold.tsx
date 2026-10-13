@@ -220,7 +220,7 @@ function KandidatLenke({ kandidat: k }: { kandidat: MigreringKandidat }) {
         type="submit"
         variant="tertiary-neutral"
         size="small"
-        className="-ml-2 font-normal"
+        className="-ml-2 [&_span]:font-normal"
         aria-label={`Flytt sak med PID ${k.legacyPid} fra Access`}
       >
         {k.legacyPid}
