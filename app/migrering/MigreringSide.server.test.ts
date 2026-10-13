@@ -8,6 +8,7 @@ const mocks = vi.hoisted(() => ({
   miljø: "local-mock" as Miljø,
   bruker: vi.fn(),
   kandidater: vi.fn(),
+  ansattKandidater: vi.fn(),
   backend: vi.fn(),
   ansatte: vi.fn(),
   tildel: vi.fn(),
@@ -21,7 +22,14 @@ vi.mock("~/config/env.server", () => ({
   },
 }));
 vi.mock("~/auth/innlogget-bruker.server", () => ({ hentInnloggetBruker: mocks.bruker }));
-vi.mock("./mock-data.server", () => ({ hentMockMigreringKandidater: mocks.kandidater }));
+vi.mock("./mock-data.server", () => ({
+  hentMockMigreringKandidater: mocks.kandidater,
+  hentMockAnsattKandidater: mocks.ansattKandidater,
+  MOCK_MIGRERING_ANSATTE: [
+    { navIdent: "L900002", navn: "Ulrikke Utrederson", enhetId: "ky153k", enhetNavn: "Øst" },
+    { navIdent: "L900009", navn: "Vilde Vestby", enhetId: "gu301n", enhetNavn: "Vest" },
+  ],
+}));
 vi.mock("./api.server", () => ({
   hentMigreringsliste: mocks.backend,
   hentMigreringsAnsatte: mocks.ansatte,
@@ -63,6 +71,7 @@ beforeEach(() => {
   mocks.mockmodus = true;
   mocks.miljø = "local-mock";
   mocks.ansatte.mockResolvedValue([]);
+  mocks.ansattKandidater.mockReturnValue([]);
   mocks.bruker.mockResolvedValue({ navIdent: "L999999" });
   mocks.kandidater.mockReturnValue([
     basis,
@@ -286,6 +295,88 @@ describe("Migreringsprototypens loader", () => {
       context: {},
     } as LoaderFunctionArgs);
     expect(resultat.liste.kandidater).toHaveLength(0);
+  });
+});
+
+describe("mockmodus for ledere", () => {
+  const leder = { navIdent: "L999999", name: "Leder Lederesen", enhet: "Analyse", erLeder: true };
+  const ansattRad = (pid: string, navIdent: string, enhet: string): MigreringKandidat => ({
+    ...basis,
+    kandidatId: `UTREDNING:${pid}`,
+    pid,
+    legacyPid: pid,
+    ansvar: { type: "BEKREFTET", navIdent },
+    enhet,
+    personIdent: null,
+  });
+
+  beforeEach(() => {
+    mocks.bruker.mockResolvedValue(leder);
+    mocks.kandidater.mockReturnValue([{ ...basis, personIdent: "12345678901" }]);
+    mocks.ansattKandidater.mockReturnValue([
+      ansattRad("700001", "L900002", "ky153k"),
+      ansattRad("700005", "L900009", "gu301n"),
+    ]);
+  });
+
+  const medUrl = (url: string) =>
+    ({ request: new Request(url), params: {}, context: {} }) as LoaderFunctionArgs;
+
+  it("slår egne og ansattes saker sammen, og navngir lederen som ansvarlig på egne", async () => {
+    const resultat = await loader(args());
+
+    expect(resultat.liste.kandidater.map((k) => k.pid)).toEqual(["100245", "700001", "700005"]);
+    expect(resultat.liste.kandidater[0]).toMatchObject({
+      ansvarligNavn: "Leder Lederesen",
+      personIdent: "12345678901",
+    });
+    expect(resultat.liste.kandidater.slice(1).every((k) => k.personIdent == null)).toBe(true);
+    expect(resultat.ansatteValg.map((a) => a.navIdent)).toEqual(["L900002", "L900009", "L999999"]);
+  });
+
+  it("filtrerer på saksbehandler og avdeling, også for lederens egne saker", async () => {
+    const påAnsvarlig = await loader(medUrl("http://localhost/migrering?ansvarlig=L999999"));
+    expect(påAnsvarlig.liste.kandidater.map((k) => k.pid)).toEqual(["100245"]);
+
+    const påAvdeling = await loader(medUrl("http://localhost/migrering?enhet=gu301n"));
+    expect(påAvdeling.liste.kandidater.map((k) => k.pid)).toEqual(["700005"]);
+  });
+
+  it("ignorerer avdelings- og saksbehandlerfilter for saksbehandlere", async () => {
+    mocks.bruker.mockResolvedValue({ ...leder, erLeder: false });
+
+    const resultat = await loader(medUrl("http://localhost/migrering?ansvarlig=L900002"));
+
+    expect(resultat.liste.kandidater.map((k) => k.pid)).toEqual(["100245"]);
+    expect(resultat.ansatteValg).toEqual([]);
+  });
+
+  it("flytter en sak til en annen ansatt etter tildeling", async () => {
+    const forespørsel = new Request("http://localhost/migrering", {
+      method: "POST",
+      body: new URLSearchParams({ kandidatId: "UTREDNING:100245", navIdent: "L900002" }),
+    });
+    expect(
+      await action({ request: forespørsel, params: {}, context: {} } as Parameters<
+        typeof action
+      >[0]),
+    ).toEqual({ ok: true });
+
+    const resultat = await loader(args());
+    const flyttet = resultat.liste.kandidater.find((k) => k.pid === "100245");
+    expect(flyttet).toMatchObject({ ansvarligNavn: "Ulrikke Utrederson" });
+  });
+
+  it("avviser tildeling til ukjent ident i mockmodus", async () => {
+    const forespørsel = new Request("http://localhost/migrering", {
+      method: "POST",
+      body: new URLSearchParams({ kandidatId: "UTREDNING:100245", navIdent: "Z123456" }),
+    });
+    await expect(
+      action({ request: forespørsel, params: {}, context: {} } as Parameters<typeof action>[0]),
+    ).rejects.toMatchObject({
+      init: { status: 400 },
+    });
   });
 });
 
