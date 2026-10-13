@@ -5,7 +5,16 @@ import {
   CheckmarkCircleFillIcon,
   ExclamationmarkTriangleIcon,
 } from "@navikt/aksel-icons";
-import { BodyShort, Button, HGrid, InfoCard, Modal, Select, VStack } from "@navikt/ds-react";
+import {
+  BodyShort,
+  Button,
+  HGrid,
+  InfoCard,
+  Modal,
+  Select,
+  UNSAFE_Combobox,
+  VStack,
+} from "@navikt/ds-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFetcher, useNavigate } from "react-router";
 import { z } from "zod";
@@ -216,22 +225,37 @@ export function SendTilAnnenEnhetModal({
                 ))}
               </Select>
               {kreverNyAnsvarlig && (
-                <Select
-                  key={fields.ansvarligNavIdent.key}
-                  name={fields.ansvarligNavIdent.name}
-                  id={fields.ansvarligNavIdent.id}
-                  defaultValue={fields.ansvarligNavIdent.initialValue ?? ""}
-                  onChange={(event) => setValgtAnsvarligNavIdent(event.target.value)}
-                  label="Ny ansvarlig saksbehandler"
-                  error={fields.ansvarligNavIdent.errors?.[0]}
-                >
-                  <option value="">Velg saksbehandler</option>
-                  {valgbareSaksbehandlere.map((saksbehandler) => (
-                    <option key={saksbehandler.navIdent} value={saksbehandler.navIdent}>
-                      {`${saksbehandler.navn} (${saksbehandler.navIdent})`}
-                    </option>
-                  ))}
-                </Select>
+                <>
+                  <input
+                    type="hidden"
+                    name={fields.ansvarligNavIdent.name}
+                    value={valgtAnsvarligNavIdent}
+                  />
+                  <UNSAFE_Combobox
+                    key={fields.ansvarligNavIdent.key}
+                    id={fields.ansvarligNavIdent.id}
+                    label="Ny ansvarlig saksbehandler"
+                    placeholder="Søk etter saksbehandler"
+                    options={valgbareSaksbehandlere.map((saksbehandler) => ({
+                      value: saksbehandler.navIdent,
+                      label: `${saksbehandler.navn} (${saksbehandler.navIdent})`,
+                    }))}
+                    selectedOptions={
+                      valgtAnsvarlig
+                        ? [
+                            {
+                              value: valgtAnsvarlig.navIdent,
+                              label: `${valgtAnsvarlig.navn} (${valgtAnsvarlig.navIdent})`,
+                            },
+                          ]
+                        : []
+                    }
+                    onToggleSelected={(navIdent, erValgt) => {
+                      setValgtAnsvarligNavIdent(erValgt ? navIdent : "");
+                    }}
+                    error={fields.ansvarligNavIdent.errors?.[0]}
+                  />
+                </>
               )}
             </VStack>
           )}
