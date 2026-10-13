@@ -1,6 +1,9 @@
+import { InboxDownIcon } from "@navikt/aksel-icons";
 import { useForm } from "@conform-to/react";
 import { parseWithZod } from "@conform-to/zod/v4";
 import {
+  BodyShort,
+  Box,
   Button,
   ErrorSummary,
   Heading,
@@ -61,6 +64,7 @@ export default function OpprettSakSide() {
     legacyPid: loaderLegacyPid,
     legacyKilde: loaderLegacyKilde,
   });
+  const erFlytting = Boolean(legacyPid && legacyKilde);
   const innloggetBruker = useInnloggetBrukerValgfri();
   const kodeverk = useKodeverk();
   const miljø = useMiljø();
@@ -258,10 +262,19 @@ export default function OpprettSakSide() {
 
   return (
     <>
-      <MiljøtilpassetTittel>Opprett sak – Watson Sak</MiljøtilpassetTittel>
+      <MiljøtilpassetTittel>
+        {erFlytting ? "Flytt fra Access – Watson Sak" : "Opprett sak – Watson Sak"}
+      </MiljøtilpassetTittel>
       <VStack gap="space-12" className="mt-4 mb-8">
         <Heading level="1" size="large">
-          Opprett sak
+          {erFlytting ? (
+            <HStack gap="space-8" align="center" as="span">
+              <InboxDownIcon aria-hidden />
+              Flytt fra Access
+            </HStack>
+          ) : (
+            "Opprett sak"
+          )}
         </Heading>
 
         <PersonOppslag
@@ -337,6 +350,29 @@ export default function OpprettSakSide() {
                   </LocalAlert>
                 )}
 
+                {erFlytting && (
+                  <>
+                    <Box
+                      background="info-soft"
+                      borderRadius="8"
+                      padding="space-16"
+                      className="max-w-2xl"
+                    >
+                      <VStack gap="space-4">
+                        <Heading level="2" size="xsmall">
+                          Du flytter en sak fra Access
+                        </Heading>
+                        <BodyShort size="small">
+                          Start med å laste opp alle filer fra S-området. Fyll deretter ut
+                          grunnleggende saksinformasjon, før du eventuelt legger inn øvrige notater
+                          fra Access i notatfeltet.
+                        </BodyShort>
+                      </VStack>
+                    </Box>
+                    <Saksvedlegg filer={filer} setFiler={setFiler} fraSOmråde />
+                  </>
+                )}
+
                 <Heading level="2" size="medium">
                   Grunnleggende saksinformasjon
                 </Heading>
@@ -377,15 +413,15 @@ export default function OpprettSakSide() {
 
                 <hr className="border-ax-border-neutral-subtle max-w-2xl" />
 
-                <Saksvedlegg filer={filer} setFiler={setFiler} />
+                {!erFlytting && <Saksvedlegg filer={filer} setFiler={setFiler} />}
 
-                {legacyPid && legacyKilde && (
+                {erFlytting && (
                   <Textarea
                     key={fields.notat.key}
                     name={fields.notat.name}
                     id={fields.notat.id}
-                    label="Notat"
-                    description="Åpent notatfelt – lagres som eget notat på saken ved opprettelse"
+                    label="Notat – informasjon fra Access"
+                    description="Legg inn informasjon fra Access som ikke følger med som fil."
                     className="max-w-2xl"
                     defaultValue={fields.notat.initialValue}
                     error={fields.notat.errors?.[0]}
