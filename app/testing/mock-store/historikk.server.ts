@@ -193,6 +193,7 @@ export function genererHistorikkForSaker(
     varsler: [],
     nesteFordelingssakId: 0,
     nesteHistorikkId: nesteId,
+    migreringTildelinger: new Map(),
   };
 
   for (const sak of saker) {

@@ -1,4 +1,4 @@
-import type { MigreringKandidat } from "./types";
+import type { MigreringAnsatt, MigreringKandidat, Migreringsstatus } from "./types";
 
 // Syntetiske visningseksempler uten reelle FNR. Dekker alle 6 kategorier iht 2.a frosset kontrakt.
 function utredningsfelter(
@@ -286,4 +286,68 @@ export function hentMockMigreringKandidater(navIdent: string): MigreringKandidat
       kildefelter: registerFelter("NKA_KONTROLL_AAP", "UNDER ARBEID", null),
     },
   ];
+}
+
+/** Syntetiske ansatte i lederens enhet. Ingen reelle identer. */
+export const MOCK_MIGRERING_ANSATTE: MigreringAnsatt[] = [
+  {
+    navIdent: "L900002",
+    navn: "Ulrikke Utrederson",
+    enhetId: "ky153k",
+    enhetNavn: "NAV Kontroll Øst",
+  },
+  {
+    navIdent: "L900003",
+    navn: "Trine Trygdesen",
+    enhetId: "ky153k",
+    enhetNavn: "NAV Kontroll Øst",
+  },
+  { navIdent: "L900009", navn: "Vilde Vestby", enhetId: "gu301n", enhetNavn: "NAV Kontroll Vest" },
+];
+
+const ANSATT_KANDIDATER: ReadonlyArray<{
+  pid: string;
+  ansvarlig: string;
+  status: Migreringsstatus;
+  dato: string;
+}> = [
+  { pid: "700001", ansvarlig: "L900002", status: "UNDER_MIGRERING", dato: "2026-02-03" },
+  { pid: "700002", ansvarlig: "L900003", status: "IKKE_PABEGYNT", dato: "2026-02-05" },
+  { pid: "700003", ansvarlig: "L900002", status: "FULLSTENDIG", dato: "2026-02-07" },
+  { pid: "700004", ansvarlig: "L900003", status: "IKKE_PABEGYNT", dato: "2026-02-09" },
+  { pid: "700005", ansvarlig: "L900009", status: "UNDER_MIGRERING", dato: "2026-02-11" },
+  { pid: "700006", ansvarlig: "L900009", status: "IKKE_PABEGYNT", dato: "2026-02-12" },
+];
+
+/**
+ * Syntetiske kandidater til lederens ansatte. Personident er aldri satt, slik som i backend.
+ * `tildelinger` overstyrer ansvarlig for kandidater som lederen har flyttet i denne økten.
+ */
+export function hentMockAnsattKandidater(
+  tildelinger: ReadonlyMap<string, string>,
+): MigreringKandidat[] {
+  return ANSATT_KANDIDATER.map(({ pid, ansvarlig, status, dato }) => {
+    const kandidatId = `UTREDNING:${pid}`;
+    const navIdent = tildelinger.get(kandidatId) ?? ansvarlig;
+    return {
+      kandidatId,
+      migreringsstatus: status,
+      kilde: "UTREDNING",
+      legacyKilde: "UTREDNING",
+      pid,
+      legacyPid: pid,
+      kategori: "TIPS_RESTANSE",
+      navn: "",
+      ansvar: { type: "BEKREFTET", navIdent },
+      ansvarligNavn: MOCK_MIGRERING_ANSATTE.find((a) => a.navIdent === navIdent)?.navn ?? null,
+      enhet: MOCK_MIGRERING_ANSATTE.find((a) => a.navIdent === navIdent)?.enhetId ?? null,
+      vurdering: "MULIG_KANDIDAT",
+      ekskluderFraStatistikk: false,
+      referansedato: dato,
+      referansedatoFelt: "TIPSINNDATO",
+      fase: "Utredning uten resultat",
+      begrunnelse: "Syntetisk eksempel.",
+      kildefelter: [],
+    } satisfies MigreringKandidat;
+  });
 }

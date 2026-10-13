@@ -1,12 +1,12 @@
 import {
   ArrowRightLeftIcon,
-  ArrowsCirclepathIcon,
   BarChartIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
   CogIcon,
   FilesIcon,
   HouseIcon,
+  InboxDownIcon,
   PersonIcon,
   PlusCircleIcon,
 } from "@navikt/aksel-icons";
@@ -37,7 +37,7 @@ const lenker: Lenke[] = [
     icon: PlusCircleIcon,
   },
   { to: RouteConfig.STATISTIKK, label: "Statistikk", icon: BarChartIcon },
-  { to: RouteConfig.MIGRERING, label: "Migrering", icon: ArrowsCirclepathIcon },
+  { to: RouteConfig.MIGRERING, label: "Flytt fra Access", icon: InboxDownIcon },
 ];
 
 export function AppSidebar() {

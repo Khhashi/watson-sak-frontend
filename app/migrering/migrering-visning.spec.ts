@@ -11,7 +11,7 @@ test.describe("Migreringsveileder med syntetiske saker", () => {
   }, testInfo) => {
     await page.setViewportSize({ width: 1280, height: 900 });
     await page.goto("/migrering");
-    await page.getByRole("link", { name: /Flyttet til Watson Sak/ }).click();
+    await page.getByRole("link", { name: "100245" }).click();
 
     await expect(page).toHaveURL(/\/saker\/1181$/);
     await expect(page.getByRole("heading", { name: "Filer" })).toBeVisible();
@@ -21,7 +21,9 @@ test.describe("Migreringsveileder med syntetiske saker", () => {
     ).toBeVisible();
     const bekreftelse = page.getByRole("status");
     await expect(bekreftelse).toContainText("Saken er ferdig flyttet");
-    await expect(page.getByRole("checkbox", { name: "Saken er ferdig flyttet" })).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Sjekkliste – flytt fra Access" })).toHaveCount(
+      0,
+    );
     await testInfo.attach("sak-ferdig-desktop", {
       body: await page.screenshot(),
       contentType: "image/png",
@@ -32,14 +34,21 @@ test.describe("Migreringsveileder med syntetiske saker", () => {
     await expect(page.getByRole("link", { name: "Notat fra opprettelse" })).toBeVisible();
   });
 
-  test("uferdig eksempel viser avkrysning uten grønn bekreftelse", async ({ page }) => {
+  test("uferdig eksempel viser sjekkliste uten grønn bekreftelse", async ({ page }) => {
     await page.goto("/migrering");
-    await page.getByRole("link", { name: "Under flytting" }).click();
+    await page.getByRole("link", { name: "100310" }).click();
 
     await expect(page).toHaveURL(/\/saker\/1182$/);
-    await expect(page.getByRole("checkbox", { name: "Saken er ferdig flyttet" })).toBeDisabled();
+    await expect(
+      page.getByRole("heading", { name: "Sjekkliste – flytt fra Access" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("checkbox", { name: "Lastet opp alle filer fra S:" }),
+    ).toBeDisabled();
+    await expect(
+      page.getByRole("button", { name: "Marker saken som ferdig flyttet" }),
+    ).toBeDisabled();
     await expect(page.getByText("Migreringsnotat (forhåndsvisning)")).toBeVisible();
-    await expect(page.getByText("Saken er ferdig flyttet", { exact: true })).toHaveCount(1);
   });
 
   test("notatkort og melding er synlige på mobil", async ({ page }, testInfo) => {
