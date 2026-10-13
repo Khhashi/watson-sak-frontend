@@ -3,8 +3,12 @@ import { getBackendOboToken } from "~/auth/access-token";
 import { erUtloggetFeil } from "~/auth/session-utløpt.server";
 import { logger } from "~/logging/logging";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
-import { skalBrukeMockdata } from "~/config/env.server";
+import { env, skalBrukeMockdata } from "~/config/env.server";
 import { hentKontrollsaker } from "~/fordeling/api.server";
+import { hentMigreringsliste } from "~/migrering/api.server";
+import { hentMockMigreringKandidater } from "~/migrering/mock-data.server";
+import { migreringErÅpen } from "~/migrering/miljo";
+import { hentMigreringsstatus } from "~/migrering/types";
 import { hentLederOversiktData } from "~/lederoversikt/loader.server";
 import { lagLederVelkomstOppsummering } from "~/lederoversikt/velkomst";
 import { hentMineSaker } from "~/saker/mock-alle-saker.server";
@@ -27,6 +31,29 @@ async function hentOppsummeringUtenAaFelleSiden(
     if (erUtloggetFeil(feil)) throw feil;
     logger.warn("Viser velkomst uten oppsummering fordi oppsummeringen ikke kunne hentes");
     return null;
+  }
+}
+
+/**
+ * Banneret på forsiden er en påminnelse. Feil her skal ikke felle forsiden, så ved feil vises det ikke.
+ * Utløpt sesjon (401) sendes videre.
+ */
+async function harSakerSomSkalFlyttes(request: Request, navIdent: string): Promise<boolean> {
+  if (skalBrukeMockdata) {
+    return hentMockMigreringKandidater(navIdent).some(
+      (k) => k.ansvar.navIdent === navIdent && hentMigreringsstatus(k) !== "FULLSTENDIG",
+    );
+  }
+  if (!migreringErÅpen(env.ENVIRONMENT)) return false;
+  try {
+    const liste = await hentMigreringsliste(request, "MINE", 1, 1, {
+      status: ["IKKE_PABEGYNT", "UNDER_MIGRERING"],
+    });
+    return liste.totalAntall > 0;
+  } catch (feil) {
+    if (erUtloggetFeil(feil)) throw feil;
+    logger.warn("Viser forsiden uten melding om saker som skal flyttes");
+    return false;
   }
 }
 
@@ -69,7 +96,12 @@ async function lastSaksbehandlerData(
 
   const velkomstOppsummering = oppsummering ? lagVelkomstOppsummering(oppsummering) : null;
 
-  return { type: "saksbehandler" as const, mineSaker, velkomstOppsummering };
+  return {
+    type: "saksbehandler" as const,
+    mineSaker,
+    velkomstOppsummering,
+    harSakerSomSkalFlyttes: await harSakerSomSkalFlyttes(request, innloggetBruker.navIdent),
+  };
 }
 
 async function lastLederData(
@@ -82,6 +114,7 @@ async function lastLederData(
     type: "leder" as const,
     velkomstOppsummering: lagLederVelkomstOppsummering(statistikk.enhet, statistikk.enhetNavn),
     statistikk,
+    harSakerSomSkalFlyttes: await harSakerSomSkalFlyttes(request, innloggetBruker.navIdent),
   };
 }
 

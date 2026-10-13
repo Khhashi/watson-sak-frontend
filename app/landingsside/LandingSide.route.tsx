@@ -8,6 +8,7 @@ import { RouteConfig } from "~/routeConfig";
 import { useVarsler, useRefreshVarsler } from "~/varsler/bruk-varsler";
 import type { loader } from "./loader.server";
 import { SisteVarsler } from "./komponenter/SisteVarsler";
+import { FlyttFraAccessBanner } from "./komponenter/FlyttFraAccessBanner";
 import { Velkomst } from "./komponenter/Velkomst";
 import { SistAktiveSakerOversikt } from "./komponenter/SistAktiveSakerOversikt";
 
@@ -37,6 +38,8 @@ export default function LandingSide() {
         {preferences.visVelkomstmelding ? (
           <Velkomst oppsummering={loaderData.velkomstOppsummering} />
         ) : null}
+
+        {loaderData.harSakerSomSkalFlyttes ? <FlyttFraAccessBanner /> : null}
 
         <SisteVarsler
           varsler={varsler}
