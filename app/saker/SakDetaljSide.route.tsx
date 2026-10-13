@@ -1,7 +1,7 @@
 import { ArrowLeftIcon, CheckmarkIcon, XMarkIcon } from "@navikt/aksel-icons";
-import { BodyShort, Box, Button, Checkbox, HGrid, HStack, VStack } from "@navikt/ds-react";
+import { BodyShort, Box, Button, HGrid, HStack, VStack } from "@navikt/ds-react";
 import { useCallback, useEffect, useState } from "react";
-import { Form, useLoaderData, useNavigate } from "react-router";
+import { useLoaderData, useNavigate } from "react-router";
 import { useInnloggetBruker } from "~/auth/innlogget-bruker";
 import { migreringErÅpen } from "~/migrering/miljo";
 import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
@@ -17,6 +17,7 @@ import { harDirekteSakstilgang, kanLeseSaksinnhold } from "./sakstilgang";
 import { PersonIdentHistorikkModal } from "./komponenter/PersonIdentHistorikkModal";
 import { SakDetaljSidePanel } from "./komponenter/SakDetaljSidePanel";
 import { SakerPåSammePerson } from "./komponenter/SakerPåSammePerson";
+import { MigreringSjekkliste } from "./komponenter/MigreringSjekkliste";
 import { SaksflytStepper } from "./komponenter/SaksflytStepper";
 import { SaksinformasjonKort } from "./komponenter/SaksinformasjonKort";
 import { getAlder, getNavn } from "./selectors";
@@ -40,9 +41,6 @@ function finnSaksbehandlerDetalj(
     ) ?? null
   );
 }
-
-const FERDIG_FLYTTET_BESKRIVELSE =
-  "Marker saken som ferdig flyttet når alle dokumenter og detaljer fra saken er flyttet fra Access og filområdet over til Watson Sak.";
 
 export default function SakDetaljSide() {
   const {
@@ -191,40 +189,9 @@ export default function SakDetaljSide() {
                   </Box>
                 )
               ) : (
-                <Box
-                  background="info-soft"
-                  borderColor="info-subtle"
-                  borderWidth="1"
-                  borderRadius="8"
-                  padding="space-12"
-                >
-                  {migreringErÅpen(miljø) && migreringsstatus === "UNDER_MIGRERING" ? (
-                    <Form method="post">
-                      <input type="hidden" name="handling" value="MIGRERING_FERDIGSTILL" />
-                      <Checkbox
-                        name="bekreftet"
-                        value="ja"
-                        description={FERDIG_FLYTTET_BESKRIVELSE}
-                        onChange={(event) => {
-                          // Figma 3–4: avkrysningen er selve ferdigmeldingen, ingen egen knapp.
-                          if (event.currentTarget.checked)
-                            event.currentTarget.form?.requestSubmit();
-                        }}
-                      >
-                        Saken er ferdig flyttet
-                      </Checkbox>
-                    </Form>
-                  ) : (
-                    <>
-                      <Checkbox disabled readOnly description={FERDIG_FLYTTET_BESKRIVELSE}>
-                        Saken er ferdig flyttet
-                      </Checkbox>
-                      <BodyShort size="small" textColor="subtle">
-                        Forhåndsvisning. Ferdigmerking kan ikke lagres ennå.
-                      </BodyShort>
-                    </>
-                  )}
-                </Box>
+                <MigreringSjekkliste
+                  kanLagres={migreringErÅpen(miljø) && migreringsstatus === "UNDER_MIGRERING"}
+                />
               ))}
 
             {kanLese ? (

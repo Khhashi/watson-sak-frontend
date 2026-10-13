@@ -200,43 +200,63 @@ describe("SakDetaljSide render", () => {
       sak.legacyKilde = "UTREDNING";
 
       renderDetaljside();
-      const kontroll = await screen.findByRole("checkbox", { name: "Saken er ferdig flyttet" });
-      expect((kontroll as HTMLInputElement).disabled).toBe(true);
+      const filer = await screen.findByRole("checkbox", { name: "Lastet opp alle filer fra S:" });
+      expect((filer as HTMLInputElement).disabled).toBe(true);
+      expect(
+        (
+          screen.getByRole("checkbox", {
+            name: "Overført all informasjon fra Access",
+          }) as HTMLInputElement
+        ).disabled,
+      ).toBe(true);
+      expect(
+        (
+          screen.getByRole("button", {
+            name: "Marker saken som ferdig flyttet",
+          }) as HTMLButtonElement
+        ).disabled,
+      ).toBe(true);
       expect(screen.getByText(/Ferdigmerking kan ikke lagres/)).toBeDefined();
       expect(screen.getByText("Migreringsnotat (forhåndsvisning)")).toBeDefined();
     },
     15000,
   );
 
-  it("viser avkrysning for ansvarlig i lokal backend uten migreringsnotat-placeholder", async () => {
+  it("viser sjekklisten for ansvarlig i lokal backend uten migreringsnotat-placeholder", async () => {
     visningsmiljø.verdi = "local-backend";
-    renderDetaljside("1182");
+    const { container } = renderDetaljside("1182");
 
-    const kontroll = await screen.findByRole("checkbox", { name: "Saken er ferdig flyttet" });
-    expect((kontroll as HTMLInputElement).disabled).toBe(false);
-    expect((kontroll as HTMLInputElement).name).toBe("bekreftet");
-    expect(screen.getByText(/Marker saken som ferdig flyttet når alle dokumenter/)).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Merk som ferdig flyttet" })).toBeNull();
+    const filer = await screen.findByRole("checkbox", { name: "Lastet opp alle filer fra S:" });
+    const info = screen.getByRole("checkbox", { name: "Overført all informasjon fra Access" });
+    expect((filer as HTMLInputElement).disabled).toBe(false);
+    expect((info as HTMLInputElement).disabled).toBe(false);
+    expect(screen.getByRole("heading", { name: "Sjekkliste – flytt fra Access" })).toBeDefined();
+    expect(container.querySelector('input[name="handling"]')?.getAttribute("value")).toBe(
+      "MIGRERING_FERDIGSTILL",
+    );
+    expect(container.querySelector('input[name="bekreftet"]')?.getAttribute("value")).toBe("ja");
     expect(screen.queryByText("Migreringsnotat (forhåndsvisning)")).toBeNull();
   }, 15000);
 
-  it("sender ferdigmeldingen når avkrysningen slås på, og ikke når den slås av", async () => {
+  it("aktiverer ferdigknappen først når begge punktene i sjekklisten er krysset av", async () => {
     visningsmiljø.verdi = "local-backend";
-    const requestSubmit = vi.fn();
-    const original = HTMLFormElement.prototype.requestSubmit;
-    HTMLFormElement.prototype.requestSubmit = requestSubmit;
-    try {
-      renderDetaljside("1182");
-      const kontroll = await screen.findByRole("checkbox", { name: "Saken er ferdig flyttet" });
+    renderDetaljside("1182");
 
-      fireEvent.click(kontroll);
-      expect(requestSubmit).toHaveBeenCalledTimes(1);
+    const knapp = (await screen.findByRole("button", {
+      name: "Marker saken som ferdig flyttet",
+    })) as HTMLButtonElement;
+    const filer = screen.getByRole("checkbox", { name: "Lastet opp alle filer fra S:" });
+    const info = screen.getByRole("checkbox", { name: "Overført all informasjon fra Access" });
+    expect(knapp.disabled).toBe(true);
 
-      fireEvent.click(kontroll);
-      expect(requestSubmit).toHaveBeenCalledTimes(1);
-    } finally {
-      HTMLFormElement.prototype.requestSubmit = original;
-    }
+    fireEvent.click(filer);
+    expect(knapp.disabled).toBe(true);
+
+    fireEvent.click(info);
+    expect(knapp.disabled).toBe(false);
+
+    fireEvent.click(filer);
+    expect(knapp.disabled).toBe(true);
   }, 15000);
 
   it("viser ferdig migrert mock-sak med notat under Filer og grønn eksempelbekreftelse", async () => {
@@ -275,7 +295,7 @@ describe("SakDetaljSide render", () => {
   it("viser uferdig mock-sak uten grønn bekreftelse", async () => {
     renderDetaljside("1182");
 
-    const kontroll = await screen.findByRole("checkbox", { name: "Saken er ferdig flyttet" });
+    const kontroll = await screen.findByRole("checkbox", { name: "Lastet opp alle filer fra S:" });
     expect((kontroll as HTMLInputElement).checked).toBe(false);
     expect(screen.queryByText(/Syntetisk eksempel/)).toBeNull();
     expect(screen.getByText("Migreringsnotat (forhåndsvisning)")).toBeDefined();
