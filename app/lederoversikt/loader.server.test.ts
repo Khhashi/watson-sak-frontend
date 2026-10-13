@@ -114,21 +114,23 @@ describe("hentLederOversiktData", () => {
     expect(hentLederStatistikkMock).toHaveBeenCalledWith("token-123", "tipsmottak");
   });
 
-  it("lar mock-lederen for Tipsmottak velge mellom Øst og Tipsmottak", async () => {
+  it("gir mock-lederen for Tipsmottak bare Tipsmottak", async () => {
     testState.skalBrukeMockdata = true;
-    const request = new Request("http://localhost/?enhet=tipsmottak");
+    const request = new Request("http://localhost/?enhet=ky153k");
     const { hentLederOversiktData } = await import("./loader.server");
 
     const resultat = await hentLederOversiktData({
       request,
-      innloggetBruker: { ...leder, navIdent: "L900008", enhet: "Øst", enhetId: "ky153k" },
+      innloggetBruker: {
+        ...leder,
+        navIdent: "L900008",
+        enhet: "Tipsmottak",
+        enhetId: "tipsmottak",
+      },
     });
 
     expect(lagMockLederStatistikkMock).toHaveBeenCalledWith(request, "tipsmottak", "Tipsmottak");
-    expect(resultat.ledetEnheter).toEqual([
-      { id: "ky153k", navn: "Øst" },
-      { id: "tipsmottak", navn: "Tipsmottak" },
-    ]);
+    expect(resultat.ledetEnheter).toEqual([{ id: "tipsmottak", navn: "Tipsmottak" }]);
   });
 
   it("faller tilbake til egen enhet i mockmodus når valgt enhet ikke ledes", async () => {
