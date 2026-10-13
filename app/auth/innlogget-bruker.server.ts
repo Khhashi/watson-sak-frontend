@@ -28,7 +28,8 @@ export interface InnloggetBruker {
  *
  * Tipsmottak er en enhet som bare finnes i Watson. Tina tilhører Øst i NOM, men
  * watson-admin-api gir henne enheten "tipsmottak" fordi hun står på Tipsmottak-listen.
- * Tor leder Øst i NOM og står på ledersiden av listen, så han leder både Øst og Tipsmottak.
+ * Tor står på Tipsmottak-lederlisten og i ledergruppen, så han leder Tipsmottak. Lederrollen
+ * han har for Øst i NOM, gjelder ikke i Watson.
  */
 const LOKALE_BRUKERPROFILER: Record<string, InnloggetBruker> = {
   "saksbehandler-analyse": {
@@ -91,8 +92,8 @@ const LOKALE_BRUKERPROFILER: Record<string, InnloggetBruker> = {
     preferredUsername: "tor.tipssjef",
     name: "Tor Tipssjef",
     navIdent: "L900008",
-    enhet: "Øst",
-    enhetId: "ky153k",
+    enhet: "Tipsmottak",
+    enhetId: "tipsmottak",
     erLeder: true,
   },
   "saksbehandler-vest-1": {
