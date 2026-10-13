@@ -354,6 +354,8 @@ export default function OpprettSakSide() {
                   <>
                     <Box
                       background="info-soft"
+                      borderColor="info"
+                      borderWidth="0 0 0 4"
                       borderRadius="8"
                       padding="space-16"
                       className="max-w-2xl"

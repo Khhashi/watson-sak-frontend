@@ -64,8 +64,7 @@ const ansatteValg: MigreringAnsatt[] = [
 
 function lagLister(delvis: Partial<MigreringLister> = {}): MigreringLister {
   return {
-    mine: lagSide([]),
-    ansatte: lagSide([]),
+    liste: lagSide([]),
     ansatteValg: [],
     filter: { status: [], enhet: null, ansvarlig: null },
     erLeder: false,
@@ -120,7 +119,7 @@ beforeAll(() => {
 
 describe("MigreringInnhold", () => {
   it("viser overskrift, infotekst og tabell med PID, Personnummer, Opprettet i Access og Status", () => {
-    renderSide(lagLister({ mine: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }));
+    renderSide(lagLister({ liste: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }));
 
     expect(screen.getByRole("heading", { level: 1, name: "Flytt fra Access" })).not.toBeNull();
     expect(screen.getByText("Her ser du dine egne saker.", { exact: false })).not.toBeNull();
@@ -132,7 +131,7 @@ describe("MigreringInnhold", () => {
 
   it("starter flyttingen med fnr og migreringsnøkkel når saken ikke er påbegynt", () => {
     const { container } = renderSide(
-      lagLister({ mine: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }),
+      lagLister({ liste: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }),
     );
 
     const knapp = screen.getByRole("button", { name: "Flytt sak med PID 100245 fra Access" });
@@ -148,7 +147,7 @@ describe("MigreringInnhold", () => {
   it("lenker PID til saken og viser status når flyttingen er påbegynt eller ferdig", () => {
     renderSide(
       lagLister({
-        mine: lagSide([
+        liste: lagSide([
           kandidat("100245", "FULLSTENDIG", 1181),
           kandidat("100246", "UNDER_MIGRERING", 1182),
         ]),
@@ -166,28 +165,30 @@ describe("MigreringInnhold", () => {
   });
 
   it("åpner saken når man klikker et annet sted i raden", async () => {
-    renderSide(lagLister({ mine: lagSide([kandidat("100245", "FULLSTENDIG", 1181)]) }));
+    renderSide(lagLister({ liste: lagSide([kandidat("100245", "FULLSTENDIG", 1181)]) }));
 
-    fireEvent.click(screen.getByText("2023-01-01"));
+    fireEvent.click(screen.getByText("01.01.2023"));
 
     expect(await screen.findByText("Saksdetaljer")).not.toBeNull();
   });
 
-  it("deaktiverer flytting når ansvaret ikke er bekreftet", () => {
+  it("viser bare PID, ikke flytteknapp, når ansvaret ikke er bekreftet", () => {
     renderSide(
       lagLister({
-        mine: lagSide([kandidat("100245", "IKKE_PABEGYNT", null, { ansvar: { type: "UKJENT" } })]),
+        liste: lagSide([kandidat("100245", "IKKE_PABEGYNT", null, { ansvar: { type: "UKJENT" } })]),
       }),
     );
 
-    const knapp = screen.getByRole("button", { name: "Flytt sak med PID 100245 fra Access" });
-    expect((knapp as HTMLButtonElement).disabled).toBe(true);
+    expect(
+      screen.queryByRole("button", { name: "Flytt sak med PID 100245 fra Access" }),
+    ).toBeNull();
+    expect(screen.getByText("100245")).not.toBeNull();
     expect(screen.getByText("–", { selector: "td" })).not.toBeNull();
   });
 
   it("skjuler statusendring inntil autorisasjon og faglige overganger er implementert", () => {
     // TODO SAK-67, rød sone: test autorisert manuell overgang når backend er klar.
-    renderSide(lagLister({ mine: lagSide([kandidat("100245", "UNDER_MIGRERING", 1182)]) }));
+    renderSide(lagLister({ liste: lagSide([kandidat("100245", "UNDER_MIGRERING", 1182)]) }));
     expect(screen.queryByRole("button", { name: "Merk migrering fullstendig" })).toBeNull();
   });
 
@@ -218,7 +219,7 @@ describe("MigreringInnhold", () => {
     });
 
     it("legger til og fjerner status i URL-en og starter på side 1", () => {
-      renderSide(lagLister(), "/migrering?side=2&ansatteSide=3");
+      renderSide(lagLister(), "/migrering?side=2");
       const gruppe = screen.getByRole("group", { name: "Status" });
 
       fireEvent.click(within(gruppe).getByText("Under flytting"));
@@ -281,26 +282,27 @@ describe("MigreringInnhold", () => {
         lagLister({
           erLeder: true,
           ansatteValg,
-          ansatte: lagSide([ansattSak, ansattUnderFlytting]),
-          mine: lagSide([kandidat("100245", "IKKE_PABEGYNT")]),
+          liste: lagSide([ansattSak, ansattUnderFlytting, kandidat("100245", "IKKE_PABEGYNT")]),
         }),
         "/migrering",
         tildelingsSvar,
       );
     }
 
-    const ansatteTabell = () =>
-      within(nærmeste(screen.getByRole("heading", { name: "Ansatte" }), "section"));
+    const ansatteTabell = () => within(screen.getByRole("table"));
 
-    it("viser ansattliste med saksbehandler, men uten personnummer og uten flytteknapp", () => {
+    it("viser én liste med saksbehandler, og ingen flytteknapp på andres saker", () => {
       renderLeder();
 
       const ansatte = ansatteTabell();
       expect(ansatte.getByRole("columnheader", { name: "Saksbehandler" })).not.toBeNull();
-      expect(ansatte.queryByRole("columnheader", { name: "Personnummer" })).toBeNull();
       expect(ansatte.getAllByText("Åse Hansen")).toHaveLength(2);
-      expect(ansatte.queryByRole("button", { name: /Flytt sak med PID/ })).toBeNull();
-      expect(screen.getByRole("heading", { name: "Mine saker" })).not.toBeNull();
+      expect(
+        ansatte.queryByRole("button", { name: "Flytt sak med PID 200001 fra Access" }),
+      ).toBeNull();
+      expect(
+        ansatte.getByRole("button", { name: "Flytt sak med PID 100245 fra Access" }),
+      ).not.toBeNull();
     });
 
     it("tilbyr bare Endre tildeling for saker som ikke er påbegynt", () => {
@@ -371,14 +373,14 @@ describe("MigreringInnhold", () => {
     );
 
     it("viser antall og sidevelger når det er flere sider", () => {
-      renderSide(lagLister({ mine: lagSide(tjue, 2, 3, 50) }));
+      renderSide(lagLister({ liste: lagSide(tjue, 2, 3, 50) }));
 
       expect(screen.getByText("Viser 21–40 av 50")).not.toBeNull();
       expect(screen.getByRole("button", { name: /^3$/ })).not.toBeNull();
     });
 
     it("bytter side ved å sette side i URL-en, og fjerner den på side 1", () => {
-      renderSide(lagLister({ mine: lagSide(tjue, 2, 3, 50) }), "/migrering?side=2");
+      renderSide(lagLister({ liste: lagSide(tjue, 2, 3, 50) }), "/migrering?side=2");
 
       fireEvent.click(screen.getByRole("button", { name: /^3$/ }));
       expect(screen.getByTestId("sok").textContent).toBe("side=3");
@@ -387,36 +389,21 @@ describe("MigreringInnhold", () => {
       expect(screen.getByTestId("sok").textContent).toBe("");
     });
 
-    it("beholder ansattesiden og filteret når hovedlisten bytter side", () => {
+    it("beholder filteret når listen bytter side", () => {
       renderSide(
-        lagLister({ mine: lagSide(tjue, 1, 3, 50) }),
-        "/migrering?ansatteSide=4&status=UNDER_MIGRERING",
+        lagLister({ liste: lagSide(tjue, 1, 3, 50) }),
+        "/migrering?status=UNDER_MIGRERING",
       );
 
       fireEvent.click(screen.getByRole("button", { name: /^2$/ }));
-      expect(screen.getByTestId("sok").textContent).toBe(
-        "ansatteSide=4&status=UNDER_MIGRERING&side=2",
-      );
+      expect(screen.getByTestId("sok").textContent).toBe("status=UNDER_MIGRERING&side=2");
     });
 
     it("viser antall, men ingen sidevelger når alt er på én side", () => {
-      renderSide(lagLister({ mine: lagSide(tjue, 1, 1, 20) }));
+      renderSide(lagLister({ liste: lagSide(tjue, 1, 1, 20) }));
 
       expect(screen.getByText("Viser 1–20 av 20")).not.toBeNull();
       expect(screen.queryByRole("button", { name: /^2$/ })).toBeNull();
-    });
-
-    it("paginerer ansattlisten for leder med egen parameter", () => {
-      const ansatte = tjue.map((k) => ({
-        ...k,
-        ansvar: { type: "BEKREFTET" as const, navIdent: "Z999001" },
-        personIdent: null,
-      }));
-      renderSide(lagLister({ erLeder: true, ansatteValg, ansatte: lagSide(ansatte, 1, 2, 30) }));
-
-      expect(screen.getByText("Viser 1–20 av 30")).not.toBeNull();
-      fireEvent.click(screen.getByRole("button", { name: /^2$/ }));
-      expect(screen.getByTestId("sok").textContent).toBe("ansatteSide=2");
     });
 
     it("viser ingen sidetekst når listen er tom", () => {

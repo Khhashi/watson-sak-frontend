@@ -149,7 +149,6 @@ function medFilter(kandidater: MigreringKandidat[], filter: MigreringFilter): Mi
 export async function loader({ request }: LoaderFunctionArgs): Promise<MigreringLister> {
   const url = new URL(request.url);
   const side = lesSide(url, "side");
-  const ansatteSide = lesSide(url, "ansatteSide");
   const filter = lesFilter(url);
   const backendFilter: Migreringsfilter = filter;
 
@@ -161,40 +160,57 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<Migrering
     }
     const bruker = await hentInnloggetBruker({ request });
     // Uavhengige, potensielt trege kall: hent parallelt så svartiden ikke blir summen.
-    const [mine, ansatte, ansatteValg] = await Promise.all([
-      hentListe(request, "MINE", side, { status: filter.status }),
+    const [liste, ansatteValg] = await Promise.all([
       bruker.erLeder
-        ? hentListe(request, "ANSATTE", ansatteSide, backendFilter)
-        : Promise.resolve({ side: TOM_SIDE, utilgjengelig: false }),
+        ? hentListe(request, "ALLE", side, backendFilter)
+        : hentListe(request, "MINE", side, { status: filter.status }),
       bruker.erLeder ? hentAnsatteValg(request) : Promise.resolve([]),
     ]);
     return {
-      mine: mine.side,
-      ansatte: ansatte.side,
+      liste: liste.side,
       ansatteValg: ansatteValg ?? [],
       filter,
       erLeder: bruker.erLeder,
-      utilgjengelig: mine.utilgjengelig || ansatte.utilgjengelig || ansatteValg === null,
+      utilgjengelig: liste.utilgjengelig || ansatteValg === null,
     };
   }
 
   const bruker = await hentInnloggetBruker({ request });
   const kandidater = merkAlleredeOverforte(request, hentMockMigreringKandidater(bruker.navIdent));
-  const mine = medFilter(
-    kandidater.filter(
-      (k) => k.ansvar.type === "BEKREFTET" && k.ansvar.navIdent === bruker.navIdent,
-    ),
-    { status: filter.status, enhet: null, ansvarlig: null },
-  );
-  // Syntetiske ansatte vises bare for ledere, slik at saksbehandlere ikke ser andres saker.
-  const ansatte = bruker.erLeder
-    ? medFilter(hentMockAnsattKandidater(hentMockState(request).migreringTildelinger), filter)
+  const tildelinger = hentMockState(request).migreringTildelinger;
+  const ansatteValg: MigreringAnsatt[] = bruker.erLeder
+    ? [
+        ...MOCK_MIGRERING_ANSATTE,
+        {
+          navIdent: bruker.navIdent,
+          navn: bruker.name,
+          enhetId: bruker.enhetId ?? bruker.enhet,
+          enhetNavn: bruker.enhet,
+        },
+      ]
     : [];
+  const egne = kandidater
+    .filter((k) => k.ansvar.type === "BEKREFTET" && k.ansvar.navIdent === bruker.navIdent)
+    .map((k): MigreringKandidat => {
+      const navIdent = tildelinger.get(k.kandidatId) ?? k.ansvar.navIdent;
+      const ansvarlig = ansatteValg.find((a) => a.navIdent === navIdent);
+      return {
+        ...k,
+        ansvar: { type: "BEKREFTET", navIdent: navIdent ?? "" },
+        ansvarligNavn: ansvarlig?.navn ?? bruker.name,
+        enhet: ansvarlig?.enhetId ?? null,
+      };
+    });
+  // Syntetiske ansatte vises bare for ledere, slik at saksbehandlere ikke ser andres saker.
+  const alle = bruker.erLeder ? [...egne, ...hentMockAnsattKandidater(tildelinger)] : egne;
+  const liste = medFilter(
+    alle,
+    bruker.erLeder ? filter : { ...filter, enhet: null, ansvarlig: null },
+  );
 
   return {
-    mine: sideAv(mine, side),
-    ansatte: sideAv(ansatte, ansatteSide),
-    ansatteValg: bruker.erLeder ? MOCK_MIGRERING_ANSATTE : [],
+    liste: sideAv(liste, side),
+    ansatteValg,
     filter,
     erLeder: bruker.erLeder,
     utilgjengelig: false,
@@ -220,7 +236,10 @@ export async function action({ request }: ActionFunctionArgs): Promise<Tildeling
   }
 
   if (skalBrukeMockdata) {
-    if (!MOCK_MIGRERING_ANSATTE.some((a) => a.navIdent === navIdent)) {
+    if (
+      navIdent !== bruker.navIdent &&
+      !MOCK_MIGRERING_ANSATTE.some((a) => a.navIdent === navIdent)
+    ) {
       throw data("Ugyldig tildeling", { status: 400 });
     }
     hentMockState(request).migreringTildelinger.set(kandidatId, navIdent);

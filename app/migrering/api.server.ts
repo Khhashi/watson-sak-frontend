@@ -59,9 +59,9 @@ const ansattSchema = z.object({
   enhetNavn: z.string().nullish(),
 });
 
-export type Migreringsvisning = "MINE" | "ANSATTE";
+export type Migreringsvisning = "MINE" | "ANSATTE" | "ALLE";
 
-/** Filtre som backend anvender før paginering. `enhet` og `ansvarlig` gjelder bare ANSATTE. */
+/** Filtre som backend anvender før paginering. `enhet` og `ansvarlig` gjelder bare ANSATTE og ALLE. */
 export interface Migreringsfilter {
   status?: readonly Migreringsstatus[];
   enhet?: string | null;
@@ -83,7 +83,7 @@ export async function hentMigreringskandidater(request: Request): Promise<Migrer
 
 /**
  * Henter én side. Bruker backendens eksisterende Azure-token og tilgangskontroller, aldri klientvalgt NAV-ident.
- * `ANSATTE` er bare for ledere. Backend skjuler personident i den visningen.
+ * `ANSATTE` og `ALLE` er bare for ledere. Backend skjuler andres personident.
  *
  * @param side 1-basert sidenummer
  */
@@ -105,7 +105,7 @@ export async function hentMigreringsliste(
     size: String(størrelse),
   });
   for (const status of filter.status ?? []) query.append("status", status);
-  if (visning === "ANSATTE") {
+  if (visning !== "MINE") {
     if (filter.enhet) query.set("enhet", filter.enhet);
     if (filter.ansvarlig) query.set("ansvarlig", filter.ansvarlig);
   }

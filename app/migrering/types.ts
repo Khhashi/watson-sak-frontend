@@ -52,7 +52,7 @@ export interface MigreringKandidat {
     | { type: "LOGGTREFF"; navIdent: string }
     | { type: "UKJENT"; navIdent?: null };
   enhet?: string | null;
-  /** Visningsnavn på ansvarlig. Bare satt i lederens visning av ansatte. */
+  /** Visningsnavn på ansvarlig. Satt i lederens samlede visning. */
   ansvarligNavn?: string | null;
   vurdering: MigreringVurdering;
   ekskluderFraStatistikk: boolean;
@@ -97,9 +97,8 @@ export interface MigreringFilter {
 }
 
 export interface MigreringLister {
-  mine: MigreringSide;
-  /** Kandidater til ansatte i lederens enhet. Tom for andre enn ledere. Personident er aldri satt. */
-  ansatte: MigreringSide;
+  /** Egne kandidater. For ledere også ansattes. Andres personident er aldri satt. */
+  liste: MigreringSide;
   /** Valg til filtre og tildeling. Tom for andre enn ledere. */
   ansatteValg: MigreringAnsatt[];
   filter: MigreringFilter;

@@ -108,49 +108,25 @@ describe("Migreringsprototypens loader", () => {
     expect(mocks.backend).toHaveBeenCalledTimes(1);
     expect(mocks.backend).toHaveBeenCalledWith(argumenter.request, "MINE", 1, 20, { status: [] });
     expect(mocks.kandidater).not.toHaveBeenCalled();
-    expect(resultat.mine.kandidater.map((k) => k.kandidatId)).toEqual(["UTREDNING:100245"]);
-    expect(resultat.ansatte).toEqual(tomSide);
+    expect(resultat.liste.kandidater.map((k) => k.kandidatId)).toEqual(["UTREDNING:100245"]);
     expect(resultat.utilgjengelig).toBe(false);
   });
 
-  it("henter ansattlisten bare for ledere", async () => {
+  it("henter samlet liste og ansattvalg for ledere", async () => {
     mocks.miljø = "local-backend";
     mocks.mockmodus = false;
     mocks.bruker.mockResolvedValue({ navIdent: "L999999", erLeder: true });
-    mocks.backend.mockImplementation(async (_request: Request, visning: string) =>
-      visning === "ANSATTE" ? side([{ ...basis, personIdent: null }]) : side([]),
-    );
+    mocks.backend.mockResolvedValue(side([{ ...basis, personIdent: null }]));
 
     const resultat = await loader(args());
 
-    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "ANSATTE", 1, 20, ingenFilter);
-    expect(resultat.ansatte.kandidater).toHaveLength(1);
+    expect(mocks.backend).toHaveBeenCalledTimes(1);
+    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "ALLE", 1, 20, ingenFilter);
+    expect(mocks.ansatte).toHaveBeenCalledTimes(1);
+    expect(resultat.liste.kandidater).toHaveLength(1);
   });
 
-  it("starter begge listekallene for ledere før noen av dem er ferdig", async () => {
-    mocks.miljø = "local-backend";
-    mocks.mockmodus = false;
-    mocks.bruker.mockResolvedValue({ navIdent: "L999999", erLeder: true });
-    let slippMine: () => void = () => {};
-    mocks.backend.mockImplementation((_request: Request, visning: string) =>
-      visning === "MINE"
-        ? new Promise((løs) => {
-            slippMine = () => løs(side([]));
-          })
-        : Promise.resolve(side([])),
-    );
-
-    const lastet = loader(args());
-    await Promise.resolve();
-    await Promise.resolve();
-
-    // ANSATTE er startet mens MINE fortsatt venter, så kallene kjører parallelt.
-    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "ANSATTE", 1, 20, ingenFilter);
-    slippMine();
-    await lastet;
-  });
-
-  it("henter siden fra URL-en, hver liste med sin egen parameter", async () => {
+  it("henter siden fra URL-en", async () => {
     mocks.miljø = "local-backend";
     mocks.mockmodus = false;
     mocks.bruker.mockResolvedValue({ navIdent: "L999999", erLeder: true });
@@ -159,13 +135,12 @@ describe("Migreringsprototypens loader", () => {
     );
 
     await loader({
-      request: new Request("http://localhost/migrering?side=3&ansatteSide=2"),
+      request: new Request("http://localhost/migrering?side=3"),
       params: {},
       context: {},
     } as LoaderFunctionArgs);
 
-    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "MINE", 3, 20, { status: [] });
-    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "ANSATTE", 2, 20, ingenFilter);
+    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "ALLE", 3, 20, ingenFilter);
   });
 
   it.each(["0", "-4", "abc", "", "3abc", "99999999999999999999"])(
@@ -202,7 +177,7 @@ describe("Migreringsprototypens loader", () => {
 
     expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "MINE", 9, 20, { status: [] });
     expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "MINE", 2, 20, { status: [] });
-    expect(resultat.mine.side).toBe(2);
+    expect(resultat.liste.side).toBe(2);
   });
 
   it("gir tom liste og utilgjengelig når backend feiler, men bevarer utløpt sesjon", async () => {
@@ -213,8 +188,7 @@ describe("Migreringsprototypens loader", () => {
 
     const resultat = await loader(args());
     expect(resultat).toEqual({
-      mine: tomSide,
-      ansatte: tomSide,
+      liste: tomSide,
       ansatteValg: [],
       filter: ingenFilter,
       erLeder: false,
@@ -228,21 +202,20 @@ describe("Migreringsprototypens loader", () => {
   it.each<Miljø>(["local-mock", "demo"])("tillater prototypen i %s", async (miljø) => {
     mocks.miljø = miljø;
     mocks.mockmodus = skalBrukeMockdataForMiljø(miljø);
-    expect((await loader(args())).mine.kandidater).toHaveLength(1);
+    expect((await loader(args())).liste.kandidater).toHaveLength(1);
   });
 
   it("bruker ident fra innlogging, ikke queryparameter, og returnerer ikke andres bekreftede saker", async () => {
     const resultat = await loader(args());
     expect(mocks.kandidater).toHaveBeenCalledWith("L999999");
-    expect(resultat.mine.kandidater.map((k) => k.pid)).toEqual(["100245"]);
+    expect(resultat.liste.kandidater.map((k) => k.pid)).toEqual(["100245"]);
     expect(JSON.stringify(resultat)).not.toContain("100246");
   });
 
   it("søkeloggtreff er ikke eierskap, selv for innlogget bruker", async () => {
     const resultat = await loader(args());
-    expect(resultat.mine.kandidater.map((k) => k.pid)).toEqual(["100245"]);
-    expect(resultat.mine.kandidater.every((k) => k.ansvar.type === "BEKREFTET")).toBe(true);
-    expect(resultat.ansatte).toEqual(tomSide);
+    expect(resultat.liste.kandidater.map((k) => k.pid)).toEqual(["100245"]);
+    expect(resultat.liste.kandidater.every((k) => k.ansvar.type === "BEKREFTET")).toBe(true);
   });
 
   it("deler mock-data i sider og viser siste side når siden er for høy", async () => {
@@ -255,17 +228,17 @@ describe("Migreringsprototypens loader", () => {
     mocks.kandidater.mockReturnValue(mange);
 
     const forste = await loader(args());
-    expect(forste.mine.kandidater).toHaveLength(20);
-    expect(forste.mine.totalSider).toBe(3);
-    expect(forste.mine.totalAntall).toBe(45);
+    expect(forste.liste.kandidater).toHaveLength(20);
+    expect(forste.liste.totalSider).toBe(3);
+    expect(forste.liste.totalAntall).toBe(45);
 
     const forHoy = await loader({
       request: new Request("http://localhost/migrering?side=99"),
       params: {},
       context: {},
     } as LoaderFunctionArgs);
-    expect(forHoy.mine.side).toBe(3);
-    expect(forHoy.mine.kandidater).toHaveLength(5);
+    expect(forHoy.liste.side).toBe(3);
+    expect(forHoy.liste.kandidater).toHaveLength(5);
   });
 
   it("bevarer autentiseringsfeil og henter ikke kandidater ved feil", async () => {
@@ -274,7 +247,7 @@ describe("Migreringsprototypens loader", () => {
     expect(mocks.kandidater).not.toHaveBeenCalled();
   });
 
-  it("sender statusfilter til MINE og alle filtre til ANSATTE for ledere", async () => {
+  it("sender alle filtre til ALLE for ledere", async () => {
     mocks.miljø = "local-backend";
     mocks.mockmodus = false;
     mocks.bruker.mockResolvedValue({ navIdent: "L999999", erLeder: true });
@@ -288,10 +261,7 @@ describe("Migreringsprototypens loader", () => {
       context: {},
     } as LoaderFunctionArgs);
 
-    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "MINE", 1, 20, {
-      status: ["UNDER_MIGRERING"],
-    });
-    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "ANSATTE", 1, 20, {
+    expect(mocks.backend).toHaveBeenCalledWith(expect.anything(), "ALLE", 1, 20, {
       status: ["UNDER_MIGRERING"],
       enhet: "4812",
       ansvarlig: "Z000001",
@@ -315,7 +285,7 @@ describe("Migreringsprototypens loader", () => {
       params: {},
       context: {},
     } as LoaderFunctionArgs);
-    expect(resultat.mine.kandidater).toHaveLength(0);
+    expect(resultat.liste.kandidater).toHaveLength(0);
   });
 });
 

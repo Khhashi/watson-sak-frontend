@@ -41,6 +41,11 @@ const STATUSFARGE: Record<Migreringsstatus, "neutral" | "warning" | "success"> =
 };
 
 /** Hele raden er klikkbar. Lenken eller knappen i raden gjør jobben, så tastatur og skjermleser fungerer. */
+function formaterAccessDato(iso: string | null | undefined) {
+  const treff = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
+  return treff ? `${treff[3]}.${treff[2]}.${treff[1]}` : (iso ?? "–");
+}
+
 function klikkRad(event: MouseEvent<HTMLTableRowElement>) {
   if ((event.target as HTMLElement).closest("a, button, input, select")) return;
   event.currentTarget.querySelector<HTMLElement>("a[href], button[type='submit']")?.click();
@@ -71,25 +76,14 @@ export function MigreringInnhold({ lister }: { lister: MigreringLister }) {
             Opprett sak for hver person, og flytt over alle filer fra S: og all informasjon fra
             Access.{" "}
             {erLeder
-              ? "Som leder kan du filtrere på avdeling, saksbehandler og status, og tildele saker til andre."
+              ? "Som leder kan du filtrere på avdeling, saksbehandler og status – og tildele saker til andre."
               : "Her ser du dine egne saker."}
           </BodyShort>
         </VStack>
       </Box>
       <HGrid columns={{ xs: 1, lg: "minmax(0, 1fr) 280px" }} gap="space-24">
-        <div className="flex min-w-0 flex-col gap-8 lg:order-1 order-2">
-          {erLeder && <AnsatteListe ansatte={lister.ansatte} ansatteValg={lister.ansatteValg} />}
-          <section
-            aria-labelledby={erLeder ? "migrering-mine" : undefined}
-            className="flex flex-col gap-4"
-          >
-            {erLeder && (
-              <Heading level="2" size="small" id="migrering-mine">
-                Mine saker
-              </Heading>
-            )}
-            <MineListe side={lister.mine} />
-          </section>
+        <div className="flex min-w-0 flex-col gap-4 lg:order-1 order-2">
+          <Kandidatliste side={lister.liste} erLeder={erLeder} ansatteValg={lister.ansatteValg} />
         </div>
         <Filterpanel lister={lister} />
       </HGrid>
@@ -106,7 +100,17 @@ function StatusTag({ kandidat }: { kandidat: Pick<MigreringKandidat, "migrerings
   );
 }
 
-function MineListe({ side }: { side: MigreringSide }) {
+function Kandidatliste({
+  side,
+  erLeder,
+  ansatteValg,
+}: {
+  side: MigreringSide;
+  erLeder: boolean;
+  ansatteValg: MigreringAnsatt[];
+}) {
+  const [endrer, setEndrer] = useState<MigreringKandidat | null>(null);
+
   return (
     <>
       <div className="overflow-x-auto">
@@ -117,6 +121,14 @@ function MineListe({ side }: { side: MigreringSide }) {
               <Table.HeaderCell scope="col">Personnummer</Table.HeaderCell>
               <Table.HeaderCell scope="col">Opprettet i Access</Table.HeaderCell>
               <Table.HeaderCell scope="col">Status</Table.HeaderCell>
+              {erLeder && (
+                <>
+                  <Table.HeaderCell scope="col">Saksbehandler</Table.HeaderCell>
+                  <Table.HeaderCell scope="col">
+                    <span className="sr-only">Handling</span>
+                  </Table.HeaderCell>
+                </>
+              )}
             </Table.Row>
           </Table.Header>
           <Table.Body>
@@ -134,10 +146,28 @@ function MineListe({ side }: { side: MigreringSide }) {
                     ? formaterFødselsnummer(k.personIdent)
                     : "–"}
                 </Table.DataCell>
-                <Table.DataCell>{k.referansedato ?? "–"}</Table.DataCell>
+                <Table.DataCell>{formaterAccessDato(k.referansedato)}</Table.DataCell>
                 <Table.DataCell>
                   <StatusTag kandidat={k} />
                 </Table.DataCell>
+                {erLeder && (
+                  <>
+                    <Table.DataCell>{k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}</Table.DataCell>
+                    <Table.DataCell>
+                      {hentMigreringsstatus(k) === "IKKE_PABEGYNT" && (
+                        <Button
+                          type="button"
+                          variant="secondary"
+                          size="small"
+                          aria-label={`Endre tildeling for PID ${k.legacyPid}`}
+                          onClick={() => setEndrer(k)}
+                        >
+                          Endre tildeling
+                        </Button>
+                      )}
+                    </Table.DataCell>
+                  </>
+                )}
               </Table.Row>
             ))}
           </Table.Body>
@@ -148,7 +178,14 @@ function MineListe({ side }: { side: MigreringSide }) {
           Ingen saker å vise.
         </BodyShort>
       )}
-      <Sidevelger side={side} parameter="side" />
+      <Sidevelger side={side} />
+      {endrer && (
+        <EndreTildelingModal
+          kandidat={endrer}
+          ansatteValg={ansatteValg}
+          onLukk={() => setEndrer(null)}
+        />
+      )}
     </>
   );
 }
@@ -158,6 +195,7 @@ function KandidatLenke({ kandidat: k }: { kandidat: MigreringKandidat }) {
   if (k.alleredeMigrertTilKontrollsakId) {
     return (
       <Link
+        className="text-ax-text-neutral no-underline hover:underline"
         to={RouteConfig.SAKER_DETALJ.replace(
           ":sakId",
           getSaksreferanse(k.alleredeMigrertTilKontrollsakId),
@@ -167,6 +205,8 @@ function KandidatLenke({ kandidat: k }: { kandidat: MigreringKandidat }) {
       </Link>
     );
   }
+  // Andres saker har ikke personident, og lederen kan ikke starte flyttingen for dem.
+  if (k.ansvar.type !== "BEKREFTET" || !k.personIdent) return <span>{k.legacyPid}</span>;
   return (
     <Form
       method="post"
@@ -175,91 +215,17 @@ function KandidatLenke({ kandidat: k }: { kandidat: MigreringKandidat }) {
     >
       <input type="hidden" name="legacyPid" value={k.legacyPid} />
       <input type="hidden" name="legacyKilde" value={k.legacyKilde} />
-      {k.ansvar.type === "BEKREFTET" && k.personIdent && (
-        <input type="hidden" name="fnr" value={k.personIdent} />
-      )}
+      <input type="hidden" name="fnr" value={k.personIdent} />
       <Button
         type="submit"
-        variant="tertiary"
+        variant="tertiary-neutral"
         size="small"
-        disabled={k.ansvar.type !== "BEKREFTET"}
+        className="-ml-2 font-normal"
         aria-label={`Flytt sak med PID ${k.legacyPid} fra Access`}
       >
         {k.legacyPid}
       </Button>
     </Form>
-  );
-}
-
-/** Lederens oversikt over ansattes kandidater. Viser ikke personnummer. */
-function AnsatteListe({
-  ansatte,
-  ansatteValg,
-}: {
-  ansatte: MigreringSide;
-  ansatteValg: MigreringAnsatt[];
-}) {
-  const [endrer, setEndrer] = useState<MigreringKandidat | null>(null);
-
-  return (
-    <section aria-labelledby="migrering-ansatte" className="flex flex-col gap-4">
-      <Heading level="2" size="small" id="migrering-ansatte">
-        Ansatte
-      </Heading>
-      <div className="overflow-x-auto">
-        <Table>
-          <Table.Header>
-            <Table.Row>
-              <Table.HeaderCell scope="col">PID</Table.HeaderCell>
-              <Table.HeaderCell scope="col">Opprettet i Access</Table.HeaderCell>
-              <Table.HeaderCell scope="col">Status</Table.HeaderCell>
-              <Table.HeaderCell scope="col">Saksbehandler</Table.HeaderCell>
-              <Table.HeaderCell scope="col">
-                <span className="sr-only">Handling</span>
-              </Table.HeaderCell>
-            </Table.Row>
-          </Table.Header>
-          <Table.Body>
-            {ansatte.kandidater.map((k) => (
-              <Table.Row key={`${k.kilde}:${k.legacyPid}`}>
-                <Table.DataCell>{k.legacyPid}</Table.DataCell>
-                <Table.DataCell>{k.referansedato ?? "–"}</Table.DataCell>
-                <Table.DataCell>
-                  <StatusTag kandidat={k} />
-                </Table.DataCell>
-                <Table.DataCell>{k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}</Table.DataCell>
-                <Table.DataCell>
-                  {hentMigreringsstatus(k) === "IKKE_PABEGYNT" && (
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      size="small"
-                      aria-label={`Endre tildeling for PID ${k.legacyPid}`}
-                      onClick={() => setEndrer(k)}
-                    >
-                      Endre tildeling
-                    </Button>
-                  )}
-                </Table.DataCell>
-              </Table.Row>
-            ))}
-          </Table.Body>
-        </Table>
-      </div>
-      {ansatte.totalAntall === 0 && (
-        <BodyShort size="small" textColor="subtle">
-          Ingen saker å vise.
-        </BodyShort>
-      )}
-      <Sidevelger side={ansatte} parameter="ansatteSide" />
-      {endrer && (
-        <EndreTildelingModal
-          kandidat={endrer}
-          ansatteValg={ansatteValg}
-          onLukk={() => setEndrer(null)}
-        />
-      )}
-    </section>
   );
 }
 
@@ -330,9 +296,8 @@ function Filterpanel({ lister }: { lister: MigreringLister }) {
   function oppdater(endre: (neste: URLSearchParams) => void) {
     const neste = new URLSearchParams(searchParams);
     endre(neste);
-    // Nytt filter gir nytt antall sider, så begge listene starter på side 1.
+    // Nytt filter gir nytt antall sider, så listen starter på side 1.
     neste.delete("side");
-    neste.delete("ansatteSide");
     setSearchParams(neste, { preventScrollReset: true });
   }
 
@@ -406,10 +371,10 @@ function Filterpanel({ lister }: { lister: MigreringLister }) {
 }
 
 /**
- * Sidenavigasjon med Aksel sin `Pagination`. Sidenummeret ligger i URL-en (`parameter`), så en side kan
- * lenkes til og lastes på nytt, og de to listene har hver sin side.
+ * Sidenavigasjon med Aksel sin `Pagination`. Sidenummeret ligger i URL-en, så en side kan
+ * lenkes til og lastes på nytt.
  */
-function Sidevelger({ side, parameter }: { side: MigreringSide; parameter: string }) {
+function Sidevelger({ side }: { side: MigreringSide }) {
   const [searchParams, setSearchParams] = useSearchParams();
   if (side.totalAntall === 0) return null;
 
@@ -419,9 +384,9 @@ function Sidevelger({ side, parameter }: { side: MigreringSide; parameter: strin
   function gåTilSide(ny: number) {
     const neste = new URLSearchParams(searchParams);
     if (ny <= 1) {
-      neste.delete(parameter);
+      neste.delete("side");
     } else {
-      neste.set(parameter, String(ny));
+      neste.set("side", String(ny));
     }
     setSearchParams(neste, { preventScrollReset: true });
   }
