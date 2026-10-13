@@ -398,9 +398,10 @@ describe("SaksbehandlereKort", () => {
     fireEvent.change(screen.getByLabelText("Ny enhet"), { target: { value: "hu424t" } });
     fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     expect(screen.getByText("Velg en ny ansvarlig saksbehandler")).toBeDefined();
-    fireEvent.change(screen.getByLabelText("Ny ansvarlig saksbehandler"), {
-      target: { value: "Z999999" },
+    fireEvent.change(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" }), {
+      target: { value: "Ny Saksbehandler" },
     });
+    fireEvent.pointerUp(screen.getByRole("option", { name: "Ny Saksbehandler (Z999999)" }));
     fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     await waitFor(() => {});
     expect(screen.getAllByText("Ny Saksbehandler (Z999999)").length).toBeGreaterThan(1);

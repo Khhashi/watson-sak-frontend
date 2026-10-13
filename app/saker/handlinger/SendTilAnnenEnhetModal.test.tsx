@@ -53,13 +53,19 @@ describe("SendTilAnnenEnhetModal", () => {
       />,
     );
 
+    await act(async () => {});
+
     await act(async () => {
       fireEvent.change(screen.getByRole("combobox", { name: "Ny enhet" }), {
         target: { value: "4813" },
       });
       fireEvent.change(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" }), {
-        target: { value: "Z222222" },
+        target: { value: "Ny Saksbehandler" },
       });
+      fireEvent.pointerUp(screen.getByRole("option", { name: "Ny Saksbehandler (Z222222)" }));
+    });
+
+    await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     });
 
