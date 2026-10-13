@@ -67,6 +67,8 @@ export const lederStatistikkResponseSchema = z.object({
     ),
     ufordelt: sakstallSchema,
   }),
+  /** Enhetene lederen kan velge mellom. Har mer enn ett element når lederen leder flere enheter. */
+  ledetEnheter: z.array(z.object({ id: z.string().min(1), navn: z.string().min(1) })).default([]),
 });
 
 export type LederStatus = z.infer<typeof lederStatusSchema>;
@@ -74,3 +76,4 @@ export type LederStatistikk = z.infer<typeof lederStatistikkResponseSchema>;
 export type LederAnsattStatistikk = LederStatistikk["ansatte"]["liste"][number];
 export type LederAnsatteStatistikk = LederStatistikk["ansatte"];
 export type LederEnhetStatistikk = LederStatistikk["enhet"];
+export type LederEnhetValg = LederStatistikk["ledetEnheter"][number];

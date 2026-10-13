@@ -3,13 +3,24 @@ import { BACKEND_API_URL } from "~/config/env.server";
 import { logger } from "~/logging/logging";
 import { lederStatistikkResponseSchema, type LederStatistikk } from "./types";
 
-/** Henter lederstatistikk for enheten backend utleder fra innlogget bruker. */
-export async function hentLederStatistikk(token: string): Promise<LederStatistikk> {
+/**
+ * Henter lederstatistikk. Uten `enhetId` utleder backend enheten fra innlogget bruker.
+ * Med `enhetId` sjekker backend at brukeren leder den valgte enheten.
+ */
+export async function hentLederStatistikk(
+  token: string,
+  enhetId?: string | null,
+): Promise<LederStatistikk> {
   if (!BACKEND_API_URL) {
     throw new Error("Mangler backend-url for henting av lederstatistikk.");
   }
 
-  const response = await fetch(`${BACKEND_API_URL}/api/v1/leder/statistikk`, {
+  const url = new URL(`${BACKEND_API_URL}/api/v1/leder/statistikk`);
+  if (enhetId) {
+    url.searchParams.set("enhetId", enhetId);
+  }
+
+  const response = await fetch(url.toString(), {
     headers: {
       Authorization: ["Bearer", token].join(" "),
       Accept: "application/json",

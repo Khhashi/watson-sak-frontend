@@ -23,7 +23,8 @@ vi.mock("./api.server", () => ({
   hentLederStatistikk: hentLederStatistikkMock,
 }));
 
-vi.mock("./mock.server", () => ({
+vi.mock("./mock.server", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("./mock.server")>()),
   lagMockLederStatistikk: lagMockLederStatistikkMock,
 }));
 
@@ -85,7 +86,7 @@ describe("hentLederOversiktData", () => {
     });
 
     expect(getBackendOboTokenMock).toHaveBeenCalledTimes(1);
-    expect(hentLederStatistikkMock).toHaveBeenCalledWith("token-123");
+    expect(hentLederStatistikkMock).toHaveBeenCalledWith("token-123", null);
     expect(hentLederStatistikkMock).toHaveBeenCalledTimes(1);
     expect(resultat).toEqual(respons);
   });
@@ -99,6 +100,44 @@ describe("hentLederOversiktData", () => {
 
     expect(getBackendOboTokenMock).not.toHaveBeenCalled();
     expect(lagMockLederStatistikkMock).toHaveBeenCalledWith(request, "hu424t", "Nord");
-    expect(resultat).toEqual(respons);
+    expect(resultat).toEqual({ ...respons, ledetEnheter: [{ id: "hu424t", navn: "Nord" }] });
+  });
+
+  it("sender valgt enhet fra URL-en videre til backend", async () => {
+    const { hentLederOversiktData } = await import("./loader.server");
+
+    await hentLederOversiktData({
+      request: new Request("http://localhost/?enhet=tipsmottak"),
+      innloggetBruker: leder,
+    });
+
+    expect(hentLederStatistikkMock).toHaveBeenCalledWith("token-123", "tipsmottak");
+  });
+
+  it("lar mock-lederen for Tipsmottak velge mellom Øst og Tipsmottak", async () => {
+    testState.skalBrukeMockdata = true;
+    const request = new Request("http://localhost/?enhet=tipsmottak");
+    const { hentLederOversiktData } = await import("./loader.server");
+
+    const resultat = await hentLederOversiktData({
+      request,
+      innloggetBruker: { ...leder, navIdent: "L900008", enhet: "Øst", enhetId: "ky153k" },
+    });
+
+    expect(lagMockLederStatistikkMock).toHaveBeenCalledWith(request, "tipsmottak", "Tipsmottak");
+    expect(resultat.ledetEnheter).toEqual([
+      { id: "ky153k", navn: "Øst" },
+      { id: "tipsmottak", navn: "Tipsmottak" },
+    ]);
+  });
+
+  it("faller tilbake til egen enhet i mockmodus når valgt enhet ikke ledes", async () => {
+    testState.skalBrukeMockdata = true;
+    const request = new Request("http://localhost/?enhet=tipsmottak");
+    const { hentLederOversiktData } = await import("./loader.server");
+
+    await hentLederOversiktData({ request, innloggetBruker: leder });
+
+    expect(lagMockLederStatistikkMock).toHaveBeenCalledWith(request, "hu424t", "Nord");
   });
 });
