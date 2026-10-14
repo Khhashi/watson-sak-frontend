@@ -22,7 +22,7 @@ function OpprettDokumentKnapp({ sakId, steg }: { sakId: string; steg: Kontrollsa
   const [åpen, settÅpen] = useState(false);
 
   function opprett(valg?: { malId: MalId; erStraffesak: boolean }) {
-    sporHendelse("dokument opprettet", { sakId, malId: valg?.malId ?? "tom" });
+    sporHendelse("dokument opprettet", { malId: valg?.malId ?? "tom" });
     const formData = new FormData();
     if (valg) {
       formData.set("malId", valg.malId);
@@ -144,7 +144,7 @@ export function SakFilområde({
 
     const formData = new FormData();
     formData.append("fil", fil);
-    sporHendelse("vedlegg lastet opp", { sakId });
+    sporHendelse("vedlegg lastet opp");
     opplastingFetcher.submit(formData, {
       method: "post",
       action: url,

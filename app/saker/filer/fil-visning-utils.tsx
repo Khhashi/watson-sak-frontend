@@ -26,7 +26,7 @@ export function ÅpneFilKnapp({ filId, filnavn, sakId }: ÅpneFilKnappProps) {
   const url = RouteConfig.API.SAK_FIL.replace(":sakId", sakId).replace(":filId", filId);
 
   function håndterÅpning() {
-    sporHendelse("vedlegg åpnet", { sakId });
+    sporHendelse("vedlegg åpnet");
     window.open(url, "_blank", "noopener,noreferrer");
   }
 

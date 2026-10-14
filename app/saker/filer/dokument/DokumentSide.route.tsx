@@ -323,7 +323,6 @@ function DokumentRedigering({
         redigerbar={kanRedigere}
         onEndring={håndterInnhold}
         sakId={sakReferanse}
-        docId={dokument.id}
         variabelVerdier={variabelVerdier}
         kommentarliste={kommentarliste}
         kommentarinnlastingFeilet={kommentarinnlastingFeilet}

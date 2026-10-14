@@ -51,9 +51,7 @@ type DokumentEditorProps = {
   startInnhold: DokumentInnhold;
   redigerbar: boolean;
   onEndring: (innhold: DokumentInnhold) => void;
-  /** Brukes til å knytte «dokument formatert»-analytics til riktig dokument. */
   sakId: string;
-  docId: string;
   /** Dokumenttreet som vises i sidepanelet. Eies av siden, ikke av editoren. */
   dokumentliste: ReactNode;
   /** Lagrestatusen som vises nederst i sidepanelet. Eies av siden som lagrer. */
@@ -105,7 +103,6 @@ export function DokumentEditor({
   redigerbar,
   onEndring,
   sakId,
-  docId,
   dokumentliste,
   lagreStatus,
   historikkInnhold,
@@ -210,9 +207,9 @@ export function DokumentEditor({
         children: [{ text: "" }],
       });
       const etikett = STANDARD_VARIABLER.find((variabel) => variabel.id === variabelId)?.etikett;
-      sporHendelse("dokument formatert", { sakId, docId, format: `Sett inn variabel: ${etikett}` });
+      sporHendelse("dokument formatert", { format: `Sett inn variabel: ${etikett}` });
     },
-    [docId, editor, sakId],
+    [editor],
   );
 
   const settInnBilde = useCallback(
@@ -227,9 +224,9 @@ export function DokumentEditor({
         },
         { nextBlock: true },
       );
-      sporHendelse("dokument formatert", { sakId, docId, format: "Sett inn bilde" });
+      sporHendelse("dokument formatert", { format: "Sett inn bilde" });
     },
-    [editor, sakId, docId],
+    [editor, sakId],
   );
 
   // Returnerer om opplastingen lyktes, slik at f.eks. modalen kan lukke seg selv ved
@@ -474,9 +471,7 @@ export function DokumentEditor({
             {redigerbar ? (
               <div className="px-[var(--ax-space-16)] lg:px-[var(--ax-space-24)]">
                 <Verktøylinje
-                  onFormater={(format) =>
-                    sporHendelse("dokument formatert", { sakId, docId, format })
-                  }
+                  onFormater={(format) => sporHendelse("dokument formatert", { format })}
                   aktivtSidepanel={aktivtSidepanel}
                   onVelgSidepanel={settAktivtSidepanel}
                   antallKommentarer={antallUløsteKommentarer}

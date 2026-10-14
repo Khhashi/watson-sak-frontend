@@ -132,7 +132,7 @@ export function OpprettMappeModal({ sakId, mapper, onClose }: OpprettMappeModalP
       return;
     }
     settValideringsfeil(undefined);
-    sporHendelse("mappe opprettet", { sakId, nivå: resultat.sti.split("/").length });
+    sporHendelse("mappe opprettet", { nivå: resultat.sti.split("/").length });
     utfør({ handling: "opprett", sti: resultat.sti });
   }
 
@@ -188,7 +188,7 @@ export function GiNyttNavnMappeModal({ sakId, sti, mapper, onClose }: GiNyttNavn
       return;
     }
     settValideringsfeil(undefined);
-    sporHendelse("mappe omdøpt", { sakId });
+    sporHendelse("mappe omdøpt");
     utfør({ handling: "endre", fraSti: sti, tilSti: resultat.sti });
   }
 
@@ -246,12 +246,11 @@ export function FlyttTilMappeModal({ sakId, element, mapper, onClose }: FlyttTil
         return;
       }
       settValideringsfeil(undefined);
-      sporHendelse("mappe flyttet", { sakId, metode: "meny" });
+      sporHendelse("mappe flyttet", { metode: "meny" });
       utfør({ handling: "endre", fraSti: element.sti, tilSti });
       return;
     }
     sporHendelse(element.type === "dokument" ? "dokument flyttet" : "vedlegg flyttet", {
-      sakId,
       metode: "meny",
     });
     utfør({
