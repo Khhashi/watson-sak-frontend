@@ -1,8 +1,7 @@
-import { getFormProps, useForm } from "@conform-to/react";
+import { getFormProps, useForm, useInputControl } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
 import { PersonPencilIcon } from "@navikt/aksel-icons";
 import { BodyShort, Button, Modal, UNSAFE_Combobox, VStack } from "@navikt/ds-react";
-import { useState } from "react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import { sporHendelse } from "~/analytics/analytics";
@@ -37,7 +36,6 @@ export function TildelSaksbehandlerModal({
 }: TildelSaksbehandlerModalProps) {
   const fetcher = useFetcher();
   const saksreferanse = getSaksreferanse(sakId);
-  const [valgtNavIdent, setValgtNavIdent] = useState("");
 
   const erSubmitting = fetcher.state !== "idle";
   const actionPath =
@@ -58,10 +56,10 @@ export function TildelSaksbehandlerModal({
       sporHendelse("fordeling utført");
       fetcher.submit(formData, { method: "post", action: actionPath });
       form.reset();
-      setValgtNavIdent("");
       onClose();
     },
   });
+  const navIdentControl = useInputControl(fields.navIdent);
 
   function handleFjernSaksbehandler() {
     fetcher.submit({ handling: "FRISTILL", sakId }, { method: "post", action: actionPath });
@@ -70,7 +68,6 @@ export function TildelSaksbehandlerModal({
 
   function handleClose() {
     form.reset();
-    setValgtNavIdent("");
     onClose();
   }
 
@@ -85,7 +82,7 @@ export function TildelSaksbehandlerModal({
           label: saksbehandler,
         }));
   const valgtSaksbehandler = valgbareSaksbehandlere.find(
-    (saksbehandler) => saksbehandler.value === valgtNavIdent,
+    (saksbehandler) => saksbehandler.value === navIdentControl.value,
   );
 
   const heading = nåværendeSaksbehandler ? "Endre saksbehandler" : "Tildel saksbehandler";
@@ -112,7 +109,14 @@ export function TildelSaksbehandlerModal({
               </BodyShort>
             )}
             <BodyShort>Velg saksbehandler som skal ha ansvar for sak {saksreferanse}.</BodyShort>
-            <input type="hidden" name={fields.navIdent.name} value={valgtNavIdent} />
+            <input
+              type="hidden"
+              name={fields.navIdent.name}
+              defaultValue={fields.navIdent.initialValue}
+              hidden
+              tabIndex={-1}
+              onFocus={() => navIdentControl.focus()}
+            />
             <UNSAFE_Combobox
               key={fields.navIdent.key}
               id={fields.navIdent.id}
@@ -121,14 +125,14 @@ export function TildelSaksbehandlerModal({
               options={valgbareSaksbehandlere}
               selectedOptions={valgtSaksbehandler ? [valgtSaksbehandler] : []}
               onToggleSelected={(navIdent, erValgt) => {
-                setValgtNavIdent(erValgt ? navIdent : "");
+                navIdentControl.change(erValgt ? navIdent : "");
               }}
               error={fields.navIdent.errors?.[0]}
             />
           </VStack>
         </Modal.Body>
         <Modal.Footer>
-          <Button type="submit" disabled={erSubmitting || !valgtNavIdent}>
+          <Button type="submit" disabled={erSubmitting || !navIdentControl.value}>
             Tildel
           </Button>
           <Button type="button" variant="secondary" onClick={handleClose}>

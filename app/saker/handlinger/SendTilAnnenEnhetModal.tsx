@@ -1,4 +1,4 @@
-import { getFormProps, useForm } from "@conform-to/react";
+import { getFormProps, useForm, useInputControl } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
 import {
   ArrowForwardIcon,
@@ -68,15 +68,11 @@ export function SendTilAnnenEnhetModal({
   const [steg, setSteg] = useState<Steg>("skjema");
   const [innsendingFormData, setInnsendingFormData] = useState<FormData | null>(null);
   const [valgtEnhet, setValgtEnhet] = useState("");
-  const [valgtAnsvarligNavIdent, setValgtAnsvarligNavIdent] = useState("");
   const [bekreftetEnhet, setBekreftetEnhet] = useState<string | null>(null);
   const [feilmelding, setFeilmelding] = useState<string | null>(null);
   const kreverNyAnsvarlig = sakSteg !== "OPPRETTET";
   const valgbareSaksbehandlere = saksbehandlerDetaljer.filter(
     (saksbehandler) => saksbehandler.navIdent !== ansvarligSaksbehandler?.navIdent,
-  );
-  const valgtAnsvarlig = valgbareSaksbehandlere.find(
-    (saksbehandler) => saksbehandler.navIdent === valgtAnsvarligNavIdent,
   );
   const sendTilAnnenEnhetSkjema = useMemo(
     () =>
@@ -107,7 +103,6 @@ export function SendTilAnnenEnhetModal({
       sporHendelse("send til annen enhet dialog åpnet");
       setSteg("skjema");
       setValgtEnhet("");
-      setValgtAnsvarligNavIdent("");
       setInnsendingFormData(null);
       setBekreftetEnhet(null);
       setFeilmelding(null);
@@ -153,6 +148,18 @@ export function SendTilAnnenEnhetModal({
     },
   });
 
+  const ansvarligNavIdent = useInputControl(fields.ansvarligNavIdent);
+  const valgtAnsvarligNavIdent = ansvarligNavIdent.value ?? "";
+  const valgtAnsvarlig = valgbareSaksbehandlere.find(
+    (saksbehandler) => saksbehandler.navIdent === valgtAnsvarligNavIdent,
+  );
+
+  useEffect(() => {
+    if (åpen) {
+      ansvarligNavIdent.change("");
+    }
+  }, [åpen]);
+
   function handleBekreft() {
     if (!innsendingFormData) return;
     sporHendelse("send til annen enhet klikket", {
@@ -180,7 +187,6 @@ export function SendTilAnnenEnhetModal({
     form.reset();
     setSteg("skjema");
     setValgtEnhet("");
-    setValgtAnsvarligNavIdent("");
     setInnsendingFormData(null);
     setFeilmelding(null);
     setBekreftetEnhet(null);
@@ -230,6 +236,8 @@ export function SendTilAnnenEnhetModal({
                     type="hidden"
                     name={fields.ansvarligNavIdent.name}
                     value={valgtAnsvarligNavIdent}
+                    tabIndex={-1}
+                    onFocus={() => ansvarligNavIdent.focus()}
                   />
                   <UNSAFE_Combobox
                     key={fields.ansvarligNavIdent.key}
@@ -251,7 +259,7 @@ export function SendTilAnnenEnhetModal({
                         : []
                     }
                     onToggleSelected={(navIdent, erValgt) => {
-                      setValgtAnsvarligNavIdent(erValgt ? navIdent : "");
+                      ansvarligNavIdent.change(erValgt ? navIdent : "");
                     }}
                     error={fields.ansvarligNavIdent.errors?.[0]}
                   />
