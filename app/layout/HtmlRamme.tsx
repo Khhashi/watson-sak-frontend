@@ -3,6 +3,7 @@ import { Links, Meta, Scripts, ScrollRestoration } from "react-router";
 import { AnalyticsTags } from "~/analytics/analytics";
 import { MiljøProvider } from "~/layout/MiljøtilpassetTittel";
 import { PreferencesProvider } from "~/preferanser/PreferencesContext";
+import { useNonce } from "~/sikkerhet/nonce";
 import { defaultPreferences, type Preferences } from "~/preferanser/PreferencesCookie";
 import { ThemeProvider } from "~/tema/ThemeContext";
 
@@ -21,6 +22,7 @@ export function HtmlRamme({
   sporingScriptUrl,
   miljø = "prod",
 }: HtmlRammeProps) {
+  const nonce = useNonce();
   return (
     <html lang="nb-no">
       <head>
@@ -28,7 +30,7 @@ export function HtmlRamme({
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.svg" />
         <Meta />
-        <Links />
+        <Links nonce={nonce} />
         {umamiSiteId && sporingScriptUrl && (
           <AnalyticsTags sporingScriptUrl={sporingScriptUrl} sporingId={umamiSiteId} />
         )}
@@ -41,8 +43,8 @@ export function HtmlRamme({
             </PreferencesProvider>
           </FaroErrorBoundary>
         </MiljøProvider>
-        <ScrollRestoration />
-        <Scripts />
+        <ScrollRestoration nonce={nonce} />
+        <Scripts nonce={nonce} />
       </body>
     </html>
   );

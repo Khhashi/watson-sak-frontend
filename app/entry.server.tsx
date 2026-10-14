@@ -6,7 +6,11 @@ import type { RenderToPipeableStreamOptions } from "react-dom/server";
 import { renderToPipeableStream } from "react-dom/server";
 import type { EntryContext } from "react-router";
 import { ServerRouter } from "react-router";
+import { env } from "~/config/env.server";
 import { logger } from "~/logging/logging";
+import { lagContentSecurityPolicy } from "~/sikkerhet/headers";
+import { NonceProvider } from "~/sikkerhet/nonce";
+import { lagNonce } from "~/sikkerhet/nonce.server";
 
 export const streamTimeout = 60_000;
 
@@ -30,9 +34,22 @@ export default function handleRequest(
       streamTimeout + 1000,
     );
 
+    // Ny nonce per forespørsel. Settes i CSP-headeren og på alle skript vi rendrer.
+    const nonce = lagNonce();
+    responseHeaders.set(
+      "Content-Security-Policy",
+      lagContentSecurityPolicy({
+        nonce,
+        ekstraFormActionUrls: env.WATSON_SOK_URL ? [env.WATSON_SOK_URL] : [],
+      }),
+    );
+
     const { pipe, abort } = renderToPipeableStream(
-      <ServerRouter context={routerContext} url={request.url} />,
+      <NonceProvider value={nonce}>
+        <ServerRouter context={routerContext} url={request.url} nonce={nonce} />
+      </NonceProvider>,
       {
+        nonce,
         [readyOption]() {
           shellRendered = true;
           const body = new PassThrough({

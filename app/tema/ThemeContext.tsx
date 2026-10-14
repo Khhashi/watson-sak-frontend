@@ -1,6 +1,7 @@
 import { Theme } from "@navikt/ds-react";
 import { useEffect, useState } from "react";
 import { usePreferences } from "~/preferanser/PreferencesContext";
+import { useNonce } from "~/sikkerhet/nonce";
 import { finnAktivtTema } from "./theme-utils";
 
 type ThemeProviderProps = {
@@ -21,6 +22,7 @@ function lagSystemTemaScript() {
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const { preferences } = usePreferences();
+  const nonce = useNonce();
   const [systemForetrekkerMorktTema, setSystemForetrekkerMorktTema] = useState(() => {
     if (typeof window === "undefined") {
       return false;
@@ -53,7 +55,7 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     <Theme asChild theme={theme}>
       <div suppressHydrationWarning>
         {preferences.tema === "system" ? (
-          <script dangerouslySetInnerHTML={{ __html: lagSystemTemaScript() }} />
+          <script nonce={nonce} dangerouslySetInnerHTML={{ __html: lagSystemTemaScript() }} />
         ) : null}
         {children}
       </div>
