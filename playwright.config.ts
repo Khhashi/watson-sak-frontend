@@ -6,6 +6,13 @@ if (lokalBaseUrl && !/^http:\/\/localhost:\d+$/.test(lokalBaseUrl)) {
   throw new Error("PLAYWRIGHT_BASE_URL må peke til en lokal utviklingsserver");
 }
 
+// Mock-brukeren velges med BRUKERPROFIL når serveren starter. Lederspesifikke tester (`*.leder.spec.ts`)
+// kjører derfor mot en egen dev-server med lederprofil.
+const lederBaseUrl = process.env.PLAYWRIGHT_LEDER_BASE_URL ?? "http://localhost:5175";
+if (!/^http:\/\/localhost:\d+$/.test(lederBaseUrl)) {
+  throw new Error("PLAYWRIGHT_LEDER_BASE_URL må peke til en lokal utviklingsserver");
+}
+
 /**
  * Playwright-konfigurasjon for Watson Søk
  * Se https://playwright.dev/docs/test-configuration
@@ -50,17 +57,31 @@ export default defineConfig({
   projects: [
     {
       name: "chromium",
+      testIgnore: /.*\.leder\.spec\.(ts|tsx)$/,
       use: { ...devices["Desktop Chrome"] },
+    },
+    {
+      name: "leder",
+      testMatch: /.*\.leder\.spec\.(ts|tsx)$/,
+      use: { ...devices["Desktop Chrome"], baseURL: lederBaseUrl },
     },
   ],
 
   /* Kjør lokal dev-server før testene starter */
   webServer: lokalBaseUrl
     ? undefined
-    : {
-        command:
-          'WATSON_ADMIN_API_URL=http://localhost:8089 ENVIRONMENT=local-mock NODE_ENV=development npx concurrently -k -n mock,dev "node playwright.backend.mock.cjs" "pnpm run dev"',
-        url: "http://localhost:5174",
-        reuseExistingServer: false,
-      },
+    : [
+        {
+          command:
+            'WATSON_ADMIN_API_URL=http://localhost:8089 ENVIRONMENT=local-mock NODE_ENV=development npx concurrently -k -n mock,dev "node playwright.backend.mock.cjs" "pnpm run dev"',
+          url: "http://localhost:5174",
+          reuseExistingServer: false,
+        },
+        {
+          command:
+            "WATSON_ADMIN_API_URL=http://localhost:8089 ENVIRONMENT=local-mock BRUKERPROFIL=leder-øst NODE_ENV=development pnpm run dev --port 5175 --strictPort",
+          url: "http://localhost:5175",
+          reuseExistingServer: false,
+        },
+      ],
 });

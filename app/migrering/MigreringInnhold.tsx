@@ -62,27 +62,27 @@ export function MigreringInnhold({ lister }: { lister: MigreringLister }) {
           Flytt fra Access
         </HStack>
       </Heading>
-      {lister.utilgjengelig && (
-        <Alert variant="warning" size="small">
-          Vi fikk ikke hentet hele listen. Det kan mangle saker. Prøv igjen om litt.
-        </Alert>
-      )}
-      <Box background="info-soft" borderRadius="8" padding="space-16">
-        <VStack gap="space-4">
-          <Heading level="2" size="xsmall">
-            Flytt saker fra Access til Watson Sak
-          </Heading>
-          <BodyShort size="small">
-            Opprett sak for hver person, og flytt over alle filer fra S: og all informasjon fra
-            Access.{" "}
-            {erLeder
-              ? "Som leder kan du filtrere på avdeling, saksbehandler og status – og tildele saker til andre."
-              : "Her ser du dine egne saker."}
-          </BodyShort>
-        </VStack>
-      </Box>
       <HGrid columns={{ xs: 1, lg: "minmax(0, 1fr) 280px" }} gap="space-24">
-        <div className="flex min-w-0 flex-col gap-4 lg:order-1 order-2">
+        <div className="flex min-w-0 flex-col gap-6 lg:order-1 order-2">
+          {lister.utilgjengelig && (
+            <Alert variant="warning" size="small">
+              Vi fikk ikke hentet hele listen. Det kan mangle saker. Prøv igjen om litt.
+            </Alert>
+          )}
+          <Box background="info-soft" borderRadius="8" padding="space-16">
+            <VStack gap="space-4">
+              <Heading level="2" size="xsmall">
+                Flytt saker fra Access til Watson Sak
+              </Heading>
+              <BodyShort size="small">
+                Opprett sak for hver person, og flytt over alle filer fra S: og all informasjon fra
+                Access.{" "}
+                {erLeder
+                  ? "Som leder kan du filtrere på avdeling, saksbehandler og status – og tildele saker til andre."
+                  : "Her ser du dine egne saker."}
+              </BodyShort>
+            </VStack>
+          </Box>
           <Kandidatliste side={lister.liste} erLeder={erLeder} ansatteValg={lister.ansatteValg} />
         </div>
         <Filterpanel lister={lister} />
@@ -216,15 +216,13 @@ function KandidatLenke({ kandidat: k }: { kandidat: MigreringKandidat }) {
       <input type="hidden" name="legacyPid" value={k.legacyPid} />
       <input type="hidden" name="legacyKilde" value={k.legacyKilde} />
       <input type="hidden" name="fnr" value={k.personIdent} />
-      <Button
+      <button
         type="submit"
-        variant="tertiary-neutral"
-        size="small"
-        className="-ml-2 [&_span]:font-normal"
+        className="cursor-pointer border-0 bg-transparent p-0 text-inherit hover:underline"
         aria-label={`Flytt sak med PID ${k.legacyPid} fra Access`}
       >
         {k.legacyPid}
-      </Button>
+      </button>
     </Form>
   );
 }
