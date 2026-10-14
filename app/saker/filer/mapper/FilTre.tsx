@@ -104,7 +104,6 @@ export function FilTre({
   }, []);
   const mappehandling = useMappehandling(sakId);
   const { dras, slippmål, draProps, slippProps, kanSlippe, fjernSlippmål } = useDraOgSlipp({
-    sakId,
     alleMapper,
     kanEndreMapper,
     mappehandling,
@@ -221,7 +220,7 @@ export function FilTre({
                     flyttFokusEtterSletting(forelder(mappe.sti));
                   });
                   if (slettet) {
-                    sporHendelse("mappe slettet", { sakId });
+                    sporHendelse("mappe slettet");
                   }
                 }}
               >

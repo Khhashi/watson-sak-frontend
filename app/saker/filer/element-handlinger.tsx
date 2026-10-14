@@ -30,7 +30,7 @@ export function DokumentPdfKnapp({ dokument, sakId }: { dokument: DokumentNode; 
       lenke.rel = "noopener noreferrer";
       lenke.click();
       window.setTimeout(() => URL.revokeObjectURL(pdfUrl), 1_000);
-      sporHendelse("dokument lastet ned", { sakId, docId: dokument.id, format: "pdf" });
+      sporHendelse("dokument lastet ned", { format: "pdf" });
     } catch {
       settFeil(true);
     } finally {
@@ -90,7 +90,7 @@ export function useFilSletting(sakId: string) {
     if (!kandidat) return;
     settKandidat(null);
     settSistSlettet(kandidat);
-    sporHendelse("vedlegg slettet", { sakId });
+    sporHendelse("vedlegg slettet");
     fetcher.submit(null, {
       method: "delete",
       action: RouteConfig.API.SAK_FIL.replace(":sakId", sakId).replace(":filId", kandidat.id),
