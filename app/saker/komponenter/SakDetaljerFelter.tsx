@@ -40,21 +40,24 @@ export function SakDetaljerFelter({ sak, onVisIdentHistorikk }: SakDetaljerFelte
   return (
     <HGrid columns={{ xs: 1, lg: 2 }} gap="space-6">
       <VStack gap="space-6">
-        <VStack gap="space-2">
-          <Detail className="text-ax-text-neutral-subtle" uppercase>
-            Personnummer
-          </Detail>
-          <PersonIdentMedHistorikk
-            personIdent={visPersonIdent}
-            harHistorikk={harHistoriskIdent}
-            onVisHistorikk={onVisIdentHistorikk}
-          />
-          {sak.gjeldendePersonIdent && sak.gjeldendePersonIdent !== sak.personIdent && (
-            <Detail className="text-ax-text-neutral-subtle">
-              Saken ble opprettet under {personIdent}
+        <HStack gap="space-12" align="start" wrap>
+          <VStack gap="space-2">
+            <Detail className="text-ax-text-neutral-subtle" uppercase>
+              Personnummer
             </Detail>
-          )}
-        </VStack>
+            <PersonIdentMedHistorikk
+              personIdent={visPersonIdent}
+              harHistorikk={harHistoriskIdent}
+              onVisHistorikk={onVisIdentHistorikk}
+            />
+            {sak.gjeldendePersonIdent && sak.gjeldendePersonIdent !== sak.personIdent && (
+              <Detail className="text-ax-text-neutral-subtle">
+                Saken ble opprettet under {personIdent}
+              </Detail>
+            )}
+          </VStack>
+          {sak.legacyPid && <Felt label="PID">{sak.legacyPid}</Felt>}
+        </HStack>
 
         {kategoriText && (
           <VStack gap="space-2">
@@ -98,8 +101,6 @@ export function SakDetaljerFelter({ sak, onVisIdentHistorikk }: SakDetaljerFelte
             </HStack>
           </VStack>
         )}
-
-        {sak.legacyPid && <Felt label="PID">{sak.legacyPid}</Felt>}
 
         <Felt label="Kilde">{kildeTekst}</Felt>
 
