@@ -1,5 +1,6 @@
 import { UploadIcon } from "@navikt/aksel-icons";
 import { BodyShort, Button, FileUpload, Heading, VStack } from "@navikt/ds-react";
+import { TILLATTE_FILTYPER } from "~/saker/filer/fil-type-utils";
 
 type Props = {
   filer: File[];
@@ -7,8 +8,6 @@ type Props = {
   /** Flytting fra Access: knapp for filene fra S-området i stedet for valgfri dropzone. */
   fraSOmråde?: boolean;
 };
-
-const TILLATTE_FILTYPER = ".pdf,.png,.jpg,.jpeg,.docx,.xlsx";
 
 export function Saksvedlegg({ filer, setFiler, fraSOmråde = false }: Props) {
   return (

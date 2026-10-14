@@ -9,6 +9,7 @@ import type { KontrollsakSteg } from "~/saker/types.backend";
 import { RouteConfig } from "~/routeConfig";
 import { formaterDato } from "~/utils/date-utils";
 import { ArkivertSeksjon } from "./ArkivertSeksjon";
+import { TILLATTE_FILTYPER } from "./fil-type-utils";
 import { FilerSeksjonCaption } from "./FilerRad";
 import { flatMappeliste, byggFilTre } from "./mapper/bygg-filtre";
 import { FilTre } from "./mapper/FilTre";
@@ -168,6 +169,7 @@ export function SakFilområde({
                   <input
                     ref={inputRef}
                     type="file"
+                    accept={TILLATTE_FILTYPER}
                     className="sr-only"
                     aria-hidden
                     tabIndex={-1}
