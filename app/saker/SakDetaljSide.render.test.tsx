@@ -243,7 +243,9 @@ describe("SakDetaljSide render", () => {
     renderDetaljside("1181");
 
     const notatlenke = await screen.findByRole("link", { name: "Notat fra opprettelse" });
-    expect(notatlenke.getAttribute("href")).toBe("/saker/1181/dokumenter/1181-migrering");
+    expect(notatlenke.getAttribute("href")).toBe(
+      "/saker/1181/dokumenter/00000000-0000-4000-8000-000000001181",
+    );
     expect(
       screen.getByText("Eksempelnotat for migrering. Kun syntetisk testinnhold."),
     ).toBeDefined();

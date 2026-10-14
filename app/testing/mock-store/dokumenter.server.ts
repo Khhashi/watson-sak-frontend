@@ -46,7 +46,7 @@ type DokumentSeed = {
 
 const dokumentSeeds: DokumentSeed[] = [
   {
-    id: "1-1",
+    id: "00000000-0000-4000-8000-000000000101",
     tittel: "Saksframlegg",
     opprettetAv: "Ola Nordmann",
     opprettetDato: "2026-02-10",
@@ -58,7 +58,7 @@ const dokumentSeeds: DokumentSeed[] = [
     ],
   },
   {
-    id: "1-2",
+    id: "00000000-0000-4000-8000-000000000102",
     tittel: "Vedtak",
     opprettetAv: "Kari Hansen",
     opprettetDato: "2026-02-18",
@@ -67,7 +67,7 @@ const dokumentSeeds: DokumentSeed[] = [
     avsnitt: ["Foreløpig vurdering og konklusjon. Eksempeltekst uten reelle opplysninger."],
   },
   {
-    id: "1-3",
+    id: "00000000-0000-4000-8000-000000000103",
     tittel: "Notat fra møte",
     opprettetAv: "Per Olsen",
     opprettetDato: "2026-02-25",
@@ -77,7 +77,7 @@ const dokumentSeeds: DokumentSeed[] = [
     mappe: "Møtereferater",
   },
   {
-    id: "2-1",
+    id: "00000000-0000-4000-8000-000000000201",
     tittel: "Oversikt ytelser",
     opprettetAv: "Ola Nordmann",
     opprettetDato: "2026-01-05",
@@ -86,7 +86,7 @@ const dokumentSeeds: DokumentSeed[] = [
     avsnitt: ["Beskrivelse av relevante ytelser. Eksempeltekst for lokal utvikling."],
   },
   {
-    id: "3",
+    id: "00000000-0000-4000-8000-000000000003",
     tittel: "Presentasjon til ledelsen",
     opprettetAv: "Per Olsen",
     opprettetDato: "2026-03-01",
@@ -96,7 +96,7 @@ const dokumentSeeds: DokumentSeed[] = [
     mappe: "Møtereferater/Ledelsen",
   },
   {
-    id: "4",
+    id: "00000000-0000-4000-8000-000000000004",
     tittel: "Sammendrag",
     opprettetAv: "Ola Nordmann",
     opprettetDato: "2026-03-06",
@@ -107,7 +107,7 @@ const dokumentSeeds: DokumentSeed[] = [
 ];
 
 export const migreringsnotatSeed: DokumentSeed = {
-  id: "1181-migrering",
+  id: "00000000-0000-4000-8000-000000001181",
   tittel: "Notat fra opprettelse",
   opprettetAv: "Saks Behandlersen",
   opprettetDato: "2026-09-20",

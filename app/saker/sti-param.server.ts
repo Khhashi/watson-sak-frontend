@@ -18,13 +18,15 @@ function ikkeFunnet(navn: string): never {
   throw data("Fant ikke siden", { status: 404 });
 }
 
-/** Sak-ID-er er `Long` i backend: positivt heltall, maks `Long.MAX_VALUE`. */
-export function parseSakId(verdi: string | number | undefined | null, navn = "sakId"): string {
-  const tekst = typeof verdi === "number" ? String(verdi) : verdi;
-  if (typeof tekst !== "string" || !SAK_ID.test(tekst) || BigInt(tekst) > LONG_MAX) {
+/**
+ * Sak-ID-er er `Long` i backend: positivt heltall, maks `Long.MAX_VALUE`.
+ * Tar bare inn tekst: et JS-`number` over 2^53 har allerede mistet presisjon.
+ */
+export function parseSakId(verdi: string | undefined | null, navn = "sakId"): string {
+  if (typeof verdi !== "string" || !SAK_ID.test(verdi) || BigInt(verdi) > LONG_MAX) {
     return ikkeFunnet(navn);
   }
-  return tekst;
+  return verdi;
 }
 
 /** UUID på kanonisk form (8-4-4-4-12), normalisert til små bokstaver. */

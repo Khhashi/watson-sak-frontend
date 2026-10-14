@@ -65,7 +65,7 @@ describe("mock-store filer", () => {
     const fil = opprettArkivertFilFraDokument(
       state(),
       sakId,
-      { id: "1-1", tittel: "Saksframlegg" },
+      { id: "00000000-0000-4000-8000-000000000101", tittel: "Saksframlegg" },
       "Z999999",
       "demo-1",
     );
@@ -75,7 +75,7 @@ describe("mock-store filer", () => {
       contentType: "application/pdf",
       arkivertAv: "Z999999",
       arkivertJournalpostId: "demo-1",
-      arkivertFraDokumentId: "1-1",
+      arkivertFraDokumentId: "00000000-0000-4000-8000-000000000101",
     });
     expect(hentFilerForSak(state(), sakId).some((f) => f.id === fil.id)).toBe(true);
   });
@@ -84,7 +84,7 @@ describe("mock-store filer", () => {
     const fil = opprettArkivertFilFraDokument(
       state(),
       sakId,
-      { id: "1-2", tittel: "" },
+      { id: "00000000-0000-4000-8000-000000000102", tittel: "" },
       "Z999999",
       "demo-1",
     );

@@ -17,8 +17,8 @@ describe("parseSakId", () => {
     expect(parseSakId(verdi)).toBe(verdi);
   });
 
-  it("godtar tall", () => {
-    expect(parseSakId(42)).toBe("42");
+  it("avviser tall, siden store tall har mistet presisjon", async () => {
+    expect(await statusVed(() => parseSakId(9007199254740993 as unknown as string))).toBe(404);
   });
 
   it.each([

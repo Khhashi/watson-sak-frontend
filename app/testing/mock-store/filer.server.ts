@@ -8,7 +8,7 @@ const filSeeds: { sakId: string; filer: FilResponse[] }[] = [
     sakId: "1",
     filer: [
       {
-        id: "fil-1-1",
+        id: "00000000-0000-4000-8000-00000000f101",
         filnavn: "anmeldelse.pdf",
         storrelse: 204800,
         contentType: "application/pdf",
@@ -17,7 +17,7 @@ const filSeeds: { sakId: string; filer: FilResponse[] }[] = [
         bruktIDokumenter: [],
       },
       {
-        id: "fil-1-2",
+        id: "00000000-0000-4000-8000-00000000f102",
         filnavn: "screenshot-nettbank.png",
         storrelse: 512000,
         contentType: "image/png",

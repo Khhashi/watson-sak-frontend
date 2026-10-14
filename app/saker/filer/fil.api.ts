@@ -1,3 +1,4 @@
+import { parseSakId, parseUuid } from "~/saker/sti-param.server";
 import { data, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
@@ -21,10 +22,8 @@ import { filnavnSchema } from "./filnavn-utils";
  * - DELETE: sletter filen (kun sakseier).
  */
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  const { sakId, filId } = params;
-  if (!sakId || !filId) {
-    throw data("Mangler sak eller fil", { status: 400 });
-  }
+  const sakId = parseSakId(params.sakId);
+  const filId = parseUuid(params.filId, "filId");
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
@@ -35,10 +34,8 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
-  const { sakId, filId } = params;
-  if (!sakId || !filId) {
-    throw data("Mangler sak eller fil", { status: 400 });
-  }
+  const sakId = parseSakId(params.sakId);
+  const filId = parseUuid(params.filId, "filId");
 
   if (request.method !== "DELETE" && request.method !== "PATCH") {
     throw data("Metoden støttes ikke", { status: 405 });
