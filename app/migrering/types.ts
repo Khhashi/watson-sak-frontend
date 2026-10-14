@@ -1,6 +1,23 @@
 export type Migreringskilde = "UTREDNING" | "SV" | "NKA_DAGPENGER" | "NKA_AAP";
 
-type Migreringsstatus = "IKKE_PABEGYNT" | "UNDER_MIGRERING" | "FULLSTENDIG";
+export type Migreringsstatus = "IKKE_PABEGYNT" | "UNDER_MIGRERING" | "FULLSTENDIG";
+
+export const MIGRERINGSSTATUSER: readonly Migreringsstatus[] = [
+  "IKKE_PABEGYNT",
+  "UNDER_MIGRERING",
+  "FULLSTENDIG",
+];
+
+export const statusEtikett: Record<Migreringsstatus, string> = {
+  IKKE_PABEGYNT: "Ikke startet",
+  UNDER_MIGRERING: "Under flytting",
+  FULLSTENDIG: "Ferdig flyttet",
+};
+
+/** Kandidater uten lagret status regnes som ikke startet. */
+export function hentMigreringsstatus(kandidat: { migreringsstatus?: Migreringsstatus }) {
+  return kandidat.migreringsstatus ?? "IKKE_PABEGYNT";
+}
 
 export type MigreringKategori =
   | "TIPS_RESTANSE"
@@ -35,6 +52,8 @@ export interface MigreringKandidat {
     | { type: "LOGGTREFF"; navIdent: string }
     | { type: "UKJENT"; navIdent?: null };
   enhet?: string | null;
+  /** Visningsnavn på ansvarlig. Satt i lederens samlede visning. */
+  ansvarligNavn?: string | null;
   vurdering: MigreringVurdering;
   ekskluderFraStatistikk: boolean;
   referansedato?: string | null;
@@ -62,10 +81,28 @@ export interface MigreringSide {
 
 export const MIGRERING_SIDESTORRELSE = 20;
 
+/** Ansatt en leder kan se kandidater for og tildele kandidater til. */
+export interface MigreringAnsatt {
+  navIdent: string;
+  navn: string;
+  enhetId: string;
+  enhetNavn?: string | null;
+}
+
+/** Filtrene i URL-en. `enhet` og `ansvarlig` brukes bare i lederens visning. */
+export interface MigreringFilter {
+  status: Migreringsstatus[];
+  enhet: string | null;
+  ansvarlig: string | null;
+}
+
 export interface MigreringLister {
-  mine: MigreringSide;
-  /** Kandidater til ansatte i lederens enhet. Tom for andre enn ledere. Personident er aldri satt. */
-  ansatte: MigreringSide;
+  /** Egne kandidater. For ledere også ansattes. Andres personident er aldri satt. */
+  liste: MigreringSide;
+  /** Valg til filtre og tildeling. Tom for andre enn ledere. */
+  ansatteValg: MigreringAnsatt[];
+  filter: MigreringFilter;
+  erLeder: boolean;
   /** NOM, tilgangsmaskinen eller migreringstabellen svarte ikke. Listene kan da mangle kandidater. */
   utilgjengelig: boolean;
 }

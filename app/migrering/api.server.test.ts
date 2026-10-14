@@ -13,6 +13,7 @@ vi.mock("~/logging/logging", () => ({ logger: { error: mocks.loggFeil } }));
 import {
   ferdigstillMigreringskandidat,
   hentMigreringskandidat,
+  tildelMigreringskandidat,
   hentMigreringsliste,
   hentMigreringskandidater,
 } from "./api.server";
@@ -81,6 +82,29 @@ describe("manuell migreringsstatus", () => {
     expect(mocks.loggFeil).toHaveBeenCalledWith("Kunne ikke ferdigmerke migreringskandidat", {
       status: 404,
     });
+  });
+});
+
+describe("tildelMigreringskandidat", () => {
+  it("sender POST med kodet kandidat-ID, token og navIdent i body", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 204 })));
+
+    await tildelMigreringskandidat(request, "UTREDNING:200001", "Z999002");
+
+    const [url, init] = vi.mocked(fetch).mock.calls[0] as [string, RequestInit];
+    expect(url).toBe("http://localhost:8080/api/v1/migrering/kandidater/UTREDNING%3A200001/tildel");
+    expect(init.method).toBe("POST");
+    expect((init.headers as Record<string, string>).Authorization).toContain("lokal-testtoken");
+    expect(JSON.parse(init.body as string)).toEqual({ navIdent: "Z999002" });
+  });
+
+  it("videresender backend-avslag som Response med samme status", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response(null, { status: 409 })));
+
+    await expect(
+      tildelMigreringskandidat(request, "UTREDNING:200001", "Z999002"),
+    ).rejects.toMatchObject({ status: 409 });
+    expect(mocks.kastHvisUtlogget).toHaveBeenCalled();
   });
 });
 

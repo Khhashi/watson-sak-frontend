@@ -1,9 +1,9 @@
 import { useLoaderData } from "react-router";
 import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
 import { MigreringInnhold } from "./MigreringInnhold";
-import { loader } from "./MigreringSide.server";
+import { action, loader } from "./MigreringSide.server";
 
-export { loader };
+export { action, loader };
 export const handle = { bredPageBlock: true };
 
 export default function MigreringSide() {
@@ -11,7 +11,7 @@ export default function MigreringSide() {
 
   return (
     <>
-      <MiljøtilpassetTittel>Migrering – Watson Sak</MiljøtilpassetTittel>
+      <MiljøtilpassetTittel>Flytt fra Access – Watson Sak</MiljøtilpassetTittel>
       <MigreringInnhold lister={lister} />
     </>
   );

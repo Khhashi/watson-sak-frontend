@@ -20,7 +20,7 @@ describe("Migreringslenke i sidebar", () => {
   it.each<Miljø>(["local-mock", "local-backend", "demo", "dev"])("vises i %s", (miljø) => {
     state.miljø = miljø;
     visSidebar();
-    const migreringslenke = screen.getByRole("link", { name: "Migrering" });
+    const migreringslenke = screen.getByRole("link", { name: "Flytt fra Access" });
     expect(migreringslenke.getAttribute("href")).toBe("/migrering");
     expect(screen.getAllByRole("link").at(-1)).toBe(migreringslenke);
   });
@@ -28,7 +28,7 @@ describe("Migreringslenke i sidebar", () => {
   it.each<Miljø | undefined>(["prod", "local-dev", undefined])("skjules i %s", (miljø) => {
     state.miljø = miljø;
     visSidebar();
-    expect(screen.queryByRole("link", { name: "Migrering" })).toBeNull();
+    expect(screen.queryByRole("link", { name: "Flytt fra Access" })).toBeNull();
     expect(screen.getByRole("link", { name: "Mine saker" })).not.toBeNull();
   });
 });

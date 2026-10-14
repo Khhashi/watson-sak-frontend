@@ -33,6 +33,8 @@ export interface MockState {
   /** Journalposter opprettet fra saken, per sak. */
   journalposter: Map<string, JournalpostReferanse[]>;
   varsler: Varsel[];
+  /** Ny ansvarlig per migreringskandidat (kandidatId) etter «Endre tildeling» i mockmiljø. */
+  migreringTildelinger: Map<string, string>;
   nesteFordelingssakId: number;
   nesteHistorikkId: number;
 }
@@ -60,6 +62,7 @@ function lagFreshState(): MockState {
     mapper: new Map(),
     journalposter: new Map(),
     varsler: lagInitialeVarsler(),
+    migreringTildelinger: new Map(),
     nesteFordelingssakId: 10000,
     nesteHistorikkId,
   };

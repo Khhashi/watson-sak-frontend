@@ -4,7 +4,12 @@ import { kastHvisUtlogget } from "~/auth/session-utløpt.server";
 import { BACKEND_API_URL } from "~/config/env.server";
 import { logger } from "~/logging/logging";
 import { sti } from "~/saker/sti-param.server";
-import { MIGRERING_SIDESTORRELSE, type MigreringKandidat } from "./types";
+import {
+  MIGRERING_SIDESTORRELSE,
+  type MigreringAnsatt,
+  type MigreringKandidat,
+  type Migreringsstatus,
+} from "./types";
 
 const kildeSchema = z.enum(["UTREDNING", "SV", "NKA_DAGPENGER", "NKA_AAP"]);
 const kategoriSchema = z.enum([
@@ -28,6 +33,7 @@ const kandidatSchema = z.object({
   kategori: kategoriSchema,
   ansvar: ansvarSchema,
   enhet: z.string().nullable(),
+  ansvarligNavn: z.string().nullish(),
   vurdering: z.enum(["MULIG_KANDIDAT", "MA_AVKLARES"]),
   ekskluderFraStatistikk: z.boolean(),
   referansedato: z.string().nullable(),
@@ -47,7 +53,21 @@ const sideSchema = z.object({
   utilgjengelig: z.boolean().optional(),
 });
 
-export type Migreringsvisning = "MINE" | "ANSATTE";
+const ansattSchema = z.object({
+  navIdent: z.string(),
+  navn: z.string(),
+  enhetId: z.string(),
+  enhetNavn: z.string().nullish(),
+});
+
+export type Migreringsvisning = "MINE" | "ANSATTE" | "ALLE";
+
+/** Filtre som backend anvender før paginering. `enhet` og `ansvarlig` gjelder bare ANSATTE og ALLE. */
+export interface Migreringsfilter {
+  status?: readonly Migreringsstatus[];
+  enhet?: string | null;
+  ansvarlig?: string | null;
+}
 
 export interface Migreringsliste {
   kandidater: MigreringKandidat[];
@@ -64,7 +84,7 @@ export async function hentMigreringskandidater(request: Request): Promise<Migrer
 
 /**
  * Henter én side. Bruker backendens eksisterende Azure-token og tilgangskontroller, aldri klientvalgt NAV-ident.
- * `ANSATTE` er bare for ledere. Backend skjuler personident i den visningen.
+ * `ANSATTE` og `ALLE` er bare for ledere. Backend skjuler andres personident.
  *
  * @param side 1-basert sidenummer
  */
@@ -73,16 +93,27 @@ export async function hentMigreringsliste(
   visning: Migreringsvisning,
   side = 1,
   størrelse = MIGRERING_SIDESTORRELSE,
+  filter: Migreringsfilter = {},
 ): Promise<Migreringsliste> {
   if (!BACKEND_API_URL) {
     throw new Error("Mangler lokal backend-url for migreringslisten.");
   }
 
   const token = await getBackendOboToken(request);
-  const params = new URLSearchParams({ visning, page: String(side), size: String(størrelse) });
-  const response = await fetch(`${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater`}?${params}`, {
-    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  const query = new URLSearchParams({
+    visning,
+    page: String(side),
+    size: String(størrelse),
   });
+  for (const status of filter.status ?? []) query.append("status", status);
+  if (visning !== "MINE") {
+    if (filter.enhet) query.set("enhet", filter.enhet);
+    if (filter.ansvarlig) query.set("ansvarlig", filter.ansvarlig);
+  }
+  const response = await fetch(
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater`}?${query.toString()}`,
+    { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } },
+  );
   if (!response.ok) {
     kastHvisUtlogget(response);
     logger.error("Kunne ikke hente migreringskandidater fra Watson Admin API", {
@@ -111,6 +142,7 @@ export async function hentMigreringsliste(
       navn: "",
       ansvar: k.ansvar,
       enhet: k.enhet,
+      ansvarligNavn: k.ansvarligNavn,
       vurdering: k.vurdering,
       ekskluderFraStatistikk: k.ekskluderFraStatistikk,
       referansedato: k.referansedato,
@@ -155,5 +187,48 @@ export async function ferdigstillMigreringskandidat(request: Request, kandidatId
     kastHvisUtlogget(response);
     logger.error("Kunne ikke ferdigmerke migreringskandidat", { status: response.status });
     throw new Response("Kunne ikke merke saken ferdig flyttet", { status: response.status });
+  }
+}
+
+/** Ansatte lederen kan se kandidater for. Bare for ledere. Backend avviser andre. */
+export async function hentMigreringsAnsatte(request: Request): Promise<MigreringAnsatt[]> {
+  const token = await getBackendOboToken(request);
+  const response = await fetch(`${BACKEND_API_URL}${sti`/api/v1/migrering/ansatte`}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  });
+  if (!response.ok) {
+    kastHvisUtlogget(response);
+    logger.error("Kunne ikke hente ansatte for migrering", { status: response.status });
+    throw new Response("Ansatte er ikke tilgjengelig", { status: response.status });
+  }
+  const parsed = z.array(ansattSchema).safeParse(await response.json());
+  if (!parsed.success) throw new Error("Ugyldig svar fra watson-admin-api (migrering/ansatte)");
+  return parsed.data.map((a) => ({
+    navIdent: a.navIdent,
+    navn: a.navn,
+    enhetId: a.enhetId,
+    enhetNavn: a.enhetNavn,
+  }));
+}
+
+/** Flytter en kandidat som ikke er påbegynt til en annen ansatt. Backend validerer at lederen har rett til det. */
+export async function tildelMigreringskandidat(
+  request: Request,
+  kandidatId: string,
+  navIdent: string,
+): Promise<void> {
+  const token = await getBackendOboToken(request);
+  const response = await fetch(
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater/${kandidatId}/tildel`}`,
+    {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ navIdent }),
+    },
+  );
+  if (!response.ok) {
+    kastHvisUtlogget(response);
+    logger.error("Kunne ikke tildele migreringskandidat", { status: response.status });
+    throw new Response("Kunne ikke endre tildeling", { status: response.status });
   }
 }

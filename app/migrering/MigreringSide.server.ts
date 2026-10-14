@@ -1,14 +1,29 @@
-import type { LoaderFunctionArgs } from "react-router";
+import { data, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { erUtloggetFeil } from "~/auth/session-utløpt.server";
 import { env, skalBrukeMockdata } from "~/config/env.server";
 import { hentAlleSaker } from "~/saker/mock-alle-saker.server";
-import { hentMockMigreringKandidater } from "./mock-data.server";
-import { hentMigreringsliste, type Migreringsvisning } from "./api.server";
+import { hentMockState } from "~/testing/mock-store/session.server";
+import {
+  hentMockAnsattKandidater,
+  hentMockMigreringKandidater,
+  MOCK_MIGRERING_ANSATTE,
+} from "./mock-data.server";
+import {
+  hentMigreringsAnsatte,
+  hentMigreringsliste,
+  tildelMigreringskandidat,
+  type Migreringsfilter,
+  type Migreringsvisning,
+} from "./api.server";
 import { logger } from "~/logging/logging";
 import { migreringErÅpen } from "./miljo";
 import {
+  hentMigreringsstatus,
   MIGRERING_SIDESTORRELSE,
+  MIGRERINGSSTATUSER,
+  type MigreringAnsatt,
+  type MigreringFilter,
   type MigreringKandidat,
   type MigreringLister,
   type MigreringSide,
@@ -48,16 +63,39 @@ function lesSide(url: URL, navn: string): number {
   return Number.isSafeInteger(side) && side >= 1 ? side : 1;
 }
 
+const IDENT_MØNSTER = /^[A-Za-z0-9æøåÆØÅ_-]{1,20}$/;
+
+/** Filtre fra URL-en. Ukjente verdier ignoreres, så en feil lenke aldri gir en feilside. */
+export function lesFilter(url: URL): MigreringFilter {
+  const status = MIGRERINGSSTATUSER.filter((kandidat) =>
+    url.searchParams.getAll("status").includes(kandidat),
+  );
+  const enhet = url.searchParams.get("enhet") ?? "";
+  const ansvarlig = url.searchParams.get("ansvarlig") ?? "";
+  return {
+    status,
+    enhet: IDENT_MØNSTER.test(enhet) ? enhet : null,
+    ansvarlig: IDENT_MØNSTER.test(ansvarlig) ? ansvarlig : null,
+  };
+}
+
 /** Henter én side. Hvis siden er forbi siste side (for eksempel etter at saker er flyttet), vises siste side. */
 async function hentListe(
   request: Request,
   visning: Migreringsvisning,
   side: number,
+  filter: Migreringsfilter,
 ): Promise<{ side: MigreringSide; utilgjengelig: boolean }> {
   try {
-    let liste = await hentMigreringsliste(request, visning, side);
+    let liste = await hentMigreringsliste(request, visning, side, MIGRERING_SIDESTORRELSE, filter);
     if (liste.totalSider > 0 && side > liste.totalSider) {
-      liste = await hentMigreringsliste(request, visning, liste.totalSider);
+      liste = await hentMigreringsliste(
+        request,
+        visning,
+        liste.totalSider,
+        MIGRERING_SIDESTORRELSE,
+        filter,
+      );
     }
     return {
       side: {
@@ -89,10 +127,30 @@ function sideAv(kandidater: MigreringKandidat[], side: number): MigreringSide {
   };
 }
 
+async function hentAnsatteValg(request: Request): Promise<MigreringAnsatt[] | null> {
+  try {
+    return await hentMigreringsAnsatte(request);
+  } catch (feil) {
+    if (erUtloggetFeil(feil)) throw feil;
+    logger.error("Kunne ikke hente ansatte til filter og tildeling");
+    return null;
+  }
+}
+
+function medFilter(kandidater: MigreringKandidat[], filter: MigreringFilter): MigreringKandidat[] {
+  return kandidater.filter(
+    (k) =>
+      (filter.status.length === 0 || filter.status.includes(hentMigreringsstatus(k))) &&
+      (!filter.enhet || k.enhet === filter.enhet) &&
+      (!filter.ansvarlig || k.ansvar.navIdent === filter.ansvarlig),
+  );
+}
+
 export async function loader({ request }: LoaderFunctionArgs): Promise<MigreringLister> {
   const url = new URL(request.url);
   const side = lesSide(url, "side");
-  const ansatteSide = lesSide(url, "ansatteSide");
+  const filter = lesFilter(url);
+  const backendFilter: Migreringsfilter = filter;
 
   // `prod` er stengt til importen er godkjent. `local-backend` og `dev` kaller det beskyttede
   // migrerings-API-et med brukertoken. `local-mock` og `demo` bruker syntetiske eksempler (se under).
@@ -102,31 +160,123 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<Migrering
     }
     const bruker = await hentInnloggetBruker({ request });
     // Uavhengige, potensielt trege kall: hent parallelt så svartiden ikke blir summen.
-    const [mine, ansatte] = await Promise.all([
-      hentListe(request, "MINE", side),
+    const [liste, ansatteValg] = await Promise.all([
       bruker.erLeder
-        ? hentListe(request, "ANSATTE", ansatteSide)
-        : Promise.resolve({ side: TOM_SIDE, utilgjengelig: false }),
+        ? hentListe(request, "ALLE", side, backendFilter)
+        : hentListe(request, "MINE", side, { status: filter.status }),
+      bruker.erLeder ? hentAnsatteValg(request) : Promise.resolve([]),
     ]);
     return {
-      mine: mine.side,
-      ansatte: ansatte.side,
-      utilgjengelig: mine.utilgjengelig || ansatte.utilgjengelig,
+      liste: liste.side,
+      ansatteValg: ansatteValg ?? [],
+      filter,
+      erLeder: bruker.erLeder,
+      utilgjengelig: liste.utilgjengelig || ansatteValg === null,
     };
   }
 
   const bruker = await hentInnloggetBruker({ request });
   const kandidater = merkAlleredeOverforte(request, hentMockMigreringKandidater(bruker.navIdent));
+  const tildelinger = hentMockState(request).migreringTildelinger;
+  const ansatteValg: MigreringAnsatt[] = bruker.erLeder
+    ? [
+        ...MOCK_MIGRERING_ANSATTE,
+        {
+          navIdent: bruker.navIdent,
+          navn: bruker.name,
+          enhetId: bruker.enhetId ?? bruker.enhet,
+          enhetNavn: bruker.enhet,
+        },
+      ]
+    : [];
+  const egne = kandidater
+    .filter((k) => k.ansvar.type === "BEKREFTET" && k.ansvar.navIdent === bruker.navIdent)
+    .map((k): MigreringKandidat => {
+      const navIdent = tildelinger.get(k.kandidatId) ?? k.ansvar.navIdent;
+      const ansvarlig = ansatteValg.find((a) => a.navIdent === navIdent);
+      return {
+        ...k,
+        ansvar: { type: "BEKREFTET", navIdent: navIdent ?? "" },
+        // Personnummer vises bare for lederens egne rader, slik backend gjør.
+        ...(navIdent === bruker.navIdent ? {} : { personIdent: undefined }),
+        ansvarligNavn: ansvarlig?.navn ?? bruker.name,
+        enhet: ansvarlig?.enhetId ?? null,
+      };
+    });
+  // Syntetiske ansatte vises bare for ledere, slik at saksbehandlere ikke ser andres saker.
+  const alle = bruker.erLeder
+    ? [...egne, ...hentMockAnsattKandidater(tildelinger, ansatteValg)]
+    : egne;
+  const liste = medFilter(
+    alle,
+    bruker.erLeder ? filter : { ...filter, enhet: null, ansvarlig: null },
+  );
 
   return {
-    mine: sideAv(
-      kandidater.filter(
-        (k) => k.ansvar.type === "BEKREFTET" && k.ansvar.navIdent === bruker.navIdent,
-      ),
-      side,
-    ),
-    // Syntetiske eksempler har ingen andre ansvarlige. Ledervisningen er bare i ekte backend.
-    ansatte: TOM_SIDE,
+    liste: sideAv(liste, side),
+    ansatteValg,
+    filter,
+    erLeder: bruker.erLeder,
     utilgjengelig: false,
   };
+}
+
+const KANDIDAT_ID_MØNSTER = /^(UTREDNING|SV|NKA_DAGPENGER|NKA_AAP):\d{1,12}$/;
+const NAV_IDENT_MØNSTER = /^[A-Za-z]\d{6}$/;
+
+export type TildelingsSvar = { ok: true } | { ok: false; feil: string };
+
+/** Lederen flytter en kandidat til en annen ansatt. Backend avgjør om lederen har rett til det. */
+export async function action({ request }: ActionFunctionArgs): Promise<TildelingsSvar> {
+  const bruker = await hentInnloggetBruker({ request });
+  if (!bruker.erLeder) {
+    throw data("Bare ledere kan endre tildeling", { status: 403 });
+  }
+  const skjema = await request.formData();
+  const kandidatId = String(skjema.get("kandidatId") ?? "");
+  const navIdent = String(skjema.get("navIdent") ?? "");
+  if (!KANDIDAT_ID_MØNSTER.test(kandidatId) || !NAV_IDENT_MØNSTER.test(navIdent)) {
+    throw data("Ugyldig tildeling", { status: 400 });
+  }
+
+  if (skalBrukeMockdata) {
+    if (
+      navIdent !== bruker.navIdent &&
+      !MOCK_MIGRERING_ANSATTE.some((a) => a.navIdent === navIdent)
+    ) {
+      throw data("Ugyldig tildeling", { status: 400 });
+    }
+    const tildelinger = hentMockState(request).migreringTildelinger;
+    const tildelbar = [
+      ...hentMockAnsattKandidater(tildelinger),
+      ...hentMockMigreringKandidater(bruker.navIdent).filter(
+        (k) => k.ansvar.type === "BEKREFTET" && k.ansvar.navIdent === bruker.navIdent,
+      ),
+    ].find((k) => k.kandidatId === kandidatId);
+    if (!tildelbar) {
+      throw data("Kandidaten finnes ikke", { status: 404 });
+    }
+    if (hentMigreringsstatus(tildelbar) !== "IKKE_PABEGYNT") {
+      throw data("Saken er allerede påbegynt og kan ikke flyttes til en annen", { status: 409 });
+    }
+    tildelinger.set(kandidatId, navIdent);
+    return { ok: true };
+  }
+  if (!migreringErÅpen(env.ENVIRONMENT)) {
+    throw data("Endring av tildeling er ikke tilgjengelig", { status: 404 });
+  }
+
+  try {
+    await tildelMigreringskandidat(request, kandidatId, navIdent);
+    return { ok: true };
+  } catch (feil) {
+    if (erUtloggetFeil(feil)) throw feil;
+    if (feil instanceof Response && feil.status === 409) {
+      return { ok: false, feil: "Saken er allerede påbegynt og kan ikke flyttes til en annen." };
+    }
+    if (feil instanceof Response && (feil.status === 404 || feil.status === 403)) {
+      return { ok: false, feil: "Du kan ikke tildele denne saken til den valgte saksbehandleren." };
+    }
+    throw feil;
+  }
 }

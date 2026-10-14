@@ -70,16 +70,37 @@ describe("Notat i Opprett sak", () => {
       state.legacyPid = "100245";
       state.legacyKilde = "UTREDNING";
       renderSide();
-      const notat = await screen.findByRole("textbox", { name: "Notat" });
+      const notat = await screen.findByRole("textbox", { name: "Notat – informasjon fra Access" });
       expect((notat as HTMLTextAreaElement).disabled).toBe(false);
       expect((notat as HTMLTextAreaElement).name).toBe("notat");
     },
   );
 
+  it("viser flytt-fra-Access-oppsett med S:-opplasting først for migreringssaker", async () => {
+    state.legacyPid = "100245";
+    state.legacyKilde = "UTREDNING";
+    renderSide();
+
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "Flytt fra Access" }),
+    ).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Filer fra S-området" })).not.toBeNull();
+    expect(screen.getByText("Last opp filer fra S:")).not.toBeNull();
+    expect(screen.queryByText("Last opp dokumenter (valgfritt)")).toBeNull();
+  });
+
+  it("beholder vanlig opprett-sak-oppsett uten migrering", async () => {
+    renderSide();
+
+    expect(await screen.findByRole("heading", { level: 1, name: "Opprett sak" })).not.toBeNull();
+    expect(screen.queryByRole("heading", { name: "Filer fra S-området" })).toBeNull();
+    expect(screen.getByText("Last opp dokumenter (valgfritt)")).not.toBeNull();
+  });
+
   it("viser ikke Notat for vanlige saker", async () => {
     renderSide();
     await screen.findByRole("heading", { name: "Grunnleggende saksinformasjon" });
-    expect(screen.queryByRole("textbox", { name: "Notat" })).toBeNull();
+    expect(screen.queryByRole("textbox", { name: "Notat – informasjon fra Access" })).toBeNull();
   });
 
   it.each([
@@ -92,7 +113,7 @@ describe("Notat i Opprett sak", () => {
       state.legacyKilde = legacyKilde;
       renderSide();
       await screen.findByRole("heading", { name: "Grunnleggende saksinformasjon" });
-      expect(screen.queryByRole("textbox", { name: "Notat" })).toBeNull();
+      expect(screen.queryByRole("textbox", { name: "Notat – informasjon fra Access" })).toBeNull();
     },
   );
 
@@ -116,14 +137,14 @@ describe("Notat i Opprett sak", () => {
       { initialEntries: ["/registrer-sak"] },
     );
     const { container } = render(<RouterProvider router={router} />);
-    await screen.findByRole("textbox", { name: "Notat" });
+    await screen.findByRole("textbox", { name: "Notat – informasjon fra Access" });
 
     await act(async () => {
       await router.revalidate();
     });
 
     expect(kall).toBeGreaterThan(1);
-    expect(screen.getByRole("textbox", { name: "Notat" })).not.toBeNull();
+    expect(screen.getByRole("textbox", { name: "Notat – informasjon fra Access" })).not.toBeNull();
     expect(screen.getByText(/PID: 100245/)).not.toBeNull();
     expect(container.querySelector('input[name="legacyPid"]')).not.toBeNull();
     expect(container.querySelector('input[name="legacyKilde"]')).not.toBeNull();
