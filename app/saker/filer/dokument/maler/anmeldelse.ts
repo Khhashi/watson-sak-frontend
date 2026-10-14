@@ -25,8 +25,8 @@ export function anmeldelsemal(): DokumentInnhold {
       rad(celle("Til:"), celle("[Sted] politidistrikt, [postboks], [postnummer]")),
       rad(celle("Dato:"), celle(pMedVariabler(variabel("dagens-dato")))),
       rad(celle("Deres referanse:"), celle("")),
-      rad(celle("Vår referanse:"), celle(pMedVariabler(variabel("saksnummer")))),
-      rad(celle("PID:"), celle(pMedVariabler(variabel("fødselsnummer")))),
+      rad(celle("Vår referanse:"), celle("")),
+      rad(celle("PID:"), celle(pMedVariabler(variabel("saksnummer")))),
       rad(celle("Saksbehandler:"), celle(pMedVariabler(variabel("saksbehandler")))),
     ),
 

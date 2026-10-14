@@ -78,7 +78,7 @@ export function metadataTabell(): Node {
     rad(celle("Til:"), celle("")),
     rad(celle("Fra:"), celle(pMedVariabler("Nav kontroll ", variabel("avdeling")))),
     rad(celle("Dato:"), celle(pMedVariabler(variabel("dagens-dato")))),
-    rad(celle("PID:"), celle(pMedVariabler(variabel("fødselsnummer")))),
+    rad(celle("PID:"), celle(pMedVariabler(variabel("saksnummer")))),
     rad(celle("Gjelder:"), celle(pMedVariabler(variabel("navn"), ", ", variabel("fødselsnummer")))),
   );
 }

@@ -190,3 +190,26 @@ describe("anmeldelse", () => {
     );
   });
 });
+
+describe("PID-feltet", () => {
+  const pidCelle = JSON.stringify({
+    type: "td",
+    children: [{ type: "p", children: [{ text: "PID:" }] }],
+  });
+  const saksnummerCelle = JSON.stringify({
+    type: "td",
+    children: [
+      {
+        type: "p",
+        children: [{ type: "variabel", variabelId: "saksnummer", children: [{ text: "" }] }],
+      },
+    ],
+  });
+
+  it.each([
+    ...MALER.map(({ id, bygger }) => ({ id, innhold: bygger({ erStraffesak: false }) })),
+    { id: "anmeldelse", innhold: anmeldelsemal() },
+  ])("$id: PID er saksnummeret", ({ innhold }) => {
+    expect(JSON.stringify(innhold)).toContain(`${pidCelle},${saksnummerCelle}`);
+  });
+});
