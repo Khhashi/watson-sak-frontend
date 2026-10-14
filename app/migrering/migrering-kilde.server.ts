@@ -4,7 +4,7 @@ import { httpMigreringKilde } from "./migrering-kilde-http.server";
 import { mockMigreringKilde } from "./migrering-kilde-mock.server";
 import type { MigreringFilter, MigreringLister } from "./types";
 
-export type MigreringBruker = Awaited<ReturnType<typeof hentInnloggetBruker>>;
+type MigreringBruker = Awaited<ReturnType<typeof hentInnloggetBruker>>;
 
 export type TildelingsSvar = { ok: true } | { ok: false; feil: string };
 
