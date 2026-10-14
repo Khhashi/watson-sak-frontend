@@ -584,6 +584,32 @@ describe("opprettKontrollsak", () => {
     ).toMatchObject([{ filnavn: "demo.pdf", opprettetAv: "Demo Bruker" }]);
   });
 
+  it("logger ikke filnavn når opplasting til backend feiler", async () => {
+    vi.resetModules();
+    vi.doMock("~/config/env.server", () => ({
+      BACKEND_API_URL: "https://backend.test",
+      skalBrukeMockdata: false,
+    }));
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue({ ok: false, status: 500 }));
+
+    const { lastOppFil } = await import("./api.server");
+    const { logger } = await import("~/logging/logging");
+    const sensitivtFilnavn = "12345678901 Ola Nordmann.pdf";
+
+    await lastOppFil(
+      testRequest,
+      "token-123",
+      "sak-123",
+      new File(["innhold"], sensitivtFilnavn, { type: "application/pdf" }),
+    );
+
+    expect(logger.error).toHaveBeenCalledWith("Kunne ikke laste opp fil til kontrollsak", {
+      sakId: "sak-123",
+      status: 500,
+    });
+    expect(JSON.stringify(vi.mocked(logger.error).mock.calls)).not.toContain(sensitivtFilnavn);
+  });
+
   it("legger mock-sak med eier i Mine saker", async () => {
     const nySak = leggTilMockSakIFordeling(state(), {
       personIdent: "12345678901",

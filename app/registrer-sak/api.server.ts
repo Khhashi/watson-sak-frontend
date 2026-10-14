@@ -206,7 +206,6 @@ export async function lastOppFil(
       }
       logger.warn("Kunne ikke hente innlogget bruker ved mock-lagring av fil", {
         sakId,
-        filnavn: fil.name,
         error,
       });
     }
@@ -248,7 +247,6 @@ export async function lastOppFil(
     if (!respons.ok) {
       logger.error("Kunne ikke laste opp fil til kontrollsak", {
         sakId,
-        filnavn: fil.name,
         status: respons.status,
       });
     }
