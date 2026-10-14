@@ -3,6 +3,9 @@ import type { ComponentType, SVGProps } from "react";
 
 type FilIkon = ComponentType<SVGProps<SVGSVGElement>>;
 
+/** Filendelser backend godtar ved opplasting av vedlegg. Brukes som `accept` på filvelgere. */
+export const TILLATTE_FILTYPER = ".pdf,.png,.jpg,.jpeg,.docx,.xlsx";
+
 const WORD_CONTENT_TYPES = [
   "application/msword",
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
