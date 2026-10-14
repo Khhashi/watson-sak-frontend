@@ -42,6 +42,11 @@ describe("innlogget-bruker-api", () => {
     };
   }
 
+  async function kjørLoader() {
+    const { loader } = await import("./api");
+    return loader(lagLoaderArgs());
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     testState.isDev = true;
@@ -56,12 +61,11 @@ describe("innlogget-bruker-api", () => {
   });
 
   it("returnerer backend-token for godkjent bruker i dev", async () => {
-    const { loader } = await import("./api");
-
-    const result = await loader(lagLoaderArgs());
+    const result = await kjørLoader();
 
     expect(getBackendOboTokenMock).toHaveBeenCalledWith(expect.any(Request));
-    expect(result).toEqual({
+    expect(result.headers.get("Cache-Control")).toBe("no-store");
+    await expect(result.json()).resolves.toEqual({
       preferredUsername: "test@nav.no",
       name: "Test Saksbehandler",
       navIdent: "S162301",
@@ -73,17 +77,36 @@ describe("innlogget-bruker-api", () => {
   it("hopper over token i local-mock", async () => {
     testState.environment = "local-mock";
 
-    const { loader } = await import("./api");
-
-    const result = await loader(lagLoaderArgs());
+    const result = await kjørLoader();
 
     expect(getBackendOboTokenMock).not.toHaveBeenCalled();
-    expect(result).toEqual({
+    await expect(result.json()).resolves.toEqual({
       preferredUsername: "test@nav.no",
       name: "Test Saksbehandler",
       navIdent: "S162301",
       enhet: "4812",
     });
+  });
+
+  it.each(["dev", "local-backend", "local-dev"])("gir token i %s", async (miljø) => {
+    testState.environment = miljø;
+
+    const result = await kjørLoader();
+
+    await expect(result.json()).resolves.toMatchObject({ token: "obo-token" });
+  });
+
+  it.each(["prod", "demo"])("svarer 404 uten å hente bruker eller token i %s", async (miljø) => {
+    testState.environment = miljø;
+
+    const feil = await kjørLoader().catch((e: unknown) => e);
+
+    if (!(feil instanceof Response)) {
+      throw new Error("Forventet at loaderen kaster en Response");
+    }
+    expect(feil.status).toBe(404);
+    expect(hentInnloggetBrukerMock).not.toHaveBeenCalled();
+    expect(getBackendOboTokenMock).not.toHaveBeenCalled();
   });
 
   it.each(["Z993376", "Z993741", "Z993471", "Z990474", "B126228"])(
@@ -96,11 +119,9 @@ describe("innlogget-bruker-api", () => {
         enhet: "4812",
       });
 
-      const { loader } = await import("./api");
+      const result = await kjørLoader();
 
-      const result = await loader(lagLoaderArgs());
-
-      expect(result).toMatchObject({ navIdent, token: "obo-token" });
+      await expect(result.json()).resolves.toMatchObject({ navIdent, token: "obo-token" });
     },
   );
 
@@ -112,13 +133,7 @@ describe("innlogget-bruker-api", () => {
       enhet: "4812",
     });
 
-    const { loader } = await import("./api");
-
-    const result = await loader(lagLoaderArgs());
-
-    if (!(result instanceof Response)) {
-      throw new Error("Forventet Response ved manglende tilgang");
-    }
+    const result = await kjørLoader();
 
     expect(result.status).toBe(403);
   });
@@ -131,13 +146,7 @@ describe("innlogget-bruker-api", () => {
       enhet: "4812",
     });
 
-    const { loader } = await import("./api");
-
-    const result = await loader(lagLoaderArgs());
-
-    if (!(result instanceof Response)) {
-      throw new Error("Forventet Response ved manglende tilgang");
-    }
+    const result = await kjørLoader();
 
     expect(getBackendOboTokenMock).not.toHaveBeenCalled();
     expect(result.status).toBe(403);
