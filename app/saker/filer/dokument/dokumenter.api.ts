@@ -6,13 +6,21 @@ import { RouteConfig } from "~/routeConfig";
 import * as backendApi from "~/saker/api.server";
 import { hentStegbaserteSaksregler } from "~/saker/stegregler";
 import { hentSakstilgangFraMock } from "~/saker/tilgang.server";
+import type { KontrollsakSteg } from "~/saker/types.backend";
 import {
   lagreDokument,
   opprettDokument,
   opprettEllerOppdaterDokumentHistorikk,
   slettDokument,
 } from "../mock-data.server";
-import { byggMalInnhold, MAL_NAVN, type MalId } from "./maler";
+import { byggMalInnhold, erMalTilgjengelig, MAL_NAVN, type MalId } from "./maler";
+
+/** Avviser maler som ikke hører til sakens steg, f.eks. anmeldelse under utredning. */
+function sjekkMalForSteg(valgtMal: { malId: MalId } | null, steg: KontrollsakSteg) {
+  if (valgtMal && !erMalTilgjengelig(valgtMal.malId, steg)) {
+    throw data("Malen kan ikke brukes i sakens nåværende steg", { status: 400 });
+  }
+}
 
 function lesValgtMal(formData: FormData): { malId: MalId; erStraffesak: boolean } | null {
   const malId = formData.get("malId");
@@ -83,6 +91,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
     const formData = await lesFormData(request);
     const valgtMal = lesValgtMal(formData);
+    sjekkMalForSteg(valgtMal, sak.steg);
 
     const opprettet = await backendApi.opprettDokument(token, sakReferanse);
     if (!opprettet.id) {
@@ -133,6 +142,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   const formData = await lesFormData(request);
   const valgtMal = lesValgtMal(formData);
+  sjekkMalForSteg(valgtMal, tilgang.sak.steg);
 
   const innlogget = await hentInnloggetBruker({ request });
   const { id } = opprettDokument(request, String(tilgang.sak.id), innlogget.name);

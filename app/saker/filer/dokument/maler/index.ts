@@ -1,11 +1,13 @@
 import type { DokumentInnhold } from "~/saker/filer/typer";
+import type { KontrollsakSteg } from "~/saker/types.backend";
+import { anmeldelsemal } from "./anmeldelse";
 import { arbeidRapportmal } from "./arbeid";
 import { ensligForsørgerRapportmal } from "./enslig-forsørger";
 import { innhentingsbrevmal } from "./innhentingsbrev";
 import { utlandRapportmal } from "./utland";
 
 /** Identifiserer hvilken mal som skal brukes til å opprette et nytt dokument. */
-export type MalId = "arbeid" | "enslig-forsørger" | "utland" | "innhentingsbrev";
+export type MalId = "arbeid" | "enslig-forsørger" | "utland" | "innhentingsbrev" | "anmeldelse";
 
 export type MalValg = {
   malId: MalId;
@@ -18,17 +20,38 @@ export type MalValg = {
  */
 export type MalKategori = "rapport" | "brev";
 
+const UTREDNINGSSTEG: KontrollsakSteg[] = ["UTREDNING", "UTREDES"];
+
+/**
+ * Hvilke steg malen kan brukes i. Kontrollrapporter hører til utredningen,
+ * anmeldelsen til strafferettslig vurdering. `null` betyr alle steg.
+ */
+const MAL_STEG: Record<MalId, KontrollsakSteg[] | null> = {
+  arbeid: UTREDNINGSSTEG,
+  "enslig-forsørger": UTREDNINGSSTEG,
+  utland: UTREDNINGSSTEG,
+  innhentingsbrev: null,
+  anmeldelse: ["STRAFFERETTSLIG_VURDERING"],
+};
+
+export function erMalTilgjengelig(malId: MalId, steg: KontrollsakSteg): boolean {
+  const tillatteSteg = MAL_STEG[malId];
+  return tillatteSteg === null || tillatteSteg.includes(steg);
+}
+
 /** Menneskelesbare navn på malene, til bruk i velgere i UI. */
 export const MAL_NAVN: Record<MalId, string> = {
   arbeid: "Kontrollrapport – Arbeid",
   "enslig-forsørger": "Kontrollrapport – Enslig forsørger",
   utland: "Kontrollrapport – Utland",
   innhentingsbrev: "Innhentingsbrev",
+  anmeldelse: "Anmeldelse",
 };
 
 /** Undertekst for brevmaler i velgeren. Rapportmaler viser sakstypen i stedet. */
 export const BREVMAL_BESKRIVELSE: Partial<Record<MalId, string>> = {
   innhentingsbrev: "Hente inn opplysninger fra eksterne parter",
+  anmeldelse: "Anmelde forholdet til politiet",
 };
 
 export const MAL_KATEGORI: Record<MalId, MalKategori> = {
@@ -36,6 +59,7 @@ export const MAL_KATEGORI: Record<MalId, MalKategori> = {
   "enslig-forsørger": "rapport",
   utland: "rapport",
   innhentingsbrev: "brev",
+  anmeldelse: "brev",
 };
 
 const MAL_BYGGERE: Record<MalId, (valg: { erStraffesak: boolean }) => DokumentInnhold> = {
@@ -43,6 +67,7 @@ const MAL_BYGGERE: Record<MalId, (valg: { erStraffesak: boolean }) => DokumentIn
   "enslig-forsørger": ensligForsørgerRapportmal,
   utland: utlandRapportmal,
   innhentingsbrev: innhentingsbrevmal,
+  anmeldelse: anmeldelsemal,
 };
 
 /** Bygger dokumentinnhold for en gitt mal. `erStraffesak` ignoreres for brevmaler. */
