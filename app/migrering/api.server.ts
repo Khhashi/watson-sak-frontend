@@ -3,6 +3,7 @@ import { getBackendOboToken } from "~/auth/access-token";
 import { kastHvisUtlogget } from "~/auth/session-utløpt.server";
 import { BACKEND_API_URL } from "~/config/env.server";
 import { logger } from "~/logging/logging";
+import { sti } from "~/saker/sti-param.server";
 import { MIGRERING_SIDESTORRELSE, type MigreringKandidat } from "./types";
 
 const kildeSchema = z.enum(["UTREDNING", "SV", "NKA_DAGPENGER", "NKA_AAP"]);
@@ -78,10 +79,10 @@ export async function hentMigreringsliste(
   }
 
   const token = await getBackendOboToken(request);
-  const response = await fetch(
-    `${BACKEND_API_URL}/api/v1/migrering/kandidater?visning=${visning}&page=${side}&size=${størrelse}`,
-    { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } },
-  );
+  const params = new URLSearchParams({ visning, page: String(side), size: String(størrelse) });
+  const response = await fetch(`${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater`}?${params}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
+  });
   if (!response.ok) {
     kastHvisUtlogget(response);
     logger.error("Kunne ikke hente migreringskandidater fra Watson Admin API", {
@@ -130,7 +131,7 @@ export async function hentMigreringsliste(
 export async function hentMigreringskandidat(request: Request, kandidatId: string) {
   const token = await getBackendOboToken(request);
   const response = await fetch(
-    `${BACKEND_API_URL}/api/v1/migrering/kandidater/${encodeURIComponent(kandidatId)}`,
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater/${kandidatId}`}`,
     { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } },
   );
   if (!response.ok) {
@@ -147,7 +148,7 @@ export async function hentMigreringskandidat(request: Request, kandidatId: strin
 export async function ferdigstillMigreringskandidat(request: Request, kandidatId: string) {
   const token = await getBackendOboToken(request);
   const response = await fetch(
-    `${BACKEND_API_URL}/api/v1/migrering/kandidater/${encodeURIComponent(kandidatId)}/ferdigstill`,
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater/${kandidatId}/ferdigstill`}`,
     { method: "POST", headers: { Authorization: `Bearer ${token}` } },
   );
   if (!response.ok) {

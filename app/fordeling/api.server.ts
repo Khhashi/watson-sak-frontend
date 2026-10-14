@@ -4,6 +4,7 @@ import { BACKEND_API_URL, skalBrukeMockdata } from "~/config/env.server";
 import { logger } from "~/logging/logging";
 import { kontrollsakPageResponseSchema } from "~/saker/types.backend";
 import { ALLE_STEG } from "~/saker/steg";
+import { sti } from "~/saker/sti-param.server";
 import type { KontrollsakPageResponse } from "./types.backend";
 import type { Aldersvarsel, ANSVARLIG_MEG } from "~/alle-saker/aldersfilter";
 
@@ -121,15 +122,18 @@ export async function tildelKontrollsak({
     throw new Error("Mangler backend-url for tildeling av kontrollsak.");
   }
 
-  const response = await fetch(`${BACKEND_API_URL}/api/v1/kontrollsaker/${sakId}/saksbehandler`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-      Accept: "application/json",
+  const response = await fetch(
+    `${BACKEND_API_URL}${sti`/api/v1/kontrollsaker/${sakId}/saksbehandler`}`,
+    {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "Content-Type": "application/json",
+        Accept: "application/json",
+      },
+      body: JSON.stringify({ aksjon: "TILDEL", navIdent: saksbehandler }),
     },
-    body: JSON.stringify({ aksjon: "TILDEL", navIdent: saksbehandler }),
-  });
+  );
 
   if (!response.ok) {
     kastHvisUtlogget(response);

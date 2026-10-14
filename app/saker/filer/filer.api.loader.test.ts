@@ -34,7 +34,7 @@ vi.mock("./mock-data-filer.server", () => ({
   leggTilFil: vi.fn(),
 }));
 
-function lagLoaderArgs(sakId = "sak-1"): LoaderFunctionArgs {
+function lagLoaderArgs(sakId = "1"): LoaderFunctionArgs {
   return {
     request: new Request(`http://localhost/api/saker/${sakId}/filer`),
     params: { sakId },

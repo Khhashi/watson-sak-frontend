@@ -7,6 +7,7 @@ import * as backendApi from "~/saker/api.server";
 import { hentStegbaserteSaksregler } from "~/saker/stegregler";
 import { harDirekteSakstilgang } from "~/saker/sakstilgang";
 import { hentSakstilgangFraMock } from "~/saker/tilgang.server";
+import { parseSakId } from "~/saker/sti-param.server";
 import {
   endreMappe,
   flyttDokumentTilMappe,
@@ -134,10 +135,7 @@ async function utførMotMock(
  * slik at komponenten kan vise dem uten å gå til error boundary.
  */
 export async function action({ request, params }: ActionFunctionArgs) {
-  const sakReferanse = params.sakId;
-  if (!sakReferanse) {
-    throw data("Mangler sak", { status: 400 });
-  }
+  const sakReferanse = parseSakId(params.sakId);
   if (request.method !== "POST") {
     throw data("Metoden støttes ikke", { status: 405 });
   }

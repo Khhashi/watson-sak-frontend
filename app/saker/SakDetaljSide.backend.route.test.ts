@@ -242,6 +242,20 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(resultat.sak).toEqual(grunnleggendeSak);
   });
 
+  it("avviser ugyldig sakId før loaderen kaller backend", async () => {
+    const { loader } = await import("./SakDetaljSide.server");
+
+    await expect(loader(lagLoaderArgs("../1"))).rejects.toMatchObject({ init: { status: 404 } });
+
+    expect(mockHentKontrollsak).not.toHaveBeenCalled();
+    expect(mockHentHendelser).not.toHaveBeenCalled();
+    expect(mockHentJournalposter).not.toHaveBeenCalled();
+    expect(mockHentSaksbehandlere).not.toHaveBeenCalled();
+    expect(mockHentFiler).not.toHaveBeenCalled();
+    expect(mockHentMapper).not.toHaveBeenCalled();
+    expect(mockHentTillatteHandlinger).not.toHaveBeenCalled();
+  });
+
   it("setter harFilTilgang: true og returnerer filene når hentFiler lykkes", async () => {
     const filer = [{ id: "f1", filnavn: "vedlegg.pdf" }];
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);

@@ -1,3 +1,4 @@
+import { parseSakId, parseUuid } from "~/saker/sti-param.server";
 import { data, type ActionFunctionArgs, type LoaderFunctionArgs } from "react-router";
 import { z } from "zod";
 import { getBackendOboToken } from "~/auth/access-token";
@@ -88,10 +89,7 @@ const kommentarhandlingSchema = z.discriminatedUnion("handling", [
 ]);
 
 function krevParametre(params: { sakId?: string; docId?: string }) {
-  if (!params.sakId || !params.docId) {
-    throw data("Mangler sak eller dokument", { status: 400 });
-  }
-  return { sakReferanse: params.sakId, docId: params.docId };
+  return { sakReferanse: parseSakId(params.sakId), docId: parseUuid(params.docId, "docId") };
 }
 
 /**

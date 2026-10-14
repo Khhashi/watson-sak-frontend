@@ -52,7 +52,7 @@ describe("filer.api POST — backend-sti", () => {
   it("laster opp fil når steget tillater det", async () => {
     await actionMedBackend();
 
-    expect(mockLastOppFil).toHaveBeenCalledWith("mock-token", "SAK-1", expect.any(File));
+    expect(mockLastOppFil).toHaveBeenCalledWith("mock-token", "1", expect.any(File));
   });
 
   it("avviser opplasting på avsluttet sak før fil-API-et kalles", async () => {
@@ -67,6 +67,6 @@ async function actionMedBackend() {
   const { action } = await import("./filer.api");
   return action({
     request: uploadRequest(),
-    params: { sakId: "SAK-1" },
+    params: { sakId: "1" },
   } as Route.ActionArgs);
 }

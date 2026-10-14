@@ -48,7 +48,7 @@ function lagSak(steg: string): KontrollsakResponse {
 async function hent() {
   return (await loader({
     request: new Request("http://localhost"),
-    params: { sakId: "SAK-42", docId: "d1" },
+    params: { sakId: "42", docId: "3f2504e0-4f89-41d3-9a0c-0305e82c3301" },
   } as never)) as Response;
 }
 
@@ -64,7 +64,11 @@ describe("kommentarer.api loader — backend-modus", () => {
     const respons = await hent();
 
     expect(respons.status).toBe(200);
-    expect(mockHentKommentarliste).toHaveBeenCalledWith("mock-token", "SAK-42", "d1");
+    expect(mockHentKommentarliste).toHaveBeenCalledWith(
+      "mock-token",
+      "42",
+      "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    );
   });
 
   it("avviser vanlig saksbehandler uten direkte tilgang på aktiv sak før kommentar-API-et kalles", async () => {

@@ -56,7 +56,7 @@ function tilRespons(traad: LagretTraad, innloggetIdent: string): Kommentartraad 
 function seedKommentarer(sakId: string, docId: string): LagretTraad[] {
   // Bare det første seedede dokumentet får eksempelkommentarer, slik at vi har
   // både en forankret, en generell og en adressert tråd å utvikle mot.
-  if (docId !== "1-1") return [];
+  if (docId !== "00000000-0000-4000-8000-000000000101") return [];
 
   const opprettet = "2026-02-16T09:15:00.000Z";
   const suffiks = sakId.padStart(12, "0");

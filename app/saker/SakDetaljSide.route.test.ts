@@ -1005,7 +1005,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert dokument");
     formData.set("innhold", "Dokumentinnhold");
-    formData.set("dokumentId", "1-1");
+    formData.set("dokumentId", "00000000-0000-4000-8000-000000000101");
 
     await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
@@ -1017,7 +1017,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
     expect(hentDokumenttreForSak(testRequest, String(kontrollsak.id))).toEqual([
       expect.objectContaining({
-        id: "1-1",
+        id: "00000000-0000-4000-8000-000000000101",
         arkivertAv: "Z999999",
         arkivertJournalpostId: expect.stringMatching(/^demo-/),
       }),
@@ -1088,7 +1088,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert dokument");
     formData.set("innhold", "Dokumentinnhold");
-    formData.set("dokumentId", "1-1");
+    formData.set("dokumentId", "00000000-0000-4000-8000-000000000101");
 
     await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
@@ -1099,7 +1099,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     } as Route.ActionArgs);
 
     const generert = hentFilerForSak(testRequest, String(kontrollsak.id)).find(
-      (fil) => fil.arkivertFraDokumentId === "1-1",
+      (fil) => fil.arkivertFraDokumentId === "00000000-0000-4000-8000-000000000101",
     );
     expect(generert).toMatchObject({
       filnavn: "Saksframlegg.pdf",

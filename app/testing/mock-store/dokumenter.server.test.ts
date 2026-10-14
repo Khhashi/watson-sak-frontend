@@ -46,16 +46,28 @@ describe("mock-store dokumenter", () => {
   });
 
   it("henter et seedet dokument med innhold", () => {
-    const dokument = hentDokument(state(), sakMedDokumenter, "1-1");
+    const dokument = hentDokument(
+      state(),
+      sakMedDokumenter,
+      "00000000-0000-4000-8000-000000000101",
+    );
     expect(dokument?.tittel).toBe("Saksframlegg");
     expect(Array.isArray(dokument?.innhold)).toBe(true);
   });
 
   it("arkiverer et dokument med journalpost og saksbehandler", () => {
-    const arkivert = arkiverDokument(state(), sakMedDokumenter, "1-1", "Z999999", "demo-123");
+    const arkivert = arkiverDokument(
+      state(),
+      sakMedDokumenter,
+      "00000000-0000-4000-8000-000000000101",
+      "Z999999",
+      "demo-123",
+    );
 
     expect(arkivert).toBe(true);
-    expect(hentDokument(state(), sakMedDokumenter, "1-1")).toMatchObject({
+    expect(
+      hentDokument(state(), sakMedDokumenter, "00000000-0000-4000-8000-000000000101"),
+    ).toMatchObject({
       arkivertAv: "Z999999",
       arkivertJournalpostId: "demo-123",
     });
@@ -120,12 +132,20 @@ describe("mock-store dokumenter", () => {
   });
 
   it("sletter et seedet dokument på rot", () => {
-    expect(hentDokument(state(), sakMedDokumenter, "1-1")).toBeDefined();
+    expect(
+      hentDokument(state(), sakMedDokumenter, "00000000-0000-4000-8000-000000000101"),
+    ).toBeDefined();
 
-    const slettet = slettDokument(state(), sakMedDokumenter, "1-1");
+    const slettet = slettDokument(
+      state(),
+      sakMedDokumenter,
+      "00000000-0000-4000-8000-000000000101",
+    );
 
     expect(slettet).toBe(true);
-    expect(hentDokument(state(), sakMedDokumenter, "1-1")).toBeUndefined();
+    expect(
+      hentDokument(state(), sakMedDokumenter, "00000000-0000-4000-8000-000000000101"),
+    ).toBeUndefined();
   });
 
   it("returnerer false når man sletter et ukjent dokument", () => {
