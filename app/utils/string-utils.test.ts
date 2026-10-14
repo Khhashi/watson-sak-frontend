@@ -6,6 +6,7 @@ import {
   erSaksnummer,
   formaterFødselsnummer,
   formaterOrganisasjonsnummer,
+  parseOrganisasjonsnumre,
   snakeCaseTilSetning,
   storFørsteBokstav,
   storFørsteBokstavPerOrd,
@@ -190,6 +191,27 @@ describe("erOrganisasjonsnummer", () => {
     expect(erOrganisasjonsnummer("1234567890")).toBe(false);
     expect(erOrganisasjonsnummer("12345678a")).toBe(false);
     expect(erOrganisasjonsnummer("")).toBe(false);
+  });
+});
+
+describe("parseOrganisasjonsnumre", () => {
+  it("deler organisasjonsnummer separert med komma", () => {
+    expect(parseOrganisasjonsnumre("123456789,987654321")).toEqual(["123456789", "987654321"]);
+  });
+
+  it("fjerner alle mellomrom i organisasjonsnumrene", () => {
+    expect(parseOrganisasjonsnumre("123 456 789, 987654321")).toEqual(["123456789", "987654321"]);
+  });
+
+  it("ignorerer tomme deler og fjerner duplikater i samme rekkefølge", () => {
+    expect(parseOrganisasjonsnumre("123456789,,987654321,123456789,")).toEqual([
+      "123456789",
+      "987654321",
+    ]);
+  });
+
+  it("returnerer en tom liste for tom tekst", () => {
+    expect(parseOrganisasjonsnumre("")).toEqual([]);
   });
 });
 

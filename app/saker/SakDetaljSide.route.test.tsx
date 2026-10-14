@@ -360,11 +360,11 @@ describe("SakDetaljSide route action – steg- og statusflyt", () => {
       steg: "AVSLUTTET",
       registrerResultat: "true",
       "resultat.utredning.type": "HENLAGT",
-      "resultat.utredning.henleggelsesarsak": "INGEN_UTREDNING",
+      "resultat.utredning.henleggelsesarsak": "IKKE_PRIORITERT",
     });
 
     expect(sak.resultat?.utredning?.type).toBe("HENLAGT");
-    expect(sak.resultat?.utredning?.henleggelsesarsak).toBe("INGEN_UTREDNING");
+    expect(sak.resultat?.utredning?.henleggelsesarsak).toBe("IKKE_PRIORITERT");
     expect(sak.steg).toBe("AVSLUTTET");
   });
 

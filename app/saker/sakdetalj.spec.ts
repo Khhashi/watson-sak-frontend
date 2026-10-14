@@ -36,9 +36,9 @@ test.describe("Sakdetalj", () => {
   test("kan redigere saksinformasjon inline", async ({ page }) => {
     await page.getByRole("button", { name: "Endre saksinformasjon" }).click();
 
-    await page.getByLabel("Kategori").selectOption("ARBEID");
+    await page.getByLabel("Kategori (må fylles ut)").selectOption("ARBEID");
 
-    const misbruktypeCombobox = page.getByLabel("Misbruktype");
+    const misbruktypeCombobox = page.getByLabel("Misbrukstype");
     await misbruktypeCombobox.click();
     await page.getByRole("option", { name: "Svart arbeid" }).click();
     await misbruktypeCombobox.press("Escape");
@@ -48,7 +48,7 @@ test.describe("Sakdetalj", () => {
     await page.getByRole("option", { name: "Lime" }).click();
     await merkingCombobox.press("Escape");
 
-    await page.getByLabel("Kilde").selectOption("PUBLIKUM");
+    await page.getByLabel("Kilde (må fylles ut)").selectOption("PUBLIKUM");
 
     const ytelseCombobox = page.getByLabel("Ytelse").first();
     await ytelseCombobox.click();

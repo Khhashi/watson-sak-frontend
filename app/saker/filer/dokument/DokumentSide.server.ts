@@ -1,3 +1,4 @@
+import { parseSakId, parseUuid } from "~/saker/sti-param.server";
 import { data, isRouteErrorResponse } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
@@ -53,8 +54,8 @@ function harStatus(feil: unknown, status: number): boolean {
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   if (!skalBrukeMockdata) {
-    const sakReferanse = params.sakId;
-    const docId = params.docId;
+    const sakReferanse = parseSakId(params.sakId);
+    const docId = parseUuid(params.docId, "docId");
     if (!sakReferanse || !docId) {
       throw data("Mangler sak eller dokument", { status: 400 });
     }
@@ -122,7 +123,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     };
   }
 
-  const tilgang = await hentSakstilgangFraMock(request, params.sakId);
+  const tilgang = await hentSakstilgangFraMock(request, parseSakId(params.sakId));
   if (!tilgang) {
     throw data("Sak ikke funnet", { status: 404 });
   }
@@ -131,7 +132,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   const [dokument, innlogget] = await Promise.all([
-    hentDokument(request, String(tilgang.sak.id), params.docId),
+    hentDokument(request, String(tilgang.sak.id), parseUuid(params.docId, "docId")),
     hentInnloggetBruker({ request }),
   ]);
   if (!dokument) {
@@ -142,13 +143,22 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     dokument,
     dokumenter: hentDokumenttreForSak(request, String(tilgang.sak.id)),
     mapper: hentMapperstierFraMock(request, String(tilgang.sak.id)),
-    dokumentHistorikk: hentDokumentHistorikk(request, String(tilgang.sak.id), params.docId),
-    kommentarliste: hentKommentarlisteFraMock(request, String(tilgang.sak.id), params.docId, {
-      innloggetIdent: innlogget.navIdent,
-      arkivert: dokument.arkivert ?? null,
-    }),
+    dokumentHistorikk: hentDokumentHistorikk(
+      request,
+      String(tilgang.sak.id),
+      parseUuid(params.docId, "docId"),
+    ),
+    kommentarliste: hentKommentarlisteFraMock(
+      request,
+      String(tilgang.sak.id),
+      parseUuid(params.docId, "docId"),
+      {
+        innloggetIdent: innlogget.navIdent,
+        arkivert: dokument.arkivert ?? null,
+      },
+    ),
     kommentarinnlastingFeilet: false,
-    sakReferanse: params.sakId,
+    sakReferanse: parseSakId(params.sakId),
     kanRedigere: tilgang.kanRedigereDokumenter && !dokument.arkivert,
     kanEndreMapper: tilgang.kanLasteOppFiler,
     variabelVerdier: byggVariabelVerdier(tilgang.sak, innlogget),
@@ -173,8 +183,8 @@ function erGyldigInnhold(verdi: unknown): verdi is DokumentInnhold {
 }
 
 export async function action({ request, params }: Route.ActionArgs) {
-  const sakReferanse = params.sakId;
-  const docId = params.docId;
+  const sakReferanse = parseSakId(params.sakId);
+  const docId = parseUuid(params.docId, "docId");
   if (!sakReferanse || !docId) {
     throw data("Mangler sak eller dokument", { status: 400 });
   }
@@ -211,7 +221,7 @@ export async function action({ request, params }: Route.ActionArgs) {
     throw data("Metoden støttes ikke", { status: 405 });
   }
 
-  const tilgang = await hentSakstilgangFraMock(request, params.sakId);
+  const tilgang = await hentSakstilgangFraMock(request, parseSakId(params.sakId));
   if (!tilgang) {
     throw data("Sak ikke funnet", { status: 404 });
   }
@@ -230,11 +240,16 @@ export async function action({ request, params }: Route.ActionArgs) {
   }
 
   const innlogget = await hentInnloggetBruker({ request });
-  const oppdatert = lagreDokument(request, String(tilgang.sak.id), params.docId, {
-    tittel: normaliserTittel(kropp.tittel),
-    innhold: kropp.innhold,
-    endretAv: innlogget.name,
-  });
+  const oppdatert = lagreDokument(
+    request,
+    String(tilgang.sak.id),
+    parseUuid(params.docId, "docId"),
+    {
+      tittel: normaliserTittel(kropp.tittel),
+      innhold: kropp.innhold,
+      endretAv: innlogget.name,
+    },
+  );
 
   if (!oppdatert) {
     throw data("Dokument ikke funnet", { status: 404 });

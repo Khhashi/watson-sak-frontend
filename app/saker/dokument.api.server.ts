@@ -5,6 +5,7 @@ import type {
   DokumentNode,
 } from "~/saker/filer/typer";
 import { dokumentNodeSchema } from "./types.backend";
+import { sti as byggSti } from "./sti-param.server";
 import {
   dokumentResponseSchema,
   dokumentHistorikkResponseSchema,
@@ -17,7 +18,7 @@ import {
 } from "~/saker/api-core.server";
 
 export async function hentDokument(token: string, sakId: string, docId: string): Promise<Dokument> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`), {
     headers: authHeaders(token),
   });
   kastHvisIkkeFunnet(respons);
@@ -26,7 +27,7 @@ export async function hentDokument(token: string, sakId: string, docId: string):
 }
 
 export async function opprettDokument(token: string, sakId: string): Promise<DokumentNode> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/dokumenter`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter`), {
     method: "POST",
     headers: authHeaders(token),
   });
@@ -40,7 +41,7 @@ export async function lagreDokument(
   docId: string,
   data: Pick<Dokument, "tittel" | "innhold"> & { opprettHistorikk?: boolean },
 ): Promise<Dokument> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`), {
     method: "PUT",
     headers: authHeaders(token),
     body: JSON.stringify(data),
@@ -56,7 +57,7 @@ export async function hentDokumentHistorikk(
   docId: string,
 ): Promise<DokumentHistorikkSide> {
   const respons = await fetch(
-    apiUrl(`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/historikk`),
+    apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/historikk`),
     {
       headers: authHeaders(token),
     },
@@ -77,7 +78,7 @@ export async function hentDokumentHistorikkpunkt(
   historikkId: string,
 ): Promise<DokumentHistorikk> {
   const respons = await fetch(
-    apiUrl(`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/historikk/${historikkId}`),
+    apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/historikk/${historikkId}`),
     { headers: authHeaders(token) },
   );
   kastHvisIkkeFunnet(respons);
@@ -97,7 +98,7 @@ export async function gjenopprettDokumentHistorikk(
 ): Promise<Dokument> {
   const respons = await fetch(
     apiUrl(
-      `/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/historikk/${historikkId}/gjenopprett`,
+      byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/historikk/${historikkId}/gjenopprett`,
     ),
     { method: "POST", headers: authHeaders(token) },
   );
@@ -111,7 +112,7 @@ export async function gjenopprettDokumentHistorikk(
 }
 
 export async function slettDokument(token: string, sakId: string, docId: string): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`), {
     method: "DELETE",
     headers: authHeaders(token),
   });

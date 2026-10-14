@@ -37,23 +37,31 @@ async function actionMedBackend() {
   const { action } = await import("./fil.api");
   return action({
     request: patchRequest(),
-    params: { sakId: "SAK-1", filId: "fil-1" },
+    params: { sakId: "1", filId: "00000000-0000-4000-8000-00000000f001" },
   } as Route.ActionArgs);
 }
 
 describe("fil.api PATCH — backend-sti", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockOmdøpFil.mockResolvedValue({ id: "fil-1", filnavn: "nytt navn.pdf" });
+    mockOmdøpFil.mockResolvedValue({
+      id: "00000000-0000-4000-8000-00000000f001",
+      filnavn: "nytt navn.pdf",
+    });
   });
 
   it("kaller backend og returnerer den omdøpte filen", async () => {
     const resultat = await actionMedBackend();
 
-    expect(mockOmdøpFil).toHaveBeenCalledWith("mock-token", "SAK-1", "fil-1", "nytt navn");
+    expect(mockOmdøpFil).toHaveBeenCalledWith(
+      "mock-token",
+      "1",
+      "00000000-0000-4000-8000-00000000f001",
+      "nytt navn",
+    );
     expect(resultat).toEqual({
       ok: true,
-      fil: { id: "fil-1", filnavn: "nytt navn.pdf" },
+      fil: { id: "00000000-0000-4000-8000-00000000f001", filnavn: "nytt navn.pdf" },
     });
   });
 

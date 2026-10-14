@@ -1,3 +1,4 @@
+import { parseSakId, parseUuid } from "~/saker/sti-param.server";
 import { data, type ActionFunctionArgs } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
@@ -11,8 +12,8 @@ export async function action({ request, params }: ActionFunctionArgs) {
   if (request.method !== "POST") {
     throw data("Metoden støttes ikke", { status: 405 });
   }
-  const sakReferanse = params.sakId;
-  const docId = params.docId;
+  const sakReferanse = parseSakId(params.sakId);
+  const docId = parseUuid(params.docId, "docId");
   if (!sakReferanse || !docId) {
     throw data("Mangler sak eller dokument", { status: 400 });
   }

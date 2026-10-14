@@ -60,7 +60,7 @@ describe("mock-store for kommentarer", () => {
   });
 
   it("seeder eksempelkommentarer på det første seedede dokumentet", () => {
-    const traader = liste("2", "1-1").traader;
+    const traader = liste("2", "00000000-0000-4000-8000-000000000101").traader;
 
     expect(traader).toHaveLength(3);
     expect(traader.map((traad) => traad.ankertype)).toEqual(["TEXT", "DOCUMENT", "ELEMENT"]);
@@ -79,8 +79,9 @@ describe("mock-store for kommentarer", () => {
   });
 
   it("setter erEgen ut fra innlogget ident", () => {
-    const somMeg = liste("2", "1-1", "mock-kari-hansen").traader[0];
-    const somAndre = liste("2", "1-1", MEG).traader[0];
+    const somMeg = liste("2", "00000000-0000-4000-8000-000000000101", "mock-kari-hansen")
+      .traader[0];
+    const somAndre = liste("2", "00000000-0000-4000-8000-000000000101", MEG).traader[0];
 
     expect(somMeg.kommentarer[0].erEgen).toBe(true);
     expect(somAndre.kommentarer[0].erEgen).toBe(false);
@@ -253,10 +254,10 @@ describe("mock-store for kommentarer", () => {
   });
 
   it("rydder bort kommentarer når dokumentet slettes", () => {
-    expect(liste("2", "1-1").traader.length).toBeGreaterThan(0);
+    expect(liste("2", "00000000-0000-4000-8000-000000000101").traader.length).toBeGreaterThan(0);
 
-    slettDokument(state(), "2", "1-1");
+    slettDokument(state(), "2", "00000000-0000-4000-8000-000000000101");
 
-    expect(liste("2", "1-1").traader).toEqual([]);
+    expect(liste("2", "00000000-0000-4000-8000-000000000101").traader).toEqual([]);
   });
 });

@@ -133,9 +133,9 @@ describe("kommentarer.api loader", () => {
     expect(kropp.arkivert).not.toBeNull();
   });
 
-  it("gir 400 når sak eller dokument mangler", async () => {
+  it("gir 404 når sak eller dokument mangler", async () => {
     await expect(loader({ request: testRequest, params: {} } as never)).rejects.toMatchObject({
-      init: { status: 400 },
+      init: { status: 404 },
     });
   });
 

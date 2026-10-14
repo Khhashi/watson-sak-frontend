@@ -8,13 +8,11 @@ type Slippmål = string | null;
 
 /** Håndterer flytting av mapper og dokumenter/filer med dra og slipp i et mappetre. */
 export function useDraOgSlipp({
-  sakId,
   alleMapper,
   kanEndreMapper,
   mappehandling,
   settÅpen,
 }: {
-  sakId: string;
   alleMapper: string[];
   kanEndreMapper: boolean;
   mappehandling: ReturnType<typeof useMappehandling>;
@@ -43,7 +41,7 @@ export function useDraOgSlipp({
 
   function flytt(element: FlyttbartElement, mål: Slippmål) {
     if (element.type === "mappe") {
-      sporHendelse("mappe flyttet", { sakId, metode: "dra og slipp" });
+      sporHendelse("mappe flyttet", { metode: "dra og slipp" });
       mappehandling.utfør({
         handling: "endre",
         fraSti: element.sti,
@@ -51,7 +49,6 @@ export function useDraOgSlipp({
       });
     } else {
       sporHendelse(element.type === "dokument" ? "dokument flyttet" : "vedlegg flyttet", {
-        sakId,
         metode: "dra og slipp",
       });
       mappehandling.utfør({

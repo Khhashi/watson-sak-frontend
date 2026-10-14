@@ -22,15 +22,9 @@ const STATUSER: LederStatus[] = [
   "I_BERO",
 ];
 
-/** Ekstra enheter lokale mock-ledere leder i tillegg til egen enhet. */
-const MOCK_EKSTRA_LEDEDE_ENHETER: Record<string, LederEnhetValg[]> = {
-  L900008: [{ id: "tipsmottak", navn: "Tipsmottak" }],
-};
-
-/** Enhetene en mock-leder kan velge mellom på forsiden, med egen enhet først. */
+/** Enhetene en mock-leder kan velge mellom på forsiden. Mock-ledere leder bare egen enhet. */
 export function mockLedetEnheter(innloggetBruker: InnloggetBruker): LederEnhetValg[] {
-  const egen = { id: innloggetBruker.enhetId ?? "", navn: innloggetBruker.enhet };
-  return [egen, ...(MOCK_EKSTRA_LEDEDE_ENHETER[innloggetBruker.navIdent] ?? [])];
+  return [{ id: innloggetBruker.enhetId ?? "", navn: innloggetBruker.enhet }];
 }
 
 /** Lager lederstatistikk fra den muterbare mock-store-en med samme kontrakt som backend. */

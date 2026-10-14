@@ -52,7 +52,7 @@ export function OmdøpFilModal({ filId, filnavn, sakId, åpen, onClose }: Omdøp
     setValideringsfeil(undefined);
     setServerfeil(undefined);
     submitPågår.current = true;
-    sporHendelse("vedlegg omdøpt", { sakId });
+    sporHendelse("vedlegg omdøpt");
     fetcher.submit(
       { navn: resultat.data },
       { method: "patch", action: url, encType: "application/json" },

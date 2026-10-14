@@ -9,6 +9,7 @@ import {
   hentProblemDetailMedDokumenter,
   parseEllerKastFeil,
 } from "~/saker/api-core.server";
+import { sti as byggSti } from "./sti-param.server";
 
 // --- Filer (vedlegg) ---
 
@@ -28,7 +29,7 @@ const filResponseSchema = z.object({
 });
 
 export async function hentFiler(token: string, sakId: string): Promise<FilResponse[]> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/filer`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/filer`), {
     headers: authHeaders(token),
   });
   // 403 er en forventet tilstand her — saksbehandleren mangler fil-tilgang på
@@ -41,7 +42,7 @@ export async function hentFiler(token: string, sakId: string): Promise<FilRespon
 export async function lastOppFil(token: string, sakId: string, fil: File): Promise<FilResponse> {
   const formData = new FormData();
   formData.append("fil", fil);
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/filer`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/filer`), {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
     body: formData,
@@ -51,7 +52,7 @@ export async function lastOppFil(token: string, sakId: string, fil: File): Promi
 }
 
 export async function slettFil(token: string, sakId: string, filId: string): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/filer/${filId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/filer/${filId}`), {
     method: "DELETE",
     headers: authHeaders(token),
   });
@@ -69,7 +70,7 @@ export async function omdøpFil(
   filId: string,
   navn: string,
 ): Promise<FilResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/filer/${filId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/filer/${filId}`), {
     method: "PATCH",
     headers: authHeaders(token),
     body: JSON.stringify({ navn }),
@@ -91,7 +92,7 @@ const mappeResponseSchema = z.object({
 const FORVENTEDE_MAPPEFEIL = [400, 404, 409];
 
 export async function hentMapper(token: string, sakId: string): Promise<MappeResponse[]> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/mapper`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/mapper`), {
     headers: authHeaders(token),
   });
   if (!respons.ok)
@@ -100,7 +101,7 @@ export async function hentMapper(token: string, sakId: string): Promise<MappeRes
 }
 
 export async function opprettMappe(token: string, sakId: string, sti: string): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/mapper`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/mapper`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ sti }),
@@ -119,7 +120,7 @@ export async function endreMappe(
   fraSti: string,
   tilSti: string,
 ): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/mapper`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/mapper`), {
     method: "PATCH",
     headers: authHeaders(token),
     body: JSON.stringify({ fraSti, tilSti }),
@@ -132,9 +133,10 @@ export async function endreMappe(
 }
 
 export async function slettMappe(token: string, sakId: string, sti: string): Promise<void> {
-  const url = apiUrl(
-    `/api/v1/kontrollsaker/${sakId}/mapper?${new URLSearchParams({ sti }).toString()}`,
-  );
+  const url =
+    apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/mapper`) +
+    "?" +
+    new URLSearchParams({ sti }).toString();
   const respons = await fetch(url, { method: "DELETE", headers: authHeaders(token) });
   if (!respons.ok) {
     await håndterFeil(respons, "Kunne ikke slette mappe", {
@@ -149,11 +151,14 @@ export async function flyttDokumentTilMappe(
   docId: string,
   mappe: string | null,
 ): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/mappe`), {
-    method: "PUT",
-    headers: authHeaders(token),
-    body: JSON.stringify({ mappe }),
-  });
+  const respons = await fetch(
+    apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/mappe`),
+    {
+      method: "PUT",
+      headers: authHeaders(token),
+      body: JSON.stringify({ mappe }),
+    },
+  );
   if (!respons.ok) {
     await håndterFeil(respons, "Kunne ikke flytte dokument", {
       forventedeStatuser: FORVENTEDE_MAPPEFEIL,
@@ -167,11 +172,14 @@ export async function flyttFilTilMappe(
   filId: string,
   mappe: string | null,
 ): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/filer/${filId}/mappe`), {
-    method: "PUT",
-    headers: authHeaders(token),
-    body: JSON.stringify({ mappe }),
-  });
+  const respons = await fetch(
+    apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/filer/${filId}/mappe`),
+    {
+      method: "PUT",
+      headers: authHeaders(token),
+      body: JSON.stringify({ mappe }),
+    },
+  );
   if (!respons.ok) {
     await håndterFeil(respons, "Kunne ikke flytte fil", {
       forventedeStatuser: FORVENTEDE_MAPPEFEIL,
@@ -185,7 +193,7 @@ export async function flyttFilTilMappe(
  * Unngår bruk av signerte GCS-URLer som krever iam.serviceAccounts.signBlob.
  */
 export async function lastNedFil(token: string, sakId: string, filId: string): Promise<Response> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/filer/${filId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/filer/${filId}`), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke laste ned fil");

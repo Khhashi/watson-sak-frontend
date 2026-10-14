@@ -23,6 +23,7 @@ import { hentMockTillatteHandlinger } from "./mock-tillatte-handlinger.server";
 import { hentHistorikk } from "./historikk/mock-data.server";
 import { finnSakMedReferanse } from "./id";
 import { kanLeseSaksinnhold } from "./sakstilgang";
+import { parseSakId } from "~/saker/sti-param.server";
 import type { Route } from "./+types/SakDetaljSide.route";
 
 // --- Loader ---
@@ -146,9 +147,9 @@ async function hentAndreSakerMedTilgangskontroll(
 }
 
 export async function loader({ request, params }: Route.LoaderArgs) {
+  const sakId = parseSakId(params.sakId);
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
-    const sakId = params.sakId;
     const sakPromise = backendApi.hentKontrollsak(token, sakId);
 
     const [
@@ -219,7 +220,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   }
 
   const alleSaker = hentAlleSaker(request);
-  const rawSak = finnSakMedReferanse(alleSaker, params.sakId);
+  const rawSak = finnSakMedReferanse(alleSaker, sakId);
   if (!rawSak) {
     throw data("Sak ikke funnet", { status: 404 });
   }

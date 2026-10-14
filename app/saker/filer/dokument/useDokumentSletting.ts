@@ -32,10 +32,10 @@ export function useDokumentSletting({ sakId, kilde, redirectTo }: UseDokumentSle
 
   const start = useCallback(
     (dokument: Slettekandidat) => {
-      sporHendelse("dokument sletting påbegynt", { sakId, docId: dokument.id, kilde });
+      sporHendelse("dokument sletting påbegynt", { kilde });
       setKandidat(dokument);
     },
-    [sakId, kilde],
+    [kilde],
   );
 
   const bekreft = useCallback(() => {
@@ -46,7 +46,7 @@ export function useDokumentSletting({ sakId, kilde, redirectTo }: UseDokumentSle
     if (redirect) {
       // Etter en vellykket sletting redirecter action-en og komponenten rives ned, så vi
       // kan ikke observere resultatet. Da sporer vi optimistisk her (navigasjon = suksess).
-      sporHendelse("dokument slettet", { sakId, docId: kandidat.id, kilde });
+      sporHendelse("dokument slettet", { kilde });
     } else {
       // Ellers venter vi på at DELETE-kallet faktisk lykkes (se effekten under).
       venterPåResultat.current = kandidat.id;
@@ -60,18 +60,18 @@ export function useDokumentSletting({ sakId, kilde, redirectTo }: UseDokumentSle
 
   const avbryt = useCallback(() => {
     if (kandidat) {
-      sporHendelse("dokument sletting avbrutt", { sakId, docId: kandidat.id, kilde });
+      sporHendelse("dokument sletting avbrutt", { kilde });
     }
     setKandidat(null);
-  }, [kandidat, sakId, kilde]);
+  }, [kandidat, kilde]);
 
   // Spor «dokument slettet» når DELETE-kallet faktisk har lykkes (ikke-redirect-tilfellet).
   useEffect(() => {
     if (fetcher.state === "idle" && fetcher.data?.ok && venterPåResultat.current) {
-      sporHendelse("dokument slettet", { sakId, docId: venterPåResultat.current, kilde });
+      sporHendelse("dokument slettet", { kilde });
       venterPåResultat.current = null;
     }
-  }, [fetcher.state, fetcher.data, sakId, kilde]);
+  }, [fetcher.state, fetcher.data, kilde]);
 
   return { kandidat, sletter, start, bekreft, avbryt };
 }

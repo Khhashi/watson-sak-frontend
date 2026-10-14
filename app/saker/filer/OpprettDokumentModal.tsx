@@ -6,14 +6,21 @@ import {
   GavelIcon,
 } from "@navikt/aksel-icons";
 import { BodyShort, Button, HGrid, Loader, Modal, VStack } from "@navikt/ds-react";
-import { BREVMAL_BESKRIVELSE, MAL_KATEGORI, MAL_NAVN, type MalId } from "./dokument/maler";
+import type { KontrollsakSteg } from "~/saker/types.backend";
+import {
+  BREVMAL_BESKRIVELSE,
+  erMalTilgjengelig,
+  MAL_KATEGORI,
+  MAL_NAVN,
+  type MalId,
+} from "./dokument/maler";
 
 const MAL_IDER = Object.keys(MAL_NAVN) as MalId[];
-const RAPPORTMALER = MAL_IDER.filter((malId) => MAL_KATEGORI[malId] === "rapport");
-const BREVMALER = MAL_IDER.filter((malId) => MAL_KATEGORI[malId] === "brev");
 
 type OpprettDokumentModalProps = {
   åpen: boolean;
+  /** Sakens steg. Styrer hvilke maler som vises. */
+  steg: KontrollsakSteg;
   oppretter: boolean;
   onClose: () => void;
   onVelg: (valg?: { malId: MalId; erStraffesak: boolean }) => void;
@@ -66,10 +73,15 @@ function MalValg({
 
 export function OpprettDokumentModal({
   åpen,
+  steg,
   oppretter,
   onClose,
   onVelg,
 }: OpprettDokumentModalProps) {
+  const tilgjengelige = MAL_IDER.filter((malId) => erMalTilgjengelig(malId, steg));
+  const rapportmaler = tilgjengelige.filter((malId) => MAL_KATEGORI[malId] === "rapport");
+  const brevmaler = tilgjengelige.filter((malId) => MAL_KATEGORI[malId] === "brev");
+
   return (
     <Modal
       open={åpen}
@@ -84,38 +96,42 @@ export function OpprettDokumentModal({
           </div>
         ) : (
           <VStack gap="space-20">
-            <VStack gap="space-12">
-              <BodyShort size="small" weight="semibold" textColor="subtle">
-                Rapportmaler
-              </BodyShort>
-              <HGrid columns={{ xs: 1, sm: 2 }} gap="space-8">
-                {RAPPORTMALER.flatMap((malId) => [
-                  <MalValg
-                    key={`${malId}-ikke-straffesak`}
-                    malId={malId}
-                    erStraffesak={false}
-                    onVelg={onVelg}
-                  />,
-                  <MalValg
-                    key={`${malId}-straffesak`}
-                    malId={malId}
-                    erStraffesak
-                    onVelg={onVelg}
-                  />,
-                ])}
-              </HGrid>
-            </VStack>
+            {rapportmaler.length > 0 && (
+              <VStack gap="space-12">
+                <BodyShort size="small" weight="semibold" textColor="subtle">
+                  Rapportmaler
+                </BodyShort>
+                <HGrid columns={{ xs: 1, sm: 2 }} gap="space-8">
+                  {rapportmaler.flatMap((malId) => [
+                    <MalValg
+                      key={`${malId}-ikke-straffesak`}
+                      malId={malId}
+                      erStraffesak={false}
+                      onVelg={onVelg}
+                    />,
+                    <MalValg
+                      key={`${malId}-straffesak`}
+                      malId={malId}
+                      erStraffesak
+                      onVelg={onVelg}
+                    />,
+                  ])}
+                </HGrid>
+              </VStack>
+            )}
 
-            <VStack gap="space-12">
-              <BodyShort size="small" weight="semibold" textColor="subtle">
-                Brevmaler
-              </BodyShort>
-              <HGrid columns={{ xs: 1, sm: 2 }} gap="space-8">
-                {BREVMALER.map((malId) => (
-                  <MalValg key={malId} malId={malId} erStraffesak={false} onVelg={onVelg} />
-                ))}
-              </HGrid>
-            </VStack>
+            {brevmaler.length > 0 && (
+              <VStack gap="space-12">
+                <BodyShort size="small" weight="semibold" textColor="subtle">
+                  Brevmaler
+                </BodyShort>
+                <HGrid columns={{ xs: 1, sm: 2 }} gap="space-8">
+                  {brevmaler.map((malId) => (
+                    <MalValg key={malId} malId={malId} erStraffesak={false} onVelg={onVelg} />
+                  ))}
+                </HGrid>
+              </VStack>
+            )}
 
             <div className="flex items-center gap-[var(--ax-space-8)] text-ax-text-neutral-subtle">
               <hr className="flex-1 border-ax-border-neutral-subtle" />

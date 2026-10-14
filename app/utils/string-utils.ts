@@ -94,6 +94,18 @@ export function erOrganisasjonsnummer(verdi: string): boolean {
   return /^\d{9}$/.test(verdi);
 }
 
+/** Deler en kommaseparert liste med organisasjonsnummer og fjerner mellomrom. */
+export function parseOrganisasjonsnumre(tekst: string): string[] {
+  return [
+    ...new Set(
+      tekst
+        .split(",")
+        .map((del) => del.replace(/\s/g, ""))
+        .filter(Boolean),
+    ),
+  ];
+}
+
 /**
  * Sjekker om en streng ser ut som et saksnummer — rent numerisk, men verken
  * fødselsnummer (11 siffer) eller organisasjonsnummer (9 siffer). Saksnummer

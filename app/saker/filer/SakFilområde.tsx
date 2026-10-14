@@ -5,6 +5,7 @@ import { Link as RouterLink, useFetcher } from "react-router";
 import { sporHendelse } from "~/analytics/analytics";
 import { Kort } from "~/komponenter/Kort";
 import type { MalId } from "~/saker/filer/dokument/maler";
+import type { KontrollsakSteg } from "~/saker/types.backend";
 import { RouteConfig } from "~/routeConfig";
 import { formaterDato } from "~/utils/date-utils";
 import { ArkivertSeksjon } from "./ArkivertSeksjon";
@@ -15,13 +16,13 @@ import { OpprettMappeModal } from "./mapper/MappeModaler";
 import { OpprettDokumentModal } from "./OpprettDokumentModal";
 import type { DokumentNode, FilResponse, JournalpostReferanse } from "./typer";
 
-function OpprettDokumentKnapp({ sakId }: { sakId: string }) {
+function OpprettDokumentKnapp({ sakId, steg }: { sakId: string; steg: KontrollsakSteg }) {
   const action = RouteConfig.API.SAK_DOKUMENTER.replace(":sakId", sakId);
   const fetcher = useFetcher();
   const [åpen, settÅpen] = useState(false);
 
   function opprett(valg?: { malId: MalId; erStraffesak: boolean }) {
-    sporHendelse("dokument opprettet", { sakId, malId: valg?.malId ?? "tom" });
+    sporHendelse("dokument opprettet", { malId: valg?.malId ?? "tom" });
     const formData = new FormData();
     if (valg) {
       formData.set("malId", valg.malId);
@@ -43,6 +44,7 @@ function OpprettDokumentKnapp({ sakId }: { sakId: string }) {
       {åpen && (
         <OpprettDokumentModal
           åpen
+          steg={steg}
           oppretter={fetcher.state !== "idle"}
           onClose={() => settÅpen(false)}
           onVelg={opprett}
@@ -79,6 +81,8 @@ interface SakFilområdeProps {
   journalposter?: JournalpostReferanse[];
   /** Saksreferansen, brukt til å bygge lenker og opprette-handlingen. */
   sakId: string;
+  /** Sakens steg. Styrer hvilke dokumentmaler som kan velges. */
+  steg: KontrollsakSteg;
   /** Om brukeren kan opprette og redigere dokumenter. Standard: `true` */
   redigerbar?: boolean;
   /** Om brukeren kan laste opp filer og endre mapper. Standard: samme verdi som `redigerbar`. */
@@ -102,6 +106,7 @@ export function SakFilområde({
   mapper = [],
   journalposter = [],
   sakId,
+  steg,
   redigerbar = true,
   kanLasteOppFiler = redigerbar,
   erSakseier = false,
@@ -139,7 +144,7 @@ export function SakFilområde({
 
     const formData = new FormData();
     formData.append("fil", fil);
-    sporHendelse("vedlegg lastet opp", { sakId });
+    sporHendelse("vedlegg lastet opp");
     opplastingFetcher.submit(formData, {
       method: "post",
       action: url,
@@ -183,7 +188,7 @@ export function SakFilområde({
                 </>
               )}
               {kanLasteOppFiler && <OpprettMappeKnapp sakId={sakId} mapper={alleMapper} />}
-              {redigerbar && <OpprettDokumentKnapp sakId={sakId} />}
+              {redigerbar && <OpprettDokumentKnapp sakId={sakId} steg={steg} />}
             </HStack>
           )}
         </HStack>

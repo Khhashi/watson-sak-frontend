@@ -17,9 +17,12 @@ test.describe("Dokumentkommentarer", () => {
     await page.getByRole("button", { name: "Tildel meg" }).click();
     await expect(page.getByRole("button", { name: "Endre saksinformasjon" })).toBeVisible();
 
-    await page.goto("/saker/102/dokumenter/1-1?sidepanel=kommentarer", {
-      waitUntil: "networkidle",
-    });
+    await page.goto(
+      "/saker/102/dokumenter/00000000-0000-4000-8000-000000000101?sidepanel=kommentarer",
+      {
+        waitUntil: "networkidle",
+      },
+    );
     await expect(page.getByRole("heading", { name: "Kommentarer" })).toBeVisible();
   });
 

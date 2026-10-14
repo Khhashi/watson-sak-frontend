@@ -1,17 +1,30 @@
+import { anonymiserUmamiPayload } from "~/analytics/anonymiser";
 import { logger } from "~/logging/logging";
+import { useNonce } from "~/sikkerhet/nonce";
 type AnalyticsTagProps = {
   sporingId: string;
   sporingScriptUrl: string;
 };
 
 export function AnalyticsTags({ sporingId, sporingScriptUrl }: AnalyticsTagProps) {
+  const nonce = useNonce();
   return (
-    <script
-      defer
-      src={sporingScriptUrl}
-      data-host-url="https://umami.nav.no"
-      data-website-id={sporingId}
-    />
+    <>
+      <script
+        nonce={nonce}
+        dangerouslySetInnerHTML={{
+          __html: `window.watsonUmamiBeforeSend = ${anonymiserUmamiPayload.toString()};`,
+        }}
+      />
+      <script
+        nonce={nonce}
+        defer
+        src={sporingScriptUrl}
+        data-host-url="https://umami.nav.no"
+        data-website-id={sporingId}
+        data-before-send="watsonUmamiBeforeSend"
+      />
+    </>
   );
 }
 

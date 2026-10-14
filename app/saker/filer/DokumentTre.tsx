@@ -53,8 +53,6 @@ function DokumentHandlinger({
           icon={<FilePdfIcon aria-hidden />}
           onSelect={() =>
             sporHendelse("dokument lastet ned", {
-              sakId,
-              docId: dokument.id,
               format: "pdf",
             })
           }
@@ -367,7 +365,6 @@ export function DokumentTre({
   }, []);
   const mappehandling = useMappehandling(sakId);
   const { dras, slippmål, draProps, slippProps, kanSlippe, fjernSlippmål } = useDraOgSlipp({
-    sakId,
     alleMapper,
     kanEndreMapper,
     mappehandling,

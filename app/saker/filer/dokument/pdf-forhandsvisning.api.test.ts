@@ -5,13 +5,16 @@ vi.mock("~/auth/access-token", () => ({
   getBackendOboToken: vi.fn().mockResolvedValue("mock-token"),
 }));
 
-const params = { sakId: "42", docId: "dok-1" };
+const params = { sakId: "42", docId: "3f2504e0-4f89-41d3-9a0c-0305e82c3301" };
 
 function lagRequest(init?: RequestInit) {
-  return new Request("http://localhost/api/saker/42/dokumenter/dok-1/forhandsvisning", {
-    method: "POST",
-    ...init,
-  });
+  return new Request(
+    "http://localhost/api/saker/42/dokumenter/3f2504e0-4f89-41d3-9a0c-0305e82c3301/forhandsvisning",
+    {
+      method: "POST",
+      ...init,
+    },
+  );
 }
 
 describe("pdf-forhandsvisning.api", () => {
@@ -36,7 +39,7 @@ describe("pdf-forhandsvisning.api", () => {
     expect(feil.init?.status).toBe(405);
   });
 
-  it("returnerer 400 ved manglende sakId eller docId", async () => {
+  it("returnerer 404 ved manglende sakId eller docId", async () => {
     vi.doMock("~/config/env.server", () => ({
       skalBrukeMockdata: false,
       BACKEND_API_URL: "https://backend.test",
@@ -45,10 +48,10 @@ describe("pdf-forhandsvisning.api", () => {
 
     const feil = await action({
       request: lagRequest(),
-      params: { sakId: undefined, docId: "dok-1" },
+      params: { sakId: undefined, docId: "3f2504e0-4f89-41d3-9a0c-0305e82c3301" },
     } as unknown as Route.ActionArgs).catch((r) => r);
 
-    expect(feil.init?.status).toBe(400);
+    expect(feil.init?.status).toBe(404);
   });
 
   it("returnerer 501 når skalBrukeMockdata er true", async () => {
@@ -81,7 +84,7 @@ describe("pdf-forhandsvisning.api", () => {
     } as Route.ActionArgs);
 
     expect(fetchMock).toHaveBeenCalledWith(
-      "https://backend.test/api/v1/kontrollsaker/42/dokumenter/dok-1/forhandsvisning",
+      "https://backend.test/api/v1/kontrollsaker/42/dokumenter/3f2504e0-4f89-41d3-9a0c-0305e82c3301/forhandsvisning",
       expect.objectContaining({
         method: "POST",
         headers: expect.objectContaining({

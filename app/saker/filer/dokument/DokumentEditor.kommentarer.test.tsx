@@ -46,7 +46,6 @@ function renderEditor(props: Partial<Parameters<typeof DokumentEditor>[0]> = {})
           redigerbar
           onEndring={() => {}}
           sakId="ABC-1"
-          docId="d1"
           dokumentliste={<p>Dokumentliste</p>}
           variabelVerdier={{}}
           kommentarliste={liste([forankretTraad])}
@@ -72,7 +71,6 @@ function renderEditorMedDynamiskDyplenke() {
           redigerbar
           onEndring={() => {}}
           sakId="ABC-1"
-          docId="d1"
           dokumentliste={<p>Dokumentliste</p>}
           variabelVerdier={{}}
           kommentarliste={liste([forankretTraad])}

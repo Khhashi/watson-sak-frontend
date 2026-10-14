@@ -1,11 +1,20 @@
-import { getFormProps, useForm } from "@conform-to/react";
+import { getFormProps, useForm, useInputControl } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
 import {
   ArrowForwardIcon,
   CheckmarkCircleFillIcon,
   ExclamationmarkTriangleIcon,
 } from "@navikt/aksel-icons";
-import { BodyShort, Button, HGrid, InfoCard, Modal, Select, VStack } from "@navikt/ds-react";
+import {
+  BodyShort,
+  Button,
+  HGrid,
+  InfoCard,
+  Modal,
+  Select,
+  UNSAFE_Combobox,
+  VStack,
+} from "@navikt/ds-react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useFetcher, useNavigate } from "react-router";
 import { z } from "zod";
@@ -59,15 +68,11 @@ export function SendTilAnnenEnhetModal({
   const [steg, setSteg] = useState<Steg>("skjema");
   const [innsendingFormData, setInnsendingFormData] = useState<FormData | null>(null);
   const [valgtEnhet, setValgtEnhet] = useState("");
-  const [valgtAnsvarligNavIdent, setValgtAnsvarligNavIdent] = useState("");
   const [bekreftetEnhet, setBekreftetEnhet] = useState<string | null>(null);
   const [feilmelding, setFeilmelding] = useState<string | null>(null);
   const kreverNyAnsvarlig = sakSteg !== "OPPRETTET";
   const valgbareSaksbehandlere = saksbehandlerDetaljer.filter(
     (saksbehandler) => saksbehandler.navIdent !== ansvarligSaksbehandler?.navIdent,
-  );
-  const valgtAnsvarlig = valgbareSaksbehandlere.find(
-    (saksbehandler) => saksbehandler.navIdent === valgtAnsvarligNavIdent,
   );
   const sendTilAnnenEnhetSkjema = useMemo(
     () =>
@@ -98,7 +103,6 @@ export function SendTilAnnenEnhetModal({
       sporHendelse("send til annen enhet dialog åpnet");
       setSteg("skjema");
       setValgtEnhet("");
-      setValgtAnsvarligNavIdent("");
       setInnsendingFormData(null);
       setBekreftetEnhet(null);
       setFeilmelding(null);
@@ -144,6 +148,18 @@ export function SendTilAnnenEnhetModal({
     },
   });
 
+  const ansvarligNavIdent = useInputControl(fields.ansvarligNavIdent);
+  const valgtAnsvarligNavIdent = ansvarligNavIdent.value ?? "";
+  const valgtAnsvarlig = valgbareSaksbehandlere.find(
+    (saksbehandler) => saksbehandler.navIdent === valgtAnsvarligNavIdent,
+  );
+
+  useEffect(() => {
+    if (åpen) {
+      ansvarligNavIdent.change("");
+    }
+  }, [åpen]);
+
   function handleBekreft() {
     if (!innsendingFormData) return;
     sporHendelse("send til annen enhet klikket", {
@@ -171,7 +187,6 @@ export function SendTilAnnenEnhetModal({
     form.reset();
     setSteg("skjema");
     setValgtEnhet("");
-    setValgtAnsvarligNavIdent("");
     setInnsendingFormData(null);
     setFeilmelding(null);
     setBekreftetEnhet(null);
@@ -216,22 +231,39 @@ export function SendTilAnnenEnhetModal({
                 ))}
               </Select>
               {kreverNyAnsvarlig && (
-                <Select
-                  key={fields.ansvarligNavIdent.key}
-                  name={fields.ansvarligNavIdent.name}
-                  id={fields.ansvarligNavIdent.id}
-                  defaultValue={fields.ansvarligNavIdent.initialValue ?? ""}
-                  onChange={(event) => setValgtAnsvarligNavIdent(event.target.value)}
-                  label="Ny ansvarlig saksbehandler"
-                  error={fields.ansvarligNavIdent.errors?.[0]}
-                >
-                  <option value="">Velg saksbehandler</option>
-                  {valgbareSaksbehandlere.map((saksbehandler) => (
-                    <option key={saksbehandler.navIdent} value={saksbehandler.navIdent}>
-                      {`${saksbehandler.navn} (${saksbehandler.navIdent})`}
-                    </option>
-                  ))}
-                </Select>
+                <>
+                  <input
+                    type="hidden"
+                    name={fields.ansvarligNavIdent.name}
+                    value={valgtAnsvarligNavIdent}
+                    tabIndex={-1}
+                    onFocus={() => ansvarligNavIdent.focus()}
+                  />
+                  <UNSAFE_Combobox
+                    key={fields.ansvarligNavIdent.key}
+                    id={fields.ansvarligNavIdent.id}
+                    label="Ny ansvarlig saksbehandler"
+                    placeholder="Søk etter saksbehandler"
+                    options={valgbareSaksbehandlere.map((saksbehandler) => ({
+                      value: saksbehandler.navIdent,
+                      label: `${saksbehandler.navn} (${saksbehandler.navIdent})`,
+                    }))}
+                    selectedOptions={
+                      valgtAnsvarlig
+                        ? [
+                            {
+                              value: valgtAnsvarlig.navIdent,
+                              label: `${valgtAnsvarlig.navn} (${valgtAnsvarlig.navIdent})`,
+                            },
+                          ]
+                        : []
+                    }
+                    onToggleSelected={(navIdent, erValgt) => {
+                      ansvarligNavIdent.change(erValgt ? navIdent : "");
+                    }}
+                    error={fields.ansvarligNavIdent.errors?.[0]}
+                  />
+                </>
               )}
             </VStack>
           )}

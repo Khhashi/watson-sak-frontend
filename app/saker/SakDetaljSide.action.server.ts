@@ -6,13 +6,14 @@ import { hentTekstfelt } from "~/utils/form-data";
 import type { Route } from "./+types/SakDetaljSide.route";
 import { backendAction } from "~/saker/handlinger/backend-action.server";
 import { mockAction } from "~/saker/handlinger/mock-action.server";
+import { parseSakId } from "~/saker/sti-param.server";
 
 // --- Action ---
 
 export async function action({ request, params }: Route.ActionArgs) {
+  const sakId = parseSakId(params.sakId);
   const formData = await request.formData();
   const handling = hentTekstfelt(formData, "handling", "Ugyldig handling");
-  const sakId = params.sakId;
 
   const utfør = () =>
     skalBrukeMockdata

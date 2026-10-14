@@ -3,6 +3,7 @@ import { getBackendOboToken } from "~/auth/access-token";
 import { kastHvisUtlogget } from "~/auth/session-utløpt.server";
 import { BACKEND_API_URL } from "~/config/env.server";
 import { logger } from "~/logging/logging";
+import { sti } from "~/saker/sti-param.server";
 import {
   MIGRERING_SIDESTORRELSE,
   type MigreringAnsatt,
@@ -110,7 +111,7 @@ export async function hentMigreringsliste(
     if (filter.ansvarlig) query.set("ansvarlig", filter.ansvarlig);
   }
   const response = await fetch(
-    `${BACKEND_API_URL}/api/v1/migrering/kandidater?${query.toString()}`,
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater`}?${query.toString()}`,
     { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } },
   );
   if (!response.ok) {
@@ -162,7 +163,7 @@ export async function hentMigreringsliste(
 export async function hentMigreringskandidat(request: Request, kandidatId: string) {
   const token = await getBackendOboToken(request);
   const response = await fetch(
-    `${BACKEND_API_URL}/api/v1/migrering/kandidater/${encodeURIComponent(kandidatId)}`,
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater/${kandidatId}`}`,
     { headers: { Authorization: `Bearer ${token}`, Accept: "application/json" } },
   );
   if (!response.ok) {
@@ -179,7 +180,7 @@ export async function hentMigreringskandidat(request: Request, kandidatId: strin
 export async function ferdigstillMigreringskandidat(request: Request, kandidatId: string) {
   const token = await getBackendOboToken(request);
   const response = await fetch(
-    `${BACKEND_API_URL}/api/v1/migrering/kandidater/${encodeURIComponent(kandidatId)}/ferdigstill`,
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater/${kandidatId}/ferdigstill`}`,
     { method: "POST", headers: { Authorization: `Bearer ${token}` } },
   );
   if (!response.ok) {
@@ -192,7 +193,7 @@ export async function ferdigstillMigreringskandidat(request: Request, kandidatId
 /** Ansatte lederen kan se kandidater for. Bare for ledere. Backend avviser andre. */
 export async function hentMigreringsAnsatte(request: Request): Promise<MigreringAnsatt[]> {
   const token = await getBackendOboToken(request);
-  const response = await fetch(`${BACKEND_API_URL}/api/v1/migrering/ansatte`, {
+  const response = await fetch(`${BACKEND_API_URL}${sti`/api/v1/migrering/ansatte`}`, {
     headers: { Authorization: `Bearer ${token}`, Accept: "application/json" },
   });
   if (!response.ok) {
@@ -218,7 +219,7 @@ export async function tildelMigreringskandidat(
 ): Promise<void> {
   const token = await getBackendOboToken(request);
   const response = await fetch(
-    `${BACKEND_API_URL}/api/v1/migrering/kandidater/${encodeURIComponent(kandidatId)}/tildel`,
+    `${BACKEND_API_URL}${sti`/api/v1/migrering/kandidater/${kandidatId}/tildel`}`,
     {
       method: "POST",
       headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },

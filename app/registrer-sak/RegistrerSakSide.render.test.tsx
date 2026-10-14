@@ -1,4 +1,4 @@
-import { act, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { mockKodeverk } from "~/testing/mock-store/kodeverk.server";
@@ -178,9 +178,15 @@ describe("Nedtrekksfelt i Opprett sak", () => {
     });
     await screen.findByText("Du må rette disse feilene før du kan gå videre");
 
-    const kategori = screen.getByRole("combobox", { name: "Kategori" }) as HTMLSelectElement;
-    const kilde = screen.getByRole("combobox", { name: "Kilde" }) as HTMLSelectElement;
-    const enhet = screen.getByRole("combobox", { name: "Enhet" }) as HTMLSelectElement;
+    const kategori = screen.getByRole("combobox", {
+      name: "Kategori (må fylles ut)",
+    }) as HTMLSelectElement;
+    const kilde = screen.getByRole("combobox", {
+      name: "Kilde (må fylles ut)",
+    }) as HTMLSelectElement;
+    const enhet = screen.getByRole("combobox", {
+      name: "Enhet (må fylles ut)",
+    }) as HTMLSelectElement;
 
     const [valgtKategori] = mockKodeverk.kategorier;
     const [valgtKilde] = mockKodeverk.kilder;
@@ -189,7 +195,7 @@ describe("Nedtrekksfelt i Opprett sak", () => {
 
     await velgISelect(kategori, valgtKategori.kode);
     expect(
-      (screen.getByRole("combobox", { name: "Misbruktype" }) as HTMLInputElement).disabled,
+      (screen.getByRole("combobox", { name: "Misbrukstype" }) as HTMLInputElement).disabled,
     ).toBe(false);
     await velgISelect(kilde, valgtKilde.kode);
     await velgISelect(enhet, valgtEnhet.kode);
@@ -207,10 +213,26 @@ describe("Nedtrekksfelt i Opprett sak", () => {
       knapp.click();
     });
 
-    for (const navn of ["Kategori", "Kilde", "Enhet"]) {
+    for (const navn of [
+      "Kategori (må fylles ut)",
+      "Kilde (må fylles ut)",
+      "Enhet (må fylles ut)",
+    ]) {
       const select = screen.getByRole("combobox", { name: navn }) as HTMLSelectElement;
       expect(select.value).not.toBe("");
     }
+  });
+
+  it("normaliserer kommaseparerte organisasjonsnummer i skjemaet", async () => {
+    const { container } = renderSide();
+    const felt = await screen.findByRole("textbox", { name: "Organisasjonsnummer" });
+
+    fireEvent.change(felt, { target: { value: "123 456 789, 987654321" } });
+
+    const skjulteFelt = container.querySelectorAll<HTMLInputElement>(
+      'form[aria-label="Grunnleggende saksinformasjon"] input[name="arbeidsgivere"]',
+    );
+    expect(Array.from(skjulteFelt, (input) => input.value)).toEqual(["123456789", "987654321"]);
   });
 
   it.each([

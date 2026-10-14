@@ -1,7 +1,7 @@
-import { getFormProps, useForm } from "@conform-to/react";
+import { getFormProps, useForm, useInputControl } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
 import { PersonPencilIcon } from "@navikt/aksel-icons";
-import { BodyShort, Button, Modal, Select, VStack } from "@navikt/ds-react";
+import { BodyShort, Button, Modal, UNSAFE_Combobox, VStack } from "@navikt/ds-react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import { RouteConfig } from "~/routeConfig";
@@ -53,6 +53,16 @@ export function OverforAnsvarligModal({
     onClose();
   }
 
+  const navIdentControl = useInputControl(fields.navIdent);
+
+  const valgbareSaksbehandlere = saksbehandlerDetaljer.map((saksbehandler) => ({
+    value: saksbehandler.navIdent,
+    label: `${saksbehandler.navn} (${saksbehandler.navIdent})`,
+  }));
+  const valgtSaksbehandler = valgbareSaksbehandlere.find(
+    (saksbehandler) => saksbehandler.value === navIdentControl.value,
+  );
+
   return (
     <Modal
       open={åpen}
@@ -67,21 +77,26 @@ export function OverforAnsvarligModal({
         <Modal.Body>
           <VStack gap="space-4">
             <BodyShort>Velg ny ansvarlig saksbehandler for sak {saksreferanse}.</BodyShort>
-            <Select
-              key={fields.navIdent.key}
+            <input
+              type="hidden"
               name={fields.navIdent.name}
+              defaultValue={fields.navIdent.initialValue}
+              hidden
+              tabIndex={-1}
+              onFocus={() => navIdentControl.focus()}
+            />
+            <UNSAFE_Combobox
+              key={fields.navIdent.key}
               id={fields.navIdent.id}
-              defaultValue={fields.navIdent.initialValue ?? ""}
               label="Saksbehandler"
+              placeholder="Søk etter saksbehandler"
+              options={valgbareSaksbehandlere}
+              selectedOptions={valgtSaksbehandler ? [valgtSaksbehandler] : []}
+              onToggleSelected={(navIdent, erValgt) => {
+                navIdentControl.change(erValgt ? navIdent : "");
+              }}
               error={fields.navIdent.errors?.[0]}
-            >
-              <option value="">Velg saksbehandler</option>
-              {saksbehandlerDetaljer.map((saksbehandler) => (
-                <option key={saksbehandler.navIdent} value={saksbehandler.navIdent}>
-                  {`${saksbehandler.navn} (${saksbehandler.navIdent})`}
-                </option>
-              ))}
-            </Select>
+            />
           </VStack>
         </Modal.Body>
         <Modal.Footer>
