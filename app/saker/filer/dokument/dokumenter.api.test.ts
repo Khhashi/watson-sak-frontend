@@ -118,6 +118,44 @@ describe("dokumenter.api POST", () => {
     });
   });
 
+  it.each([
+    { malId: "anmeldelse", steg: "UTREDES" },
+    { malId: "arbeid", steg: "STRAFFERETTSLIG_VURDERING" },
+  ] as const)("avviser $malId i steg $steg med 400", async ({ malId, steg }) => {
+    const sak = hentFordelingssaker(state())[0];
+    sak.saksbehandlere.eier = eierMeg;
+    sak.saksbehandlere.deltMed = [];
+    sak.steg = steg;
+    const ref = getSaksreferanse(sak.id);
+    const formData = new FormData();
+    formData.set("malId", malId);
+
+    await expect(
+      action({
+        request: new Request("http://localhost", { method: "POST", body: formData }),
+        params: { sakId: ref },
+      } as Route.ActionArgs),
+    ).rejects.toMatchObject({ init: { status: 400 } });
+  });
+
+  it("oppretter anmeldelse i strafferettslig vurdering", async () => {
+    const sak = hentFordelingssaker(state())[0];
+    sak.saksbehandlere.eier = eierMeg;
+    sak.saksbehandlere.deltMed = [];
+    sak.steg = "STRAFFERETTSLIG_VURDERING";
+    const ref = getSaksreferanse(sak.id);
+    const formData = new FormData();
+    formData.set("malId", "anmeldelse");
+
+    const respons = (await action({
+      request: new Request("http://localhost", { method: "POST", body: formData }),
+      params: { sakId: ref },
+    } as Route.ActionArgs)) as Response;
+    const docId = respons.headers.get("Location")?.split("/").at(-1) ?? "";
+
+    expect(hentDokument(state(), String(sak.id), docId)?.tittel).toBe("Anmeldelse");
+  });
+
   it("avviser opprettelse uten redigeringstilgang med 403", async () => {
     const sak = hentFordelingssaker(state())[0];
     sak.saksbehandlere.eier = annenSaksbehandler;

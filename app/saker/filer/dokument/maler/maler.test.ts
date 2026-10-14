@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { DokumentInnhold } from "~/saker/filer/typer";
+import { anmeldelsemal } from "./anmeldelse";
 import { arbeidRapportmal } from "./arbeid";
 import { ensligForsørgerRapportmal } from "./enslig-forsørger";
 import { byggMalInnhold, type MalId } from "./index";
@@ -151,5 +152,41 @@ describe("innhentingsbrev", () => {
     expect(tekst).toContain("Vedlegg: Lovtekster");
     expect(tekst).toContain("Folketrygdloven § 21-4 første, tredje og sjette ledd");
     expect(tekst).toContain("Forvaltningsloven § 14");
+  });
+});
+
+describe("anmeldelse", () => {
+  const innhold = anmeldelsemal();
+
+  it("bygger gyldig dokumentinnhold", () => {
+    expect(innhold.length).toBeGreaterThan(0);
+    for (const node of innhold) {
+      expect(node).toHaveProperty("type");
+      expect(node).toHaveProperty("children");
+    }
+  });
+
+  it("har tittel «Anmeldelse» og egen hjemmel for unntak fra offentlighet", () => {
+    expect(innhold[1]).toEqual({ type: "h1", children: [{ text: "Anmeldelse" }] });
+    expect(JSON.stringify(innhold[0])).toContain("offl. § 24 andre ledd andre punktum");
+  });
+
+  it("setter inn relevante standardvariabler", () => {
+    expect(variabelIder(innhold)).toEqual(
+      expect.arrayContaining([
+        "navn",
+        "fødselsnummer",
+        "saksnummer",
+        "dagens-dato",
+        "saksbehandler",
+        "avdeling",
+      ]),
+    );
+  });
+
+  it("byggMalInnhold gir samme anmeldelse uavhengig av straffesak", () => {
+    expect(JSON.stringify(byggMalInnhold({ malId: "anmeldelse", erStraffesak: false }))).toBe(
+      JSON.stringify(innhold),
+    );
   });
 });

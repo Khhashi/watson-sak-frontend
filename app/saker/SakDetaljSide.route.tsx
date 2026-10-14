@@ -234,6 +234,7 @@ export default function SakDetaljSide() {
                 mapper={mapper}
                 journalposter={journalposter}
                 sakId={saksreferanse}
+                steg={sak.steg}
                 redigerbar={harDirekteTilgang && stegregler.kanRedigereDokumenter}
                 kanLasteOppFiler={harDirekteTilgang && stegregler.kanLasteOppFiler}
                 erSakseier={erEier}

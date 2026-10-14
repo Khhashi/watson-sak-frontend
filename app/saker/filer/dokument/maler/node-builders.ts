@@ -88,7 +88,10 @@ export function kontrollrapportHeader(): Node[] {
 }
 
 /** Nav-logo, «Unntatt offentlighet»-merking og dokumentets hovedtittel. */
-export function dokumentHeader(tittel: string): Node[] {
+export function dokumentHeader(
+  tittel: string,
+  hjemmel = "jf. Lov om off. § 13 jf. NAV-loven § 7",
+): Node[] {
   return [
     tabell(
       rad(
@@ -103,10 +106,7 @@ export function dokumentHeader(tittel: string): Node[] {
           type: "p",
           justering: "right",
           bevarLinjeskift: true,
-          children: [
-            { text: "Unntatt offentlighet.\n" },
-            { text: "jf. Lov om off. § 13 jf. NAV-loven § 7", italic: true },
-          ],
+          children: [{ text: "Unntatt offentlighet.\n" }, { text: hjemmel, italic: true }],
         }),
       ),
     ),

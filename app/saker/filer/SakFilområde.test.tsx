@@ -90,12 +90,12 @@ function renderTre(
 
 describe("SakFilområde", () => {
   it("viser heading 'Filer' alltid", () => {
-    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByRole("heading", { name: "Filer" })).toBeDefined();
   });
 
   it("viser caption 'Mapper' og knapp for å opprette mappe", () => {
-    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByRole("heading", { name: "Mapper" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Opprett mappe" })).toBeDefined();
   });
@@ -106,7 +106,13 @@ describe("SakFilområde", () => {
       {
         path: "/saker/:sakId",
         Component: () => (
-          <SakFilområde dokumenter={[]} filer={[]} mapper={["Bank"]} sakId="ABC-123" />
+          <SakFilområde
+            steg="UTREDNING"
+            dokumenter={[]}
+            filer={[]}
+            mapper={["Bank"]}
+            sakId="ABC-123"
+          />
         ),
       },
       {
@@ -144,6 +150,7 @@ describe("SakFilområde", () => {
       dokumenter: [],
       filer: [],
       sakId: "ABC-123",
+      steg: "UTREDNING",
       redigerbar: false,
       kanLasteOppFiler: true,
     });
@@ -152,38 +159,50 @@ describe("SakFilområde", () => {
   });
 
   it("skjuler 'Opprett mappe' når brukeren ikke kan redigere", () => {
-    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", redigerbar: false });
+    renderOmråde({
+      dokumenter: [],
+      filer: [],
+      sakId: "ABC-123",
+      steg: "UTREDNING",
+      redigerbar: false,
+    });
     expect(screen.queryByRole("button", { name: "Opprett mappe" })).toBeNull();
   });
 
   it("viser dokumenter i listen", () => {
-    renderOmråde({ dokumenter: mockDokumenter, filer: [], sakId: "ABC-123" });
+    renderOmråde({ dokumenter: mockDokumenter, filer: [], sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByText("Rapport")).toBeDefined();
     expect(screen.getByText("Notat")).toBeDefined();
   });
 
   it("viser opplastede filer", () => {
-    renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByText("rapport.pdf")).toBeDefined();
   });
 
   it("viser 'Opprett dokument'-knapp når redigerbar er true", () => {
-    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByText("Opprett dokument")).toBeDefined();
   });
 
   it("viser 'Last opp fil'-knapp når redigerbar er true", () => {
-    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByText("Last opp fil")).toBeDefined();
   });
 
   it("viser tomtilstand når det ikke er noen dokumenter eller filer", () => {
-    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByText("Ingen dokumenter eller filer ennå")).toBeDefined();
   });
 
   it("skjuler 'Opprett dokument'- og 'Last opp fil'-knapp når redigerbar er false", () => {
-    renderOmråde({ dokumenter: mockDokumenter, filer: [], sakId: "ABC-123", redigerbar: false });
+    renderOmråde({
+      dokumenter: mockDokumenter,
+      filer: [],
+      sakId: "ABC-123",
+      steg: "UTREDNING",
+      redigerbar: false,
+    });
     expect(screen.queryByText("Opprett dokument")).toBeNull();
     expect(screen.queryByText("Last opp fil")).toBeNull();
   });
@@ -193,6 +212,7 @@ describe("SakFilområde", () => {
       dokumenter: mockDokumenter,
       filer: [],
       sakId: "ABC-123",
+      steg: "UTREDNING",
       redigerbar: false,
       kanLasteOppFiler: true,
     });
@@ -204,7 +224,7 @@ describe("SakFilområde", () => {
   });
 
   it("viser modal med tomt dokument og alle malvalg", async () => {
-    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" });
 
     fireEvent.click(screen.getByText("Opprett dokument"));
 
@@ -234,12 +254,39 @@ describe("SakFilområde", () => {
     expect(screen.getByText("Hente inn opplysninger fra eksterne parter")).toBeDefined();
   });
 
+  it("viser ikke anmeldelse under utredning", async () => {
+    renderOmråde({ dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" });
+
+    fireEvent.click(screen.getByText("Opprett dokument"));
+
+    await screen.findByRole("button", { name: "Innhentingsbrev" });
+    expect(screen.queryByRole("button", { name: "Anmeldelse" })).toBeNull();
+  });
+
+  it("viser anmeldelse, men ingen kontrollrapporter, i strafferettslig vurdering", async () => {
+    renderOmråde({
+      dokumenter: [],
+      filer: [],
+      sakId: "ABC-123",
+      steg: "STRAFFERETTSLIG_VURDERING",
+    });
+
+    fireEvent.click(screen.getByText("Opprett dokument"));
+
+    expect(await screen.findByRole("button", { name: "Anmeldelse" })).toBeDefined();
+    expect(screen.queryByText("Rapportmaler")).toBeNull();
+    expect(screen.queryByRole("button", { name: /^Kontrollrapport/ })).toBeNull();
+  });
+
   it("sender innhentingsbrev som malId uten straffesak-variant", async () => {
     const mottatt: FormData[] = [];
-    renderOmrådeMedAction({ dokumenter: [], filer: [], sakId: "ABC-123" }, (formData) => {
-      mottatt.push(formData);
-      return null;
-    });
+    renderOmrådeMedAction(
+      { dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" },
+      (formData) => {
+        mottatt.push(formData);
+        return null;
+      },
+    );
 
     fireEvent.click(screen.getByText("Opprett dokument"));
     fireEvent.click(await screen.findByRole("button", { name: "Innhentingsbrev" }));
@@ -250,10 +297,13 @@ describe("SakFilområde", () => {
 
   it("sender ingen malId når 'Blankt dokument' velges", async () => {
     const mottatt: FormData[] = [];
-    renderOmrådeMedAction({ dokumenter: [], filer: [], sakId: "ABC-123" }, (formData) => {
-      mottatt.push(formData);
-      return null;
-    });
+    renderOmrådeMedAction(
+      { dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" },
+      (formData) => {
+        mottatt.push(formData);
+        return null;
+      },
+    );
 
     fireEvent.click(screen.getByText("Opprett dokument"));
     fireEvent.click(await screen.findByText("Blankt dokument"));
@@ -264,10 +314,13 @@ describe("SakFilområde", () => {
 
   it("sender malId og erStraffesak når en mal velges", async () => {
     const mottatt: FormData[] = [];
-    renderOmrådeMedAction({ dokumenter: [], filer: [], sakId: "ABC-123" }, (formData) => {
-      mottatt.push(formData);
-      return null;
-    });
+    renderOmrådeMedAction(
+      { dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" },
+      (formData) => {
+        mottatt.push(formData);
+        return null;
+      },
+    );
 
     fireEvent.click(screen.getByText("Opprett dokument"));
     fireEvent.click(
@@ -285,7 +338,10 @@ describe("SakFilområde", () => {
       fullførOpprettelse = resolve;
     });
 
-    renderOmrådeMedAction({ dokumenter: [], filer: [], sakId: "ABC-123" }, async () => opprettelse);
+    renderOmrådeMedAction(
+      { dokumenter: [], filer: [], sakId: "ABC-123", steg: "UTREDNING" },
+      async () => opprettelse,
+    );
 
     fireEvent.click(screen.getByText("Opprett dokument"));
     fireEvent.click(await screen.findByText("Blankt dokument"));
@@ -344,7 +400,12 @@ describe("SakFilområde", () => {
   it("flytter mappe fra menyen", async () => {
     const handlinger: unknown[] = [];
     renderTre(
-      { noder: mockDokumenter, mapper: ["Bank", "Møter"], sakId: "ABC-123", kanEndreMapper: true },
+      {
+        noder: mockDokumenter,
+        mapper: ["Bank", "Møter"],
+        sakId: "ABC-123",
+        kanEndreMapper: true,
+      },
       async (request) => {
         handlinger.push(await request.json());
         return { ok: true };
@@ -374,7 +435,12 @@ describe("SakFilområde", () => {
 
   it("viser feilmelding når mappehandlingen feiler", async () => {
     renderTre(
-      { noder: mockDokumenter, mapper: ["Bank"], sakId: "ABC-123", kanEndreMapper: true },
+      {
+        noder: mockDokumenter,
+        mapper: ["Bank"],
+        sakId: "ABC-123",
+        kanEndreMapper: true,
+      },
       async () => ({ ok: false, melding: "Kunne ikke flytte elementet" }),
     );
 
@@ -398,7 +464,12 @@ describe("SakFilområde", () => {
       arkivertAv: "Z999999",
     };
 
-    renderOmråde({ dokumenter: [], filer: [...mockFiler, arkivertFil], sakId: "ABC-123" });
+    renderOmråde({
+      dokumenter: [],
+      filer: [...mockFiler, arkivertFil],
+      sakId: "ABC-123",
+      steg: "UTREDNING",
+    });
 
     expect(screen.getByRole("heading", { name: "Arkivert" })).toBeDefined();
 
@@ -413,7 +484,7 @@ describe("SakFilområde", () => {
   });
 
   it("viser ikke Arkivert-seksjonen når ingen filer eller dokumenter er arkivert", () => {
-    renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.queryByRole("heading", { name: "Arkivert" })).toBeNull();
   });
 
@@ -430,6 +501,7 @@ describe("SakFilområde", () => {
       dokumenter: [...mockDokumenter, arkivertDokument],
       filer: [],
       sakId: "ABC-123",
+      steg: "UTREDNING",
     });
 
     const redigerbareDokumenter = screen.getByRole("list", { name: "Dokumenter og filer" });
@@ -461,6 +533,7 @@ describe("SakFilområde", () => {
       dokumenter: [...mockDokumenter, arkivertDokument],
       filer: [arkivertFilFraDokument],
       sakId: "ABC-123",
+      steg: "UTREDNING",
     });
 
     const arkivertListe = screen.getByRole("list", { name: "Arkivert" });
@@ -472,17 +545,35 @@ describe("SakFilområde", () => {
 
   describe("tilgang via koblet sak (kun les)", () => {
     it("viser filer", () => {
-      renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123", redigerbar: false });
+      renderOmråde({
+        dokumenter: [],
+        filer: mockFiler,
+        sakId: "ABC-123",
+        steg: "UTREDNING",
+        redigerbar: false,
+      });
       expect(screen.getByText("rapport.pdf")).toBeDefined();
     });
 
     it("skjuler 'Opprett dokument'-knapp", () => {
-      renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123", redigerbar: false });
+      renderOmråde({
+        dokumenter: [],
+        filer: mockFiler,
+        sakId: "ABC-123",
+        steg: "UTREDNING",
+        redigerbar: false,
+      });
       expect(screen.queryByText("Opprett dokument")).toBeNull();
     });
 
     it("skjuler 'Last opp fil'-knapp", () => {
-      renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123", redigerbar: false });
+      renderOmråde({
+        dokumenter: [],
+        filer: mockFiler,
+        sakId: "ABC-123",
+        steg: "UTREDNING",
+        redigerbar: false,
+      });
       expect(screen.queryByText("Last opp fil")).toBeNull();
     });
 
@@ -491,6 +582,7 @@ describe("SakFilområde", () => {
         dokumenter: [],
         filer: mockFiler,
         sakId: "ABC-123",
+        steg: "UTREDNING",
         redigerbar: false,
         erSakseier: false,
       });
@@ -527,7 +619,13 @@ describe("Arkivert", () => {
       arkivertJournalpostId: "999",
     };
 
-    renderOmråde({ dokumenter: [], filer: [vedlegg, ukjent], journalposter, sakId: "ABC-123" });
+    renderOmråde({
+      dokumenter: [],
+      filer: [vedlegg, ukjent],
+      journalposter,
+      sakId: "ABC-123",
+      steg: "UTREDNING",
+    });
 
     expect(screen.getByText("Journalført i dokumentarkiv – koblet til journalpost")).toBeDefined();
     const kort = screen.getByRole("list", { name: "Vedlegg i Notat om kontroll" });
@@ -541,7 +639,7 @@ describe("Arkivert", () => {
   });
 
   it("viser journalposter også når de ikke har arkiverte vedlegg", () => {
-    renderOmråde({ dokumenter: [], filer: [], journalposter, sakId: "ABC-123" });
+    renderOmråde({ dokumenter: [], filer: [], journalposter, sakId: "ABC-123", steg: "UTREDNING" });
     expect(screen.getByText("Notat om kontroll")).toBeDefined();
     expect(screen.getByText(/0 vedlegg/)).toBeDefined();
   });
@@ -607,7 +705,13 @@ describe("DokumentTre med mapper", () => {
   it("flytter dokument til mappe med dra og slipp", async () => {
     const handlinger: unknown[] = [];
     renderTre(
-      { noder: dokumenter, mapper, sakId: "ABC-123", kanEndreMapper: true, fremhevetId: "1" },
+      {
+        noder: dokumenter,
+        mapper,
+        sakId: "ABC-123",
+        kanEndreMapper: true,
+        fremhevetId: "1",
+      },
       async (request) => {
         handlinger.push(await request.json());
         return { ok: true };
@@ -652,7 +756,12 @@ describe("DokumentTre med mapper", () => {
   });
 
   it("gjør ikke arkiverte dokumenter draggable", () => {
-    renderTre({ noder: dokumenter, mapper, sakId: "ABC-123", kanEndreMapper: true });
+    renderTre({
+      noder: dokumenter,
+      mapper,
+      sakId: "ABC-123",
+      kanEndreMapper: true,
+    });
 
     expect(screen.getByText("Arkivert notat").closest("li")?.getAttribute("draggable")).toBeNull();
   });
