@@ -60,11 +60,15 @@ export default defineConfig({
       testIgnore: /.*\.leder\.spec\.(ts|tsx)$/,
       use: { ...devices["Desktop Chrome"] },
     },
-    {
-      name: "leder",
-      testMatch: /.*\.leder\.spec\.(ts|tsx)$/,
-      use: { ...devices["Desktop Chrome"], baseURL: lederBaseUrl },
-    },
+    ...(lokalBaseUrl && !process.env.PLAYWRIGHT_LEDER_BASE_URL
+      ? []
+      : [
+          {
+            name: "leder",
+            testMatch: /.*\.leder\.spec\.(ts|tsx)$/,
+            use: { ...devices["Desktop Chrome"], baseURL: lederBaseUrl },
+          },
+        ]),
   ],
 
   /* Kjør lokal dev-server før testene starter */
@@ -79,7 +83,7 @@ export default defineConfig({
             reuseExistingServer: false,
           },
         ]),
-    ...(process.env.PLAYWRIGHT_LEDER_BASE_URL
+    ...(lokalBaseUrl || process.env.PLAYWRIGHT_LEDER_BASE_URL
       ? []
       : [
           {

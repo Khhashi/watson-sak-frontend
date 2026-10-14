@@ -48,7 +48,9 @@ function formaterAccessDato(iso: string | null | undefined) {
 
 function klikkRad(event: MouseEvent<HTMLTableRowElement>) {
   if ((event.target as HTMLElement).closest("a, button, input, select")) return;
-  event.currentTarget.querySelector<HTMLElement>("a[href], button[type='submit']")?.click();
+  event.currentTarget
+    .querySelector<HTMLElement>("a[href], button[type='submit'], button[data-rad-handling]")
+    ?.click();
 }
 
 export function MigreringInnhold({ lister }: { lister: MigreringLister }) {
@@ -154,17 +156,19 @@ function Kandidatliste({
                   <>
                     <Table.DataCell>{k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}</Table.DataCell>
                     <Table.DataCell>
-                      {hentMigreringsstatus(k) === "IKKE_PABEGYNT" && (
-                        <Button
-                          type="button"
-                          variant="secondary"
-                          size="small"
-                          aria-label={`Endre tildeling for PID ${k.legacyPid}`}
-                          onClick={() => setEndrer(k)}
-                        >
-                          Endre tildeling
-                        </Button>
-                      )}
+                      {hentMigreringsstatus(k) === "IKKE_PABEGYNT" &&
+                        ansatteValg.some((a) => a.navIdent !== k.ansvar.navIdent) && (
+                          <Button
+                            type="button"
+                            data-rad-handling
+                            variant="secondary"
+                            size="small"
+                            aria-label={`Endre tildeling for PID ${k.legacyPid}`}
+                            onClick={() => setEndrer(k)}
+                          >
+                            Endre tildeling
+                          </Button>
+                        )}
                     </Table.DataCell>
                   </>
                 )}

@@ -197,6 +197,8 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<Migrering
       return {
         ...k,
         ansvar: { type: "BEKREFTET", navIdent: navIdent ?? "" },
+        // Personnummer vises bare for lederens egne rader, slik backend gjør.
+        ...(navIdent === bruker.navIdent ? {} : { personIdent: undefined }),
         ansvarligNavn: ansvarlig?.navn ?? bruker.name,
         enhet: ansvarlig?.enhetId ?? null,
       };

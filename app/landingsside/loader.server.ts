@@ -61,6 +61,7 @@ async function lastSaksbehandlerData(
   request: Request,
   innloggetBruker: { navIdent: string; name: string },
 ) {
+  const sakerSomSkalFlyttes = harSakerSomSkalFlyttes(request, innloggetBruker.navIdent);
   let mineSakerHosInnloggetBruker: KontrollsakResponse[];
   let oppsummering: MineSakerOppsummering | null;
 
@@ -100,7 +101,7 @@ async function lastSaksbehandlerData(
     type: "saksbehandler" as const,
     mineSaker,
     velkomstOppsummering,
-    harSakerSomSkalFlyttes: await harSakerSomSkalFlyttes(request, innloggetBruker.navIdent),
+    harSakerSomSkalFlyttes: await sakerSomSkalFlyttes,
   };
 }
 
@@ -108,13 +109,14 @@ async function lastLederData(
   request: Request,
   innloggetBruker: Awaited<ReturnType<typeof hentInnloggetBruker>>,
 ) {
+  const sakerSomSkalFlyttes = harSakerSomSkalFlyttes(request, innloggetBruker.navIdent);
   const statistikk = await hentLederOversiktData({ request, innloggetBruker });
 
   return {
     type: "leder" as const,
     velkomstOppsummering: lagLederVelkomstOppsummering(statistikk.enhet, statistikk.enhetNavn),
     statistikk,
-    harSakerSomSkalFlyttes: await harSakerSomSkalFlyttes(request, innloggetBruker.navIdent),
+    harSakerSomSkalFlyttes: await sakerSomSkalFlyttes,
   };
 }
 
