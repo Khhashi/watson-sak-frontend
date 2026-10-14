@@ -139,7 +139,8 @@ describe("SakDetaljSide loader — backend-sti", () => {
     mockFerdigstillMigreringskandidat.mockResolvedValue(undefined);
     const formData = new FormData();
     formData.set("handling", "MIGRERING_FERDIGSTILL");
-    formData.set("bekreftet", "ja");
+    formData.set("lastetOppFiler", "ja");
+    formData.set("overfortInformasjon", "ja");
     const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
     const { action } = await import("./SakDetaljSide.server");
 
@@ -162,7 +163,8 @@ describe("SakDetaljSide loader — backend-sti", () => {
     });
     const formData = new FormData();
     formData.set("handling", "MIGRERING_FERDIGSTILL");
-    formData.set("bekreftet", "ja");
+    formData.set("lastetOppFiler", "ja");
+    formData.set("overfortInformasjon", "ja");
     const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
     const { action } = await import("./SakDetaljSide.server");
 

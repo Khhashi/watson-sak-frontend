@@ -9,7 +9,7 @@ type Props = {
 
 /**
  * Sjekklisten saksbehandler må krysse av før en migrert sak kan merkes som ferdig flyttet.
- * Avkrysningene lagres ikke. Ferdigmeldingen er selve knappetrykket, som backend validerer.
+ * Avkrysningene lagres ikke, men sendes med skjemaet og valideres i action.
  */
 export function MigreringSjekkliste({ kanLagres }: Props) {
   const [lastetOppFiler, setLastetOppFiler] = useState(false);
@@ -26,7 +26,6 @@ export function MigreringSjekkliste({ kanLagres }: Props) {
     >
       <Form method="post">
         <input type="hidden" name="handling" value="MIGRERING_FERDIGSTILL" />
-        <input type="hidden" name="bekreftet" value="ja" />
         <VStack gap="space-16" align="start">
           <VStack gap="space-4">
             <Heading level="2" size="xsmall">
@@ -38,6 +37,8 @@ export function MigreringSjekkliste({ kanLagres }: Props) {
           </VStack>
           <VStack gap="space-8">
             <Checkbox
+              name="lastetOppFiler"
+              value="ja"
               checked={lastetOppFiler}
               disabled={!kanLagres}
               onChange={(event) => setLastetOppFiler(event.target.checked)}
@@ -45,6 +46,8 @@ export function MigreringSjekkliste({ kanLagres }: Props) {
               Lastet opp alle filer fra S:
             </Checkbox>
             <Checkbox
+              name="overfortInformasjon"
+              value="ja"
               checked={overførtInformasjon}
               disabled={!kanLagres}
               onChange={(event) => setOverførtInformasjon(event.target.checked)}

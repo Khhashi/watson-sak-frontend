@@ -202,7 +202,9 @@ export async function loader({ request }: LoaderFunctionArgs): Promise<Migrering
       };
     });
   // Syntetiske ansatte vises bare for ledere, slik at saksbehandlere ikke ser andres saker.
-  const alle = bruker.erLeder ? [...egne, ...hentMockAnsattKandidater(tildelinger)] : egne;
+  const alle = bruker.erLeder
+    ? [...egne, ...hentMockAnsattKandidater(tildelinger, ansatteValg)]
+    : egne;
   const liste = medFilter(
     alle,
     bruker.erLeder ? filter : { ...filter, enhet: null, ansvarlig: null },
@@ -242,7 +244,20 @@ export async function action({ request }: ActionFunctionArgs): Promise<Tildeling
     ) {
       throw data("Ugyldig tildeling", { status: 400 });
     }
-    hentMockState(request).migreringTildelinger.set(kandidatId, navIdent);
+    const tildelinger = hentMockState(request).migreringTildelinger;
+    const tildelbar = [
+      ...hentMockAnsattKandidater(tildelinger),
+      ...hentMockMigreringKandidater(bruker.navIdent).filter(
+        (k) => k.ansvar.type === "BEKREFTET" && k.ansvar.navIdent === bruker.navIdent,
+      ),
+    ].find((k) => k.kandidatId === kandidatId);
+    if (!tildelbar) {
+      throw data("Kandidaten finnes ikke", { status: 404 });
+    }
+    if (hentMigreringsstatus(tildelbar) !== "IKKE_PABEGYNT") {
+      throw data("Saken er allerede påbegynt og kan ikke flyttes til en annen", { status: 409 });
+    }
+    tildelinger.set(kandidatId, navIdent);
     return { ok: true };
   }
   if (!migreringErÅpen(env.ENVIRONMENT)) {

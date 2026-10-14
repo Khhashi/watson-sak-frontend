@@ -68,20 +68,26 @@ export default defineConfig({
   ],
 
   /* Kjør lokal dev-server før testene starter */
-  webServer: lokalBaseUrl
-    ? undefined
-    : [
-        {
-          command:
-            'WATSON_ADMIN_API_URL=http://localhost:8089 ENVIRONMENT=local-mock NODE_ENV=development npx concurrently -k -n mock,dev "node playwright.backend.mock.cjs" "pnpm run dev"',
-          url: "http://localhost:5174",
-          reuseExistingServer: false,
-        },
-        {
-          command:
-            "WATSON_ADMIN_API_URL=http://localhost:8089 ENVIRONMENT=local-mock BRUKERPROFIL=leder-øst NODE_ENV=development pnpm run dev --port 5175 --strictPort",
-          url: "http://localhost:5175",
-          reuseExistingServer: false,
-        },
-      ],
+  webServer: [
+    ...(lokalBaseUrl
+      ? []
+      : [
+          {
+            command:
+              'WATSON_ADMIN_API_URL=http://localhost:8089 ENVIRONMENT=local-mock NODE_ENV=development npx concurrently -k -n mock,dev "node playwright.backend.mock.cjs" "pnpm run dev"',
+            url: "http://localhost:5174",
+            reuseExistingServer: false,
+          },
+        ]),
+    ...(process.env.PLAYWRIGHT_LEDER_BASE_URL
+      ? []
+      : [
+          {
+            command:
+              "WATSON_ADMIN_API_URL=http://localhost:8089 ENVIRONMENT=local-mock BRUKERPROFIL=leder-øst NODE_ENV=development pnpm run dev --port 5175 --strictPort",
+            url: "http://localhost:5175",
+            reuseExistingServer: false,
+          },
+        ]),
+  ],
 });

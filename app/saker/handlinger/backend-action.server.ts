@@ -59,7 +59,7 @@ export async function backendAction(
     if (!migreringErÅpen(env.ENVIRONMENT)) {
       throw data("Ferdigmerking er ikke tilgjengelig", { status: 404 });
     }
-    if (formData.get("bekreftet") !== "ja") {
+    if (formData.get("lastetOppFiler") !== "ja" || formData.get("overfortInformasjon") !== "ja") {
       throw data("Du må bekrefte at innholdet er overført", { status: 400 });
     }
     const sak = sakFraTilgangskontroll;

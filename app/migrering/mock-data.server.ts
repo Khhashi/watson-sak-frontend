@@ -325,10 +325,12 @@ const ANSATT_KANDIDATER: ReadonlyArray<{
  */
 export function hentMockAnsattKandidater(
   tildelinger: ReadonlyMap<string, string>,
+  ansatte: readonly MigreringAnsatt[] = MOCK_MIGRERING_ANSATTE,
 ): MigreringKandidat[] {
   return ANSATT_KANDIDATER.map(({ pid, ansvarlig, status, dato }) => {
     const kandidatId = `UTREDNING:${pid}`;
     const navIdent = tildelinger.get(kandidatId) ?? ansvarlig;
+    const ansvarlige = ansatte.find((a) => a.navIdent === navIdent);
     return {
       kandidatId,
       migreringsstatus: status,
@@ -339,8 +341,8 @@ export function hentMockAnsattKandidater(
       kategori: "TIPS_RESTANSE",
       navn: "",
       ansvar: { type: "BEKREFTET", navIdent },
-      ansvarligNavn: MOCK_MIGRERING_ANSATTE.find((a) => a.navIdent === navIdent)?.navn ?? null,
-      enhet: MOCK_MIGRERING_ANSATTE.find((a) => a.navIdent === navIdent)?.enhetId ?? null,
+      ansvarligNavn: ansvarlige?.navn ?? null,
+      enhet: ansvarlige?.enhetId ?? null,
       vurdering: "MULIG_KANDIDAT",
       ekskluderFraStatistikk: false,
       referansedato: dato,

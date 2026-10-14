@@ -234,7 +234,8 @@ describe("SakDetaljSide render", () => {
     expect(container.querySelector('input[name="handling"]')?.getAttribute("value")).toBe(
       "MIGRERING_FERDIGSTILL",
     );
-    expect(container.querySelector('input[name="bekreftet"]')?.getAttribute("value")).toBe("ja");
+    expect(container.querySelector('input[name="lastetOppFiler"]')).not.toBeNull();
+    expect(container.querySelector('input[name="overfortInformasjon"]')).not.toBeNull();
     expect(screen.queryByText("Migreringsnotat (forhåndsvisning)")).toBeNull();
   }, 15000);
 
