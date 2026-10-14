@@ -1,6 +1,7 @@
 import { kastHvisUtlogget } from "~/auth/session-utløpt.server";
 import { BACKEND_API_URL } from "~/config/env.server";
 import { logger } from "~/logging/logging";
+import { sti } from "~/saker/sti-param.server";
 import { tilVarsel, varselPageBackendResponseSchema } from "./typer";
 import type { Varsel } from "./typer";
 
@@ -70,7 +71,7 @@ export async function markerVarselSomLest(token: string, varselId: string): Prom
     throw new Error("Mangler backend-url for å markere varsel som lest.");
   }
 
-  const response = await fetch(`${BACKEND_API_URL}/api/v1/varsler/${varselId}/lest`, {
+  const response = await fetch(`${BACKEND_API_URL}${sti`/api/v1/varsler/${varselId}/lest`}`, {
     method: "POST",
     headers: {
       Authorization: `Bearer ${token}`,

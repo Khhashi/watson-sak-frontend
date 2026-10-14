@@ -10,6 +10,7 @@ import {
 } from "~/saker/filer/mock-data.server";
 import { hentAlleSaker, leggTilMockSakIFordeling } from "~/saker/mock-alle-saker.server";
 import { lagIsoTidspunktFraNorskDatoTid } from "~/utils/date-utils";
+import { sti } from "~/saker/sti-param.server";
 
 export type OpprettKontrollsakRequest = {
   personIdent: string;
@@ -234,7 +235,7 @@ export async function lastOppFil(
   formData.append("fil", fil);
 
   try {
-    const url = new URL(`${BACKEND_API_URL}/api/v1/kontrollsaker/${sakId}/filer`);
+    const url = new URL(`${BACKEND_API_URL}${sti`/api/v1/kontrollsaker/${sakId}/filer`}`);
     if (opprettetVedSaksopprettelse) {
       url.searchParams.set("opprettetVedSaksopprettelse", "true");
     }

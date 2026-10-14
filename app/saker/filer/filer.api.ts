@@ -7,6 +7,7 @@ import { BackendFeilException } from "~/saker/api.server";
 import { leggTilHendelse } from "~/saker/historikk/mock-data.server";
 import { hentStegbaserteSaksregler } from "~/saker/stegregler";
 import { hentSakstilgangFraMock } from "~/saker/tilgang.server";
+import { parseSakId } from "~/saker/sti-param.server";
 import { hentFilerForSak, leggTilFil } from "./mock-data-filer.server";
 
 /**
@@ -19,10 +20,7 @@ import { hentFilerForSak, leggTilFil } from "./mock-data-filer.server";
  *   VedleggSeksjon kan vise feilen inline uten å gå til error boundary.
  */
 export async function loader({ request, params }: LoaderFunctionArgs) {
-  const sakReferanse = params.sakId;
-  if (!sakReferanse) {
-    throw data("Mangler sak", { status: 400 });
-  }
+  const sakReferanse = parseSakId(params.sakId);
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
@@ -49,10 +47,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
-  const sakReferanse = params.sakId;
-  if (!sakReferanse) {
-    throw data("Mangler sak", { status: 400 });
-  }
+  const sakReferanse = parseSakId(params.sakId);
 
   if (request.method !== "POST") {
     throw data("Metoden støttes ikke", { status: 405 });

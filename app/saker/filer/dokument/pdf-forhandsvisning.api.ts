@@ -1,10 +1,11 @@
+import { parseSakId, parseUuid, sti } from "~/saker/sti-param.server";
 import { data, type ActionFunctionArgs } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
 import { BACKEND_API_URL, skalBrukeMockdata } from "~/config/env.server";
 
 export async function action({ request, params }: ActionFunctionArgs) {
-  const { sakId, docId } = params;
-  if (!sakId || !docId) throw data("Mangler sak eller dokument", { status: 400 });
+  const sakId = parseSakId(params.sakId);
+  const docId = parseUuid(params.docId, "docId");
   if (request.method !== "POST") throw data("Metoden støttes ikke", { status: 405 });
   if (skalBrukeMockdata) {
     throw data("PDF-forhåndsvisning er ikke tilgjengelig i mockmodus", { status: 501 });
@@ -13,7 +14,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   const token = await getBackendOboToken(request);
   const respons = await fetch(
-    `${BACKEND_API_URL}/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/forhandsvisning`,
+    `${BACKEND_API_URL}${sti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}/forhandsvisning`}`,
     {
       method: "POST",
       headers: {

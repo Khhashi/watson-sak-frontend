@@ -1,6 +1,7 @@
 import { kastHvisUtlogget } from "~/auth/session-utløpt.server";
 import { BACKEND_API_URL } from "~/config/env.server";
 import { logger } from "~/logging/logging";
+import { sti } from "~/saker/sti-param.server";
 import {
   kommentarlisteSchema,
   kommentartraadSchema,
@@ -48,7 +49,7 @@ function basisUrl(sakId: string, docId: string): string {
   if (!BACKEND_API_URL) {
     throw new Error("Mangler backend-URL for kommentarkall");
   }
-  return `${BACKEND_API_URL}/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`;
+  return `${BACKEND_API_URL}${sti`/api/v1/kontrollsaker/${sakId}/dokumenter/${docId}`}`;
 }
 
 function headers(token: string): HeadersInit {
@@ -161,15 +162,18 @@ export async function opprettKommentar(
   traadId: string,
   data: { kommentarId: string; tekst: string; traadVersjon: number },
 ): Promise<Kommentartraad> {
-  const respons = await fetch(`${basisUrl(sakId, docId)}/kommentartraader/${traadId}/kommentarer`, {
-    method: "POST",
-    headers: headers(token),
-    body: JSON.stringify({
-      kommentarId: data.kommentarId,
-      tekst: data.tekst,
-      traadVersjon: data.traadVersjon,
-    }),
-  });
+  const respons = await fetch(
+    `${basisUrl(sakId, docId)}${sti`/kommentartraader/${traadId}/kommentarer`}`,
+    {
+      method: "POST",
+      headers: headers(token),
+      body: JSON.stringify({
+        kommentarId: data.kommentarId,
+        tekst: data.tekst,
+        traadVersjon: data.traadVersjon,
+      }),
+    },
+  );
   if (!respons.ok) await kastFeil(respons, "Kunne ikke opprette kommentar");
   return parseTraad(await respons.json(), "opprettKommentar");
 }
@@ -182,7 +186,7 @@ export async function redigerKommentar(
   kommentarId: string,
   data: { tekst: string; versjon: number },
 ): Promise<Kommentartraad> {
-  const respons = await fetch(`${basisUrl(sakId, docId)}/kommentarer/${kommentarId}`, {
+  const respons = await fetch(`${basisUrl(sakId, docId)}${sti`/kommentarer/${kommentarId}`}`, {
     method: "PUT",
     headers: headers(token),
     body: JSON.stringify({ tekst: data.tekst, versjon: data.versjon }),
@@ -200,7 +204,7 @@ export async function slettKommentar(
   versjon: number,
 ): Promise<Kommentartraad> {
   const respons = await fetch(
-    `${basisUrl(sakId, docId)}/kommentarer/${kommentarId}?versjon=${versjon}`,
+    `${basisUrl(sakId, docId)}${sti`/kommentarer/${kommentarId}`}?${new URLSearchParams({ versjon: String(versjon) })}`,
     { method: "DELETE", headers: headers(token) },
   );
   if (!respons.ok) await kastFeil(respons, "Kunne ikke slette kommentar");
@@ -217,11 +221,14 @@ export async function adresserKommentartraad(
   traadId: string,
   versjon: number,
 ): Promise<Kommentartraad> {
-  const respons = await fetch(`${basisUrl(sakId, docId)}/kommentartraader/${traadId}/adressering`, {
-    method: "PUT",
-    headers: headers(token),
-    body: JSON.stringify({ versjon }),
-  });
+  const respons = await fetch(
+    `${basisUrl(sakId, docId)}${sti`/kommentartraader/${traadId}/adressering`}`,
+    {
+      method: "PUT",
+      headers: headers(token),
+      body: JSON.stringify({ versjon }),
+    },
+  );
   if (!respons.ok) await kastFeil(respons, "Kunne ikke markere tråden som løst");
   return parseTraad(await respons.json(), "adresserKommentartraad");
 }
@@ -235,7 +242,7 @@ export async function gjenaapneKommentartraad(
   versjon: number,
 ): Promise<Kommentartraad> {
   const respons = await fetch(
-    `${basisUrl(sakId, docId)}/kommentartraader/${traadId}/adressering?versjon=${versjon}`,
+    `${basisUrl(sakId, docId)}${sti`/kommentartraader/${traadId}/adressering`}?${new URLSearchParams({ versjon: String(versjon) })}`,
     { method: "DELETE", headers: headers(token) },
   );
   if (!respons.ok) await kastFeil(respons, "Kunne ikke gjenåpne tråden");

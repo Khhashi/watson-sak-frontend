@@ -15,6 +15,7 @@ import {
   tillatteHandlingerResponseSchema,
 } from "./types.backend";
 import { sakHendelseSchema } from "./historikk/typer";
+import { sti as byggSti } from "./sti-param.server";
 import {
   saksbehandlerListeSchema,
   journalpostReferanseSchema,
@@ -27,7 +28,7 @@ import {
 // --- Kontrollsak ---
 
 export async function hentKontrollsak(token: string, sakId: string): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}`), {
     headers: authHeaders(token),
   });
   if (respons.status === 404) {
@@ -41,8 +42,9 @@ export async function hentTillatteHandlinger(
   token: string,
   sakId: string,
 ): Promise<TillatteHandlingerResponse> {
-  const sti = `/api/v1/kontrollsaker/${sakId}/tillatte-handlinger`;
-  const respons = await fetch(apiUrl(sti), { headers: authHeaders(token) });
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/tillatte-handlinger`), {
+    headers: authHeaders(token),
+  });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke hente tillatte handlinger");
   return parseEllerKastFeil(
     tillatteHandlingerResponseSchema,
@@ -56,12 +58,9 @@ export async function søkKontrollsakerPåSaksnummer(
   token: string,
   saksnummer: string,
 ): Promise<KontrollsakResponse[]> {
-  const respons = await fetch(
-    apiUrl(`/api/v1/kontrollsaker/sok/saksnummer/${encodeURIComponent(saksnummer)}`),
-    {
-      headers: authHeaders(token),
-    },
-  );
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/sok/saksnummer/${saksnummer}`), {
+    headers: authHeaders(token),
+  });
   if (respons.status === 404) return [];
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke søke etter kontrollsaker på saksnummer");
   return parseEllerKastFeil(
@@ -78,7 +77,7 @@ export async function søkKontrollsaker(
   size = 20,
 ): Promise<KontrollsakPageResponse> {
   const params = new URLSearchParams({ page: String(page), size: String(size) });
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/sok?${params}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/sok`) + `?${params}`, {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ personIdent }),
@@ -98,11 +97,14 @@ export async function søkKontrollsakerOrganisasjon(
   size = 20,
 ): Promise<KontrollsakPageResponse> {
   const params = new URLSearchParams({ page: String(page), size: String(size) });
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/sok/organisasjon?${params}`), {
-    method: "POST",
-    headers: authHeaders(token),
-    body: JSON.stringify({ organisasjonsnummer }),
-  });
+  const respons = await fetch(
+    apiUrl(byggSti`/api/v1/kontrollsaker/sok/organisasjon`) + `?${params}`,
+    {
+      method: "POST",
+      headers: authHeaders(token),
+      body: JSON.stringify({ organisasjonsnummer }),
+    },
+  );
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke søke på organisasjonsnummer");
   return parseEllerKastFeil(
     kontrollsakPageResponseSchema,
@@ -114,7 +116,7 @@ export async function søkKontrollsakerOrganisasjon(
 // --- Hendelser ---
 
 export async function hentHendelser(token: string, sakId: string) {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/hendelser`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/hendelser`), {
     headers: authHeaders(token),
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke hente hendelser");
@@ -124,7 +126,7 @@ export async function hentHendelser(token: string, sakId: string) {
 // --- Journalposter ---
 
 export async function hentJournalposter(token: string, sakId: string) {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/journalposter`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/journalposter`), {
     headers: authHeaders(token),
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke hente journalposter");
@@ -145,7 +147,7 @@ export async function endreSteg(
   resultat?: LagreResultatRequest,
   beskrivelse?: string,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/steg`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/steg`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ versjon, steg, resultat, beskrivelse }),
@@ -159,7 +161,7 @@ export async function lagreResultat(
   sakId: string,
   resultat: LagreResultatRequest,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/resultat`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/resultat`), {
     method: "PUT",
     headers: authHeaders(token),
     body: JSON.stringify(resultat),
@@ -174,7 +176,7 @@ export async function endreStatus(
   status: KontrollsakStatus | null,
   beskrivelse?: string,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/status`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/status`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ status, beskrivelse }),
@@ -188,7 +190,7 @@ export async function tildelKontrollsak(
   sakId: string,
   navIdent: string,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/saksbehandler`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/saksbehandler`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ aksjon: "TILDEL", navIdent }),
@@ -201,7 +203,7 @@ export async function fristillKontrollsak(
   token: string,
   sakId: string,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/saksbehandler`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/saksbehandler`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ aksjon: "FRISTILL" }),
@@ -215,7 +217,7 @@ export async function delKontrollsak(
   sakId: string,
   navIdent: string,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/deling`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/deling`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ aksjon: "DEL", navIdent }),
@@ -237,7 +239,7 @@ export async function opprettJournalpost(
   vedleggIds: string[] = [],
   dokumentIds: string[] = [],
 ): Promise<{ journalpostId: string }> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/journalposter`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/journalposter`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ journalposttype, tittel, tekst, vedleggIds, dokumentIds }),
@@ -266,7 +268,7 @@ export async function opprettOppgave(
   oppgavetype: string,
   journalpostId?: string,
 ): Promise<OppgaveResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/oppgave`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/oppgave`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({
@@ -330,7 +332,7 @@ export async function overforAnsvarlig(
   sakId: string,
   navIdent: string,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/saksbehandler`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/saksbehandler`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ aksjon: "OVERFOR", navIdent }),
@@ -344,7 +346,7 @@ export async function fjernDeltTilgang(
   sakId: string,
   navIdent: string,
 ): Promise<KontrollsakResponse> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/deling`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/deling`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ aksjon: "FJERN", navIdent }),
@@ -371,7 +373,7 @@ export async function redigerKontrollsak(
     }[];
   },
 ): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}`), {
     method: "PATCH",
     headers: authHeaders(token),
     body: JSON.stringify(data),
@@ -386,7 +388,7 @@ export async function videresend(
   beskrivelse?: string,
   ansvarligNavIdent?: string,
 ): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/videresend`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/videresend`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ enhet, beskrivelse, ansvarligNavIdent }),
@@ -401,7 +403,7 @@ export async function kobleSak(
   aksjon: "KOBLE" | "FJERN",
   beskrivelse?: string,
 ): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/kobling`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/kobling`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ kobletSakId, aksjon, beskrivelse }),
@@ -416,7 +418,7 @@ export async function opprettManuellHendelse(
   beskrivelse?: string,
   tidspunkt?: string,
 ): Promise<void> {
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/hendelser`), {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/hendelser`), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ tittel, beskrivelse, tidspunkt }),
@@ -433,11 +435,14 @@ export async function redigerManuellHendelse(
   tidspunkt?: string,
 ): Promise<void> {
   logger.info(`Redigerer manuell hendelse ${hendelseId} for sak ${sakId}`);
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/hendelser/${hendelseId}`), {
-    method: "PUT",
-    headers: authHeaders(token),
-    body: JSON.stringify({ tittel, beskrivelse, tidspunkt }),
-  });
+  const respons = await fetch(
+    apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/hendelser/${hendelseId}`),
+    {
+      method: "PUT",
+      headers: authHeaders(token),
+      body: JSON.stringify({ tittel, beskrivelse, tidspunkt }),
+    },
+  );
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke redigere manuell hendelse");
 }
 
@@ -447,9 +452,12 @@ export async function slettManuellHendelse(
   hendelseId: string,
 ): Promise<void> {
   logger.info(`Sletter manuell hendelse ${hendelseId} for sak ${sakId}`);
-  const respons = await fetch(apiUrl(`/api/v1/kontrollsaker/${sakId}/hendelser/${hendelseId}`), {
-    method: "DELETE",
-    headers: authHeaders(token),
-  });
+  const respons = await fetch(
+    apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/hendelser/${hendelseId}`),
+    {
+      method: "DELETE",
+      headers: authHeaders(token),
+    },
+  );
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke slette manuell hendelse");
 }

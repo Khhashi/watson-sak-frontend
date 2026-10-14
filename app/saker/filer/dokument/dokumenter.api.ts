@@ -1,3 +1,4 @@
+import { parseSakId } from "~/saker/sti-param.server";
 import { data, redirect, type ActionFunctionArgs } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
@@ -53,7 +54,7 @@ async function lesFormData(request: Request): Promise<FormData> {
  *
  */
 export async function action({ request, params }: ActionFunctionArgs) {
-  const sakReferanse = params.sakId;
+  const sakReferanse = parseSakId(params.sakId);
   if (!sakReferanse) {
     throw data("Mangler sak", { status: 400 });
   }

@@ -59,7 +59,7 @@ describe("DokumentSide loader — kommentarfeil", () => {
     vi.clearAllMocks();
     mockHentKontrollsak.mockResolvedValue(sak);
     mockHentDokument.mockResolvedValue({
-      id: "d1",
+      id: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
       tittel: "Rapport",
       innhold: [{ type: "p", children: [{ text: "Innhold" }] }],
       arkivert: null,
@@ -106,7 +106,7 @@ describe("DokumentSide loader — avsluttet sak", () => {
     vi.clearAllMocks();
     mockHentKontrollsak.mockResolvedValue(avsluttetSak);
     mockHentDokument.mockResolvedValue({
-      id: "d1",
+      id: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
       tittel: "Rapport",
       innhold: [{ type: "p", children: [{ text: "Innhold" }] }],
       arkivert: "2026-09-01T10:00:00",
@@ -119,7 +119,7 @@ describe("DokumentSide loader — avsluttet sak", () => {
 
     const resultat = await hent();
 
-    expect(resultat.dokument.id).toBe("d1");
+    expect(resultat.dokument.id).toBe("3f2504e0-4f89-41d3-9a0c-0305e82c3301");
     expect(resultat.dokumentHistorikk).toEqual([]);
     expect(resultat.kanRedigere).toBe(false);
     expect(resultat.kanEndreMapper).toBe(false);
@@ -137,7 +137,7 @@ describe("DokumentSide loader — kanEndreMapper", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockHentDokument.mockResolvedValue({
-      id: "d1",
+      id: "3f2504e0-4f89-41d3-9a0c-0305e82c3301",
       tittel: "Rapport",
       innhold: [{ type: "p", children: [{ text: "Innhold" }] }],
       arkivert: null,
@@ -166,7 +166,9 @@ describe("DokumentSide loader — kanEndreMapper", () => {
 async function hent() {
   const { loader } = await import("./DokumentSide.server");
   return loader({
-    request: new Request("http://localhost/saker/SAK-42/dokumenter/d1"),
-    params: { sakId: "SAK-42", docId: "d1" },
+    request: new Request(
+      "http://localhost/saker/42/dokumenter/3f2504e0-4f89-41d3-9a0c-0305e82c3301",
+    ),
+    params: { sakId: "42", docId: "3f2504e0-4f89-41d3-9a0c-0305e82c3301" },
   } as Route.LoaderArgs);
 }
