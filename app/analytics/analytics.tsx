@@ -1,12 +1,15 @@
 import { logger } from "~/logging/logging";
+import { useNonce } from "~/sikkerhet/nonce";
 type AnalyticsTagProps = {
   sporingId: string;
   sporingScriptUrl: string;
 };
 
 export function AnalyticsTags({ sporingId, sporingScriptUrl }: AnalyticsTagProps) {
+  const nonce = useNonce();
   return (
     <script
+      nonce={nonce}
       defer
       src={sporingScriptUrl}
       data-host-url="https://umami.nav.no"
