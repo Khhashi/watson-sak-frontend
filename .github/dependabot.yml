@@ -1,0 +1,57 @@
+version: 2
+
+registries:
+  npm-github:
+    type: npm-registry
+    url: https://npm.pkg.github.com
+    token: ${{ secrets.READER_TOKEN }}
+
+updates:
+  # npm-avhengigheter (pnpm)
+  - package-ecosystem: "npm"
+    directory: "/"
+    registries:
+      - npm-github
+    commit-message:
+      prefix: "⬆ "
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Oslo"
+    open-pull-requests-limit: 10
+    groups:
+      aksel:
+        patterns:
+          - "@navikt/ds-*"
+          - "@navikt/aksel-*"
+      plate:
+        patterns:
+          - "@platejs/*"
+          - "platejs"
+      minor-og-patch:
+        update-types:
+          - "minor"
+          - "patch"
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    commit-message:
+      prefix: "⬆ "
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Oslo"
+
+  # Docker
+  - package-ecosystem: "docker"
+    directory: "/"
+    commit-message:
+      prefix: "⬆ "
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+      timezone: "Europe/Oslo"

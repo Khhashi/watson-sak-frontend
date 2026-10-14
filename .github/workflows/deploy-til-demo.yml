@@ -13,12 +13,12 @@ jobs:
       id-token: write
       packages: write
     steps:
-      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
           ref: ${{ github.ref }}
       - name: Bygg og push docker image til GAR
-        uses: nais/docker-build-push@ae613eff6f44f0323476eda1c3994a7c518761c3 # main
+        uses: nais/docker-build-push@dd7421d5068057a020ca46ead966c26190c516b1 # main
         id: docker-push-demo
         with:
           team: holmes
@@ -26,7 +26,7 @@ jobs:
           identity_provider: ${{ secrets.NAIS_WORKLOAD_IDENTITY_PROVIDER }}
           build_secrets: NODE_AUTH_TOKEN=${{ secrets.READER_TOKEN }}
       - name: Deploy til nais
-        uses: nais/deploy/actions/deploy@v2
+        uses: nais/deploy/actions/deploy@7ad7c2b833e1db74a80954e3ee6bb6ac060a8ae7 # v2
         env:
           CLUSTER: dev-gcp
           IMAGE: ${{ steps.docker-push-demo.outputs.image }}
