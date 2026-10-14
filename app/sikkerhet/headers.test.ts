@@ -52,6 +52,14 @@ describe("sikkerhetHeaders", () => {
   it("setter ikke CSP, den settes med nonce i entry.server", () => {
     expect(sikkerhetHeaders()).not.toHaveProperty("Content-Security-Policy");
   });
+
+  it("skrur av nettleserens gamle XSS-filter", () => {
+    expect(sikkerhetHeaders()).toHaveProperty("X-XSS-Protection", "0");
+  });
+
+  it("sender kun referrer innenfor samme origin", () => {
+    expect(sikkerhetHeaders()).toHaveProperty("Referrer-Policy", "same-origin");
+  });
 });
 
 describe("lagNonce", () => {
