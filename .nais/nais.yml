@@ -32,9 +32,10 @@ spec:
       rules:
         - application: nav-persondata-api
           namespace: holmes
+        - application: watson-admin-api
+          namespace: holmes
       external:
         - host: holmes-unleash-api.nav.cloud.nais.io
-        - host: watson-admin-api.intern.dev.nav.no
   image: {{image}}
   port: 3000
   azure:
