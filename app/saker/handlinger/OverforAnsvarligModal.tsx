@@ -1,8 +1,7 @@
-import { getFormProps, useForm } from "@conform-to/react";
+import { getFormProps, useForm, useInputControl } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
 import { PersonPencilIcon } from "@navikt/aksel-icons";
 import { BodyShort, Button, Modal, UNSAFE_Combobox, VStack } from "@navikt/ds-react";
-import { useState } from "react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import { RouteConfig } from "~/routeConfig";
@@ -28,7 +27,6 @@ export function OverforAnsvarligModal({
 }: OverforAnsvarligModalProps) {
   const fetcher = useFetcher();
   const saksreferanse = getSaksreferanse(sakId);
-  const [valgtNavIdent, setValgtNavIdent] = useState("");
 
   const erSubmitting = fetcher.state !== "idle";
   const actionPath = RouteConfig.SAKER_DETALJ.replace(":sakId", saksreferanse);
@@ -46,23 +44,23 @@ export function OverforAnsvarligModal({
       formData.set("handling", "overfor_ansvarlig");
       fetcher.submit(formData, { method: "post", action: actionPath });
       form.reset();
-      setValgtNavIdent("");
       onClose();
     },
   });
 
   function handleClose() {
     form.reset();
-    setValgtNavIdent("");
     onClose();
   }
+
+  const navIdentControl = useInputControl(fields.navIdent);
 
   const valgbareSaksbehandlere = saksbehandlerDetaljer.map((saksbehandler) => ({
     value: saksbehandler.navIdent,
     label: `${saksbehandler.navn} (${saksbehandler.navIdent})`,
   }));
   const valgtSaksbehandler = valgbareSaksbehandlere.find(
-    (saksbehandler) => saksbehandler.value === valgtNavIdent,
+    (saksbehandler) => saksbehandler.value === navIdentControl.value,
   );
 
   return (
@@ -79,7 +77,14 @@ export function OverforAnsvarligModal({
         <Modal.Body>
           <VStack gap="space-4">
             <BodyShort>Velg ny ansvarlig saksbehandler for sak {saksreferanse}.</BodyShort>
-            <input type="hidden" name={fields.navIdent.name} value={valgtNavIdent} />
+            <input
+              type="hidden"
+              name={fields.navIdent.name}
+              defaultValue={fields.navIdent.initialValue}
+              hidden
+              tabIndex={-1}
+              onFocus={() => navIdentControl.focus()}
+            />
             <UNSAFE_Combobox
               key={fields.navIdent.key}
               id={fields.navIdent.id}
@@ -88,7 +93,7 @@ export function OverforAnsvarligModal({
               options={valgbareSaksbehandlere}
               selectedOptions={valgtSaksbehandler ? [valgtSaksbehandler] : []}
               onToggleSelected={(navIdent, erValgt) => {
-                setValgtNavIdent(erValgt ? navIdent : "");
+                navIdentControl.change(erValgt ? navIdent : "");
               }}
               error={fields.navIdent.errors?.[0]}
             />
