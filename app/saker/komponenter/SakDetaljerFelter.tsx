@@ -139,7 +139,7 @@ export function SakDetaljerFelter({ sak, onVisIdentHistorikk }: SakDetaljerFelte
                         {formaterYtelseType(ytelse.type)}
                       </Tag>
                     </Table.DataCell>
-                    <Table.DataCell className="text-sm">
+                    <Table.DataCell className="text-sm whitespace-nowrap">
                       {formaterYtelsePeriode(ytelse.periodeFra, ytelse.periodeTil)}
                     </Table.DataCell>
                     <Table.DataCell className="text-sm">
