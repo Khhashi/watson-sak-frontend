@@ -37,8 +37,10 @@ export function sikkerhetHeaders() {
   return {
     "X-Frame-Options": "DENY",
     "X-Content-Type-Options": "nosniff",
-    "X-XSS-Protection": "1; mode=block",
-    "Referrer-Policy": "strict-origin-when-cross-origin",
+    // Skru av nettleserens gamle XSS-filter. Det kan misbrukes, og CSP beskytter oss i stedet.
+    "X-XSS-Protection": "0",
+    // Send aldri referrer (som kan inneholde saks-ID-er) til andre domener.
+    "Referrer-Policy": "same-origin",
     "Permissions-Policy":
       "geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()",
     "Strict-Transport-Security": "max-age=31536000; includeSubDomains; preload",
