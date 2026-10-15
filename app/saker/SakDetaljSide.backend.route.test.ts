@@ -17,6 +17,7 @@ const mockHentFiler = vi.fn();
 const mockHentMapper = vi.fn().mockResolvedValue([]);
 const mockEndreSteg = vi.fn();
 const mockTildelKontrollsak = vi.fn();
+const mockFristillKontrollsak = vi.fn();
 const mockVideresend = vi.fn();
 const mockHentTillatteHandlinger = vi.fn().mockResolvedValue({
   versjon: 1,
@@ -77,6 +78,7 @@ vi.mock("~/saker/api.server", () => ({
   hentTillatteHandlinger: mockHentTillatteHandlinger,
   endreSteg: mockEndreSteg,
   tildelKontrollsak: mockTildelKontrollsak,
+  fristillKontrollsak: mockFristillKontrollsak,
   videresend: mockVideresend,
   søkKontrollsaker: mockSøkKontrollsaker,
 }));
@@ -199,10 +201,21 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(resultat).toMatchObject({ ok: true, sak: { steg: "OPPRETTET" } });
   });
 
-  it.each(["OPPRETTET", "UTREDNING"])(
-    "avviser videresending av tildelt sak uten ny ansvarlig i %s i backend-stien",
-    async (steg) => {
-      mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, steg });
+  it.each([
+    ["OPPRETTET", "Z111111"],
+    ["UTREDNING", "Z999999"],
+    ["UTREDNING", "Z111111"],
+  ])(
+    "avviser videresending uten ny ansvarlig i %s med eier %s i backend-stien",
+    async (steg, navIdent) => {
+      mockHentKontrollsak.mockResolvedValue({
+        ...grunnleggendeSak,
+        steg,
+        saksbehandlere: {
+          ...grunnleggendeSak.saksbehandlere,
+          eier: { navIdent, navn: "Test Saksbehandler", enhet: "4812" },
+        },
+      });
       const formData = new FormData();
       formData.set("handling", "send_til_annen_enhet");
       formData.set("seksjon", "NORD");
@@ -217,36 +230,53 @@ describe("SakDetaljSide loader — backend-sti", () => {
     },
   );
 
-  it("lar en eierløs sak i Opprettet videresendes uten ny ansvarlig", async () => {
-    mockHentKontrollsak.mockResolvedValue({
+  it.each([null, grunnleggendeSak.saksbehandlere.eier])(
+    "lar egen eller eierløs sak i Opprettet videresendes uten ny ansvarlig (%j)",
+    async (eier) => {
+      mockHentKontrollsak.mockResolvedValue({
+        ...grunnleggendeSak,
+        saksbehandlere: { ...grunnleggendeSak.saksbehandlere, eier },
+      });
+      const formData = new FormData();
+      formData.set("handling", "send_til_annen_enhet");
+      formData.set("seksjon", "NORD");
+      const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+      const { action } = await import("./SakDetaljSide.server");
+
+      expect(
+        await action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+      ).toMatchObject({ ok: true });
+      expect(mockVideresend).toHaveBeenCalledWith("mock-token", "1", "NORD", undefined, undefined);
+    },
+  );
+
+  it("tillater FRISTILL av egen sak i Opprettet i backend-stien", async () => {
+    mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
+    mockFristillKontrollsak.mockResolvedValue({
       ...grunnleggendeSak,
       saksbehandlere: { ...grunnleggendeSak.saksbehandlere, eier: null },
     });
-    const formData = new FormData();
-    formData.set("handling", "send_til_annen_enhet");
-    formData.set("seksjon", "NORD");
-    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
-    const { action } = await import("./SakDetaljSide.server");
-
-    expect(
-      await action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
-    ).toMatchObject({ ok: true });
-    expect(mockVideresend).toHaveBeenCalledWith("mock-token", "1", "NORD", undefined, undefined);
-  });
-
-  it("avviser FRISTILL i backend-stien uten å kalle fristilling i API-et", async () => {
-    mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
     const formData = new FormData();
     formData.set("handling", "FRISTILL");
     const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
     const { action } = await import("./SakDetaljSide.server");
 
+    expect(
+      await action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+    ).toMatchObject({ ok: true, sak: { saksbehandlere: { eier: null } } });
+    expect(mockFristillKontrollsak).toHaveBeenCalledWith("mock-token", "1");
+  });
+
+  it("avviser FRISTILL etter Opprettet uten å kalle backend", async () => {
+    mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, steg: "UTREDNING" });
+    const formData = new FormData();
+    formData.set("handling", "FRISTILL");
+    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+    const { action } = await import("./SakDetaljSide.server");
     await expect(
       action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
-    ).rejects.toMatchObject({
-      data: "Ansvarlig saksbehandler kan ikke fjernes. Overfør saken til en ny saksbehandler.",
-      init: { status: 409 },
-    });
+    ).rejects.toMatchObject({ init: { status: 409 } });
+    expect(mockFristillKontrollsak).not.toHaveBeenCalled();
   });
 
   it("skjuler filområdet stille når hentFiler gir 403 (mangler fil-tilgang)", async () => {

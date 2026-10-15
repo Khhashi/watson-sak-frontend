@@ -70,7 +70,9 @@ export function SendTilAnnenEnhetModal({
   const [valgtEnhet, setValgtEnhet] = useState("");
   const [bekreftetEnhet, setBekreftetEnhet] = useState<string | null>(null);
   const [feilmelding, setFeilmelding] = useState<string | null>(null);
-  const kreverNyAnsvarlig = ansvarligSaksbehandler !== null || sakSteg !== "OPPRETTET";
+  const kreverNyAnsvarlig =
+    sakSteg !== "OPPRETTET" ||
+    (ansvarligSaksbehandler !== null && ansvarligSaksbehandler.navIdent !== innloggetNavIdent);
   const valgbareSaksbehandlere = saksbehandlerDetaljer.filter(
     (saksbehandler) => saksbehandler.navIdent !== ansvarligSaksbehandler?.navIdent,
   );

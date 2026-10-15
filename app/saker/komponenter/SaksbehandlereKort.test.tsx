@@ -464,12 +464,6 @@ describe("SaksbehandlereKort", () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText("Ny enhet"), { target: { value: "hu424t" } });
-      fireEvent.change(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" }), {
-        target: { value: "Ola Saksbehandler" },
-      });
-      fireEvent.pointerUp(screen.getByRole("option", { name: "Ola Saksbehandler (Z123456)" }));
-    });
-    await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     });
 
@@ -551,7 +545,7 @@ describe("SaksbehandlereKort", () => {
     expect(screen.getByRole("button", { name: "Tildel saksbehandler" })).toBeDefined();
   });
 
-  it("tillater bytte, men ikke fjerning for sakens ansvarlige saksbehandler", async () => {
+  it("lar ansvarlig ufordele seg selv i Opprettet", async () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
@@ -561,11 +555,15 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ufordel meg" }));
+    expect(submitMock).toHaveBeenCalledWith(
+      { handling: "FRISTILL" },
+      { method: "post", action: expect.any(String) },
+    );
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 
-  it("tillater bytte, men ikke fjerning for en leder som ikke er sakseier", async () => {
+  it("lar leder ufordele andre i Opprettet", async () => {
     useInnloggetBrukerMock.mockReturnValue({
       navIdent: "Z999999",
       name: "Leder Lederesen",
@@ -582,25 +580,35 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Ufordel saksbehandler" }));
+    expect(submitMock).toHaveBeenCalledWith(
+      { handling: "FRISTILL" },
+      { method: "post", action: expect.any(String) },
+    );
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 
-  it("skjuler Endre og Fjern saksbehandler for en saksbehandler uten eierskap eller lederrolle", async () => {
+  it("skjuler Endre og Ufordel for en saksbehandler uten eierskap eller lederrolle", async () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={false}
-        sak={lagKontrollsak()}
+        sak={lagKontrollsak({ steg: "OPPRETTET" })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler()}
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Ufordel/ })).toBeNull();
     expect(screen.queryByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeNull();
   });
 
-  it("skjuler Fjern saksbehandler utenfor steget Opprettet", async () => {
+  it.each([false, true])("skjuler Ufordel utenfor Opprettet når erLeder er %s", async (erLeder) => {
+    useInnloggetBrukerMock.mockReturnValue({
+      navIdent: "Z999999",
+      name: "Test Saksbehandler",
+      enhet: "4812",
+      erLeder,
+    });
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
@@ -610,7 +618,7 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
+    expect(screen.queryByRole("button", { name: /Ufordel/ })).toBeNull();
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 });

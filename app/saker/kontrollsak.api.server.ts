@@ -199,6 +199,19 @@ export async function tildelKontrollsak(
   return parseEllerKastFeil(kontrollsakResponseSchema, await respons.json(), "tildelKontrollsak");
 }
 
+export async function fristillKontrollsak(
+  token: string,
+  sakId: string,
+): Promise<KontrollsakResponse> {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/saksbehandler`), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ aksjon: "FRISTILL" }),
+  });
+  if (!respons.ok) await håndterFeil(respons, "Kunne ikke fristille kontrollsak");
+  return parseEllerKastFeil(kontrollsakResponseSchema, await respons.json(), "fristillKontrollsak");
+}
+
 export async function delKontrollsak(
   token: string,
   sakId: string,

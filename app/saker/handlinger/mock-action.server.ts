@@ -141,10 +141,15 @@ export async function mockAction(
       break;
     }
     case "FRISTILL": {
-      throw data(
-        "Ansvarlig saksbehandler kan ikke fjernes. Overfør saken til en ny saksbehandler.",
-        { status: 409 },
-      );
+      if (sak.steg !== "OPPRETTET") {
+        throw data("Ansvarlig saksbehandler kan bare fjernes i steget Opprettet", { status: 409 });
+      }
+      if (!sak.saksbehandlere.eier) {
+        throw data("Saken har ingen ansvarlig saksbehandler å fjerne", { status: 409 });
+      }
+      sak.saksbehandlere.eier = null;
+      leggTilBrukerhendelse(sak, "SAK_FRISTILT");
+      break;
     }
     case "endre_steg":
     case "endre_steg_dialog": {
@@ -288,7 +293,10 @@ export async function mockAction(
       if (nySeksjon === getSaksenhet(sak)) {
         throw data("Velg en annen enhet", { status: 400 });
       }
-      if ((sak.saksbehandlere.eier || sak.steg !== "OPPRETTET") && !ansvarligNavIdent) {
+      const eier = sak.saksbehandlere.eier;
+      const kreverNyAnsvarlig =
+        sak.steg !== "OPPRETTET" || (eier && eier.navIdent !== innloggetBruker.navIdent);
+      if (kreverNyAnsvarlig && !ansvarligNavIdent) {
         throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
       }
 

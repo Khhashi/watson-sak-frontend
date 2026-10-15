@@ -81,6 +81,7 @@ export function SaksbehandlereKort({
   const kodeverk = useKodeverk();
   const fetcher = useFetcher();
   const tildelMegFetcher = useFetcher();
+  const fristillFetcher = useFetcher();
   const stegregler = hentStegbaserteSaksregler(sak.steg);
   const erAktivStatus = sak.status === null || sak.status === "AKTIV";
   const kanEndreTilgang = stegregler.erAktiv && erAktivStatus;
@@ -103,6 +104,7 @@ export function SaksbehandlereKort({
 
   // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
+  const kanFristilleAnsvarlig = kanEndreAnsvarlig && sak.steg === "OPPRETTET";
   const kanEndreStatus =
     erEier && tillatteHandlinger?.handlinger.some((handling) => handling.type === "ENDRE_STATUS");
   const kanEndreSteg =
@@ -208,10 +210,28 @@ export function SaksbehandlereKort({
                 saksbehandler={ansvarligSaksbehandler}
                 handling={
                   kanEndreAnsvarlig ? (
-                    <ResponsivEndreKnapp
-                      ariaLabel="Endre ansvarlig saksbehandler"
-                      onClick={() => setVisOverforModal(true)}
-                    />
+                    <HStack gap="space-2" align="center">
+                      <ResponsivEndreKnapp
+                        ariaLabel="Endre ansvarlig saksbehandler"
+                        onClick={() => setVisOverforModal(true)}
+                      />
+                      {kanFristilleAnsvarlig && (
+                        <Button
+                          type="button"
+                          variant="tertiary"
+                          size="xsmall"
+                          loading={fristillFetcher.state !== "idle"}
+                          onClick={() =>
+                            fristillFetcher.submit(
+                              { handling: "FRISTILL" },
+                              { method: "post", action: sakPath },
+                            )
+                          }
+                        >
+                          {erEier ? "Ufordel meg" : "Ufordel saksbehandler"}
+                        </Button>
+                      )}
+                    </HStack>
                   ) : null
                 }
               />

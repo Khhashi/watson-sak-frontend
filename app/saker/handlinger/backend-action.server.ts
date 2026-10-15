@@ -82,6 +82,7 @@ export async function backendAction(
     const innlogget = await hentInnloggetBruker({ request });
     const nåværendeSak = sakFraTilgangskontroll ?? (await backendApi.hentKontrollsak(token, sakId));
     sjekkEierEllerLeder(handling, nåværendeSak, innlogget);
+    sakFraTilgangskontroll = nåværendeSak;
   }
 
   switch (handling) {
@@ -96,10 +97,11 @@ export async function backendAction(
       return { ok: true, sak };
     }
     case "FRISTILL": {
-      throw data(
-        "Ansvarlig saksbehandler kan ikke fjernes. Overfør saken til en ny saksbehandler.",
-        { status: 409 },
-      );
+      if (sakFraTilgangskontroll?.steg !== "OPPRETTET") {
+        throw data("Ansvarlig saksbehandler kan bare fjernes i steget Opprettet", { status: 409 });
+      }
+      const sak = await backendApi.fristillKontrollsak(token, sakId);
+      return { ok: true, sak };
     }
     case "endre_steg":
     case "endre_steg_dialog": {
@@ -285,7 +287,9 @@ export async function backendAction(
       const ansvarligNavIdent = hentValgfriTekst(formData, "ansvarligNavIdent");
       if (!ansvarligNavIdent) {
         const nåværendeSak = await backendApi.hentKontrollsak(token, sakId);
-        if (nåværendeSak.saksbehandlere.eier || nåværendeSak.steg !== "OPPRETTET") {
+        const innlogget = await hentInnloggetBruker({ request });
+        const eier = nåværendeSak.saksbehandlere.eier;
+        if (nåværendeSak.steg !== "OPPRETTET" || (eier && eier.navIdent !== innlogget.navIdent)) {
           throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
         }
       }
