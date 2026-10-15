@@ -9,6 +9,7 @@ import {
   hentProblemDetailMedDokumenter,
   parseEllerKastFeil,
 } from "~/saker/api-core.server";
+import { filtrerFilrespons } from "~/sikkerhet/filnedlasting.server";
 import { sti as byggSti } from "./sti-param.server";
 
 // --- Filer (vedlegg) ---
@@ -188,8 +189,8 @@ export async function flyttFilTilMappe(
 }
 
 /**
- * Henter filinnhold direkte fra backend og returnerer det rå HTTP-svaret.
- * Svaret inneholder filbytes med Content-Disposition-header for nedlasting.
+ * Henter filinnhold direkte fra backend og streamer det videre med filtrerte headere.
+ * Se `filtrerFilrespons` for hvilke headere som slippes gjennom og hvorfor.
  * Unngår bruk av signerte GCS-URLer som krever iam.serviceAccounts.signBlob.
  */
 export async function lastNedFil(token: string, sakId: string, filId: string): Promise<Response> {
@@ -197,5 +198,5 @@ export async function lastNedFil(token: string, sakId: string, filId: string): P
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke laste ned fil");
-  return respons;
+  return filtrerFilrespons(respons);
 }
