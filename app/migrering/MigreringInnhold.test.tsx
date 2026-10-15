@@ -271,6 +271,24 @@ describe("MigreringInnhold", () => {
         "Dine saker",
         "Andre saker",
       ]);
+
+      // thead er første radgruppe. Hver tbody har bare sin egen overskrift og sine egne kandidater.
+      const [, dine, andre] = screen.getAllByRole("rowgroup");
+      expect(
+        within(dine)
+          .getAllByRole("rowheader")
+          .map((e) => e.textContent),
+      ).toEqual(["Dine saker"]);
+      expect(within(dine).queryByText("3")).toBeNull();
+      expect(within(dine).getByText("1")).toBeTruthy();
+      expect(within(dine).getByText("2")).toBeTruthy();
+      expect(
+        within(andre)
+          .getAllByRole("rowheader")
+          .map((e) => e.textContent),
+      ).toEqual(["Andre saker"]);
+      expect(within(andre).getByText("3")).toBeTruthy();
+      expect(within(andre).queryByText("1")).toBeNull();
     });
 
     it("viser bare «Andre saker» når siden bare har andres saker", () => {

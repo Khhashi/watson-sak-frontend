@@ -47,14 +47,17 @@ function formaterAccessDato(iso: string | null | undefined) {
 }
 
 /**
- * Backend legger lederens egne saker først. Overskriften settes der gruppen starter på siden: «Dine saker» øverst
- * når siden begynner med egne, og «Andre saker» der egne slutter eller siden begynner med andres.
+ * Backend legger lederens egne saker først. Hver gruppe får sin egen radgruppe (`tbody`), slik at overskriften
+ * «Dine saker» eller «Andre saker» bare omfatter radene under seg i tabellsemantikken. Andre enn ledere får én gruppe uten overskrift.
  */
-function gruppeOverskrift(kandidater: MigreringKandidat[], indeks: number, egenNavIdent: string) {
-  const egen = kandidater[indeks].ansvar.navIdent === egenNavIdent;
-  if (indeks === 0) return egen ? "Dine saker" : "Andre saker";
-  const forrigeEgen = kandidater[indeks - 1].ansvar.navIdent === egenNavIdent;
-  return forrigeEgen && !egen ? "Andre saker" : null;
+function delIGrupper(kandidater: MigreringKandidat[], egenNavIdent: string | undefined) {
+  if (!egenNavIdent) return [{ overskrift: null, kandidater }];
+  const egne = kandidater.filter((k) => k.ansvar.navIdent === egenNavIdent);
+  const andres = kandidater.filter((k) => k.ansvar.navIdent !== egenNavIdent);
+  return [
+    ...(egne.length > 0 ? [{ overskrift: "Dine saker", kandidater: egne }] : []),
+    ...(andres.length > 0 ? [{ overskrift: "Andre saker", kandidater: andres }] : []),
+  ];
 }
 
 function klikkRad(event: MouseEvent<HTMLTableRowElement>) {
@@ -151,62 +154,60 @@ function Kandidatliste({
               )}
             </Table.Row>
           </Table.Header>
-          <Table.Body>
-            {side.kandidater.map((k, indeks) => (
-              <Fragment key={`${k.kilde}:${k.legacyPid}`}>
-                {erLeder &&
-                  egenNavIdent &&
-                  gruppeOverskrift(side.kandidater, indeks, egenNavIdent) && (
-                    <Table.Row>
-                      <Table.HeaderCell
-                        scope="rowgroup"
-                        colSpan={6}
-                        className="bg-ax-bg-neutral-soft"
-                      >
-                        {gruppeOverskrift(side.kandidater, indeks, egenNavIdent)}
-                      </Table.HeaderCell>
-                    </Table.Row>
-                  )}
-                <Table.Row
-                  onClick={klikkRad}
-                  className="cursor-pointer hover:bg-ax-bg-neutral-soft"
-                >
-                  <Table.DataCell>
-                    <KandidatLenke kandidat={k} />
-                  </Table.DataCell>
-                  <Table.DataCell>
-                    {k.ansvar.type === "BEKREFTET" && k.personIdent
-                      ? formaterFødselsnummer(k.personIdent)
-                      : "–"}
-                  </Table.DataCell>
-                  <Table.DataCell>{formaterAccessDato(k.referansedato)}</Table.DataCell>
-                  <Table.DataCell>
-                    <StatusTag kandidat={k} />
-                  </Table.DataCell>
-                  {erLeder && (
-                    <>
-                      <Table.DataCell>{k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}</Table.DataCell>
-                      <Table.DataCell>
-                        {hentMigreringsstatus(k) === "IKKE_PABEGYNT" &&
-                          ansatteValg.some((a) => a.navIdent !== k.ansvar.navIdent) && (
-                            <Button
-                              type="button"
-                              data-rad-handling
-                              variant="secondary"
-                              size="small"
-                              aria-label={`Endre tildeling for PID ${k.legacyPid}`}
-                              onClick={() => setEndrer(k)}
-                            >
-                              Endre tildeling
-                            </Button>
-                          )}
-                      </Table.DataCell>
-                    </>
-                  )}
+          {delIGrupper(side.kandidater, erLeder ? egenNavIdent : undefined).map((gruppe) => (
+            <Table.Body key={gruppe.overskrift ?? "alle"}>
+              {gruppe.overskrift && (
+                <Table.Row>
+                  <Table.HeaderCell scope="rowgroup" colSpan={6} className="bg-ax-bg-neutral-soft">
+                    {gruppe.overskrift}
+                  </Table.HeaderCell>
                 </Table.Row>
-              </Fragment>
-            ))}
-          </Table.Body>
+              )}
+              {gruppe.kandidater.map((k) => (
+                <Fragment key={`${k.kilde}:${k.legacyPid}`}>
+                  <Table.Row
+                    onClick={klikkRad}
+                    className="cursor-pointer hover:bg-ax-bg-neutral-soft"
+                  >
+                    <Table.DataCell>
+                      <KandidatLenke kandidat={k} />
+                    </Table.DataCell>
+                    <Table.DataCell>
+                      {k.ansvar.type === "BEKREFTET" && k.personIdent
+                        ? formaterFødselsnummer(k.personIdent)
+                        : "–"}
+                    </Table.DataCell>
+                    <Table.DataCell>{formaterAccessDato(k.referansedato)}</Table.DataCell>
+                    <Table.DataCell>
+                      <StatusTag kandidat={k} />
+                    </Table.DataCell>
+                    {erLeder && (
+                      <>
+                        <Table.DataCell>
+                          {k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}
+                        </Table.DataCell>
+                        <Table.DataCell>
+                          {hentMigreringsstatus(k) === "IKKE_PABEGYNT" &&
+                            ansatteValg.some((a) => a.navIdent !== k.ansvar.navIdent) && (
+                              <Button
+                                type="button"
+                                data-rad-handling
+                                variant="secondary"
+                                size="small"
+                                aria-label={`Endre tildeling for PID ${k.legacyPid}`}
+                                onClick={() => setEndrer(k)}
+                              >
+                                Endre tildeling
+                              </Button>
+                            )}
+                        </Table.DataCell>
+                      </>
+                    )}
+                  </Table.Row>
+                </Fragment>
+              ))}
+            </Table.Body>
+          ))}
         </Table>
       </div>
       {side.totalAntall === 0 && (
