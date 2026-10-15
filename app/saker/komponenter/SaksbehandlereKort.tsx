@@ -228,7 +228,7 @@ export function SaksbehandlereKort({
                             )
                           }
                         >
-                          {erEier ? "Ufordel meg" : "Ufordel saksbehandler"}
+                          Fjern
                         </Button>
                       )}
                     </HStack>

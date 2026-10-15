@@ -555,7 +555,7 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Ufordel meg" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fjern" }));
     expect(submitMock).toHaveBeenCalledWith(
       { handling: "FRISTILL" },
       { method: "post", action: expect.any(String) },
@@ -580,7 +580,7 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Ufordel saksbehandler" }));
+    fireEvent.click(screen.getByRole("button", { name: "Fjern" }));
     expect(submitMock).toHaveBeenCalledWith(
       { handling: "FRISTILL" },
       { method: "post", action: expect.any(String) },
@@ -588,7 +588,7 @@ describe("SaksbehandlereKort", () => {
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 
-  it("skjuler Endre og Ufordel for en saksbehandler uten eierskap eller lederrolle", async () => {
+  it("skjuler Endre og Fjern for en saksbehandler uten eierskap eller lederrolle", async () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={false}
@@ -598,11 +598,11 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: /Ufordel/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Fjern" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeNull();
   });
 
-  it.each([false, true])("skjuler Ufordel utenfor Opprettet når erLeder er %s", async (erLeder) => {
+  it.each([false, true])("skjuler Fjern utenfor Opprettet når erLeder er %s", async (erLeder) => {
     useInnloggetBrukerMock.mockReturnValue({
       navIdent: "Z999999",
       name: "Test Saksbehandler",
@@ -618,7 +618,7 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: /Ufordel/ })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Fjern" })).toBeNull();
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 });
