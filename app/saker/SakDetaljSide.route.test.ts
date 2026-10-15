@@ -1252,21 +1252,21 @@ describe("SakDetaljSide tilgangskontroll", () => {
     ).rejects.toMatchObject({ init: { status: 403 } });
   });
 
-  it("tillater FRISTILL for leder som ikke er eier", async () => {
+  it.each([false, true])("avviser FRISTILL i Opprettet når erLeder er %s", async (erLeder) => {
     vi.mocked(hentInnloggetBruker).mockResolvedValue({
       navIdent: "Z999999",
       name: "Leder Lederesen",
       preferredUsername: "leder@nav.no",
       enhet: "4812",
       enhetId: "by295h",
-      erLeder: true,
+      erLeder,
     });
 
     const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
     const kontrollsakRef = getSaksreferanse(kontrollsak.id);
     kontrollsak.steg = "OPPRETTET";
     kontrollsak.saksbehandlere.eier = {
-      navIdent: "Z111111",
+      navIdent: erLeder ? "Z111111" : "Z999999",
       navn: "Annen Saksbehandler",
       enhet: "4800",
     };
@@ -1274,15 +1274,17 @@ describe("SakDetaljSide tilgangskontroll", () => {
     const formData = new FormData();
     formData.set("handling", "FRISTILL");
 
-    const resultat = await action({
-      request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
-        method: "POST",
-        body: formData,
-      }),
-      params: { sakId: kontrollsakRef },
-    } as Route.ActionArgs);
-
-    expect(resultat).toMatchObject({ ok: true });
+    const eierFør = kontrollsak.saksbehandlere.eier;
+    await expect(
+      action({
+        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+          method: "POST",
+          body: formData,
+        }),
+        params: { sakId: kontrollsakRef },
+      } as Route.ActionArgs),
+    ).rejects.toMatchObject({ init: { status: 409 } });
+    expect(kontrollsak.saksbehandlere.eier).toEqual(eierFør);
   });
 
   it("avviser FRISTILL utenfor steget Opprettet", async () => {
@@ -1401,30 +1403,34 @@ describe("SakDetaljSide tilgangskontroll", () => {
     expect(resultat).toMatchObject({ ok: true });
   });
 
-  it("avviser videresending uten ny ansvarlig utenfor steget Opprettet", async () => {
-    const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
-    const kontrollsakRef = getSaksreferanse(kontrollsak.id);
-    kontrollsak.steg = "UTREDES";
-    kontrollsak.saksbehandlere.eier = {
-      navIdent: "Z999999",
-      navn: "Test Saksbehandler",
-      enhet: "4812",
-    };
+  it.each(["OPPRETTET", "UTREDES"] as const)(
+    "avviser videresending av tildelt sak uten ny ansvarlig i %s",
+    async (steg) => {
+      const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
+      const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+      kontrollsak.steg = steg;
+      kontrollsak.saksbehandlere.eier = {
+        navIdent: "Z999999",
+        navn: "Test Saksbehandler",
+        enhet: "4812",
+      };
 
-    const formData = new FormData();
-    formData.set("handling", "send_til_annen_enhet");
-    formData.set("seksjon", "NORD");
+      const formData = new FormData();
+      formData.set("handling", "send_til_annen_enhet");
+      formData.set("seksjon", "NORD");
 
-    await expect(
-      action({
-        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
-          method: "POST",
-          body: formData,
-        }),
-        params: { sakId: kontrollsakRef },
-      } as Route.ActionArgs),
-    ).rejects.toMatchObject({ init: { status: 409 } });
-  });
+      await expect(
+        action({
+          request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+            method: "POST",
+            body: formData,
+          }),
+          params: { sakId: kontrollsakRef },
+        } as Route.ActionArgs),
+      ).rejects.toMatchObject({ init: { status: 409 } });
+      expect(kontrollsak.saksbehandlere.eier?.navIdent).toBe("Z999999");
+    },
+  );
 
   it("returnerer tom filer-liste i loader for bruker uten tilgang", async () => {
     const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];

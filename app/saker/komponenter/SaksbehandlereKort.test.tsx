@@ -464,6 +464,12 @@ describe("SaksbehandlereKort", () => {
 
     await act(async () => {
       fireEvent.change(screen.getByLabelText("Ny enhet"), { target: { value: "hu424t" } });
+      fireEvent.change(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" }), {
+        target: { value: "Ola Saksbehandler" },
+      });
+      fireEvent.pointerUp(screen.getByRole("option", { name: "Ola Saksbehandler (Z123456)" }));
+    });
+    await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     });
 
@@ -477,7 +483,10 @@ describe("SaksbehandlereKort", () => {
       <SaksbehandlereKort
         erEier={true}
         sak={lagKontrollsak({ steg: "OPPRETTET" })}
-        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        saksbehandlerDetaljer={[
+          lagSaksbehandler(),
+          lagSaksbehandler({ navIdent: "Z888888", navn: "Ny Saksbehandler" }),
+        ]}
         ansvarligSaksbehandler={lagSaksbehandler({
           navIdent: "Z123456",
           navn: "Ola Saksbehandler",
@@ -487,7 +496,15 @@ describe("SaksbehandlereKort", () => {
 
     await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Endre enhet" }));
+    });
+    await act(async () => {
       fireEvent.change(screen.getByLabelText("Ny enhet"), { target: { value: "hu424t" } });
+      fireEvent.change(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" }), {
+        target: { value: "Ny Saksbehandler" },
+      });
+      fireEvent.pointerUp(screen.getByRole("option", { name: "Ny Saksbehandler (Z888888)" }));
+    });
+    await act(async () => {
       fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     });
 
@@ -534,7 +551,7 @@ describe("SaksbehandlereKort", () => {
     expect(screen.getByRole("button", { name: "Tildel saksbehandler" })).toBeDefined();
   });
 
-  it("viser Fjern saksbehandler for sakens ansvarlige saksbehandler", async () => {
+  it("tillater bytte, men ikke fjerning for sakens ansvarlige saksbehandler", async () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
@@ -544,17 +561,11 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    const fjernKnapp = screen.getByRole("button", { name: "Fjern saksbehandler" });
-    expect(screen.getByText("Fjern").className).toContain("hidden xl:inline");
-    fireEvent.click(fjernKnapp);
-
-    expect(submitMock).toHaveBeenCalledTimes(1);
-    const [payload, options] = submitMock.mock.calls[0];
-    expect(payload).toEqual({ handling: "FRISTILL" });
-    expect(options).toEqual(expect.objectContaining({ method: "post" }));
+    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 
-  it("viser Fjern saksbehandler for en leder som ikke er sakseier", async () => {
+  it("tillater bytte, men ikke fjerning for en leder som ikke er sakseier", async () => {
     useInnloggetBrukerMock.mockReturnValue({
       navIdent: "Z999999",
       name: "Leder Lederesen",
@@ -571,7 +582,7 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    expect(screen.getByRole("button", { name: "Fjern saksbehandler" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Fjern saksbehandler" })).toBeNull();
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
 

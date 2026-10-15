@@ -141,14 +141,10 @@ export async function mockAction(
       break;
     }
     case "FRISTILL": {
-      if (sak.steg !== "OPPRETTET") {
-        throw data("Ansvarlig saksbehandler kan bare fjernes i steget Opprettet", { status: 409 });
-      }
-      if (!sak.saksbehandlere.eier) {
-        throw data("Saken har ingen ansvarlig saksbehandler å fjerne", { status: 409 });
-      }
-      sak.saksbehandlere.eier = null;
-      break;
+      throw data(
+        "Ansvarlig saksbehandler kan ikke fjernes. Overfør saken til en ny saksbehandler.",
+        { status: 409 },
+      );
     }
     case "endre_steg":
     case "endre_steg_dialog": {
@@ -284,23 +280,7 @@ export async function mockAction(
       });
       break;
     }
-    case "videresend_seksjon": {
-      const nySeksjon = hentTekstfelt(formData, "seksjon", "Ugyldig seksjon");
-
-      if (sak.saksbehandlere.eier) {
-        sak.saksbehandlere.eier = {
-          ...sak.saksbehandlere.eier,
-          enhet: nySeksjon,
-        };
-      } else {
-        sak.saksbehandlere.opprettetAv = {
-          ...sak.saksbehandlere.opprettetAv,
-          enhet: nySeksjon,
-        };
-      }
-      leggTilBrukerhendelse(sak, "MOTTAKSENHET_ENDRET");
-      break;
-    }
+    case "videresend_seksjon":
     case "send_til_annen_enhet": {
       const nySeksjon = hentTekstfelt(formData, "seksjon", "Ugyldig enhet");
       const ansvarligNavIdent = hentValgfriTekst(formData, "ansvarligNavIdent");
@@ -308,7 +288,7 @@ export async function mockAction(
       if (nySeksjon === getSaksenhet(sak)) {
         throw data("Velg en annen enhet", { status: 400 });
       }
-      if (sak.steg !== "OPPRETTET" && !ansvarligNavIdent) {
+      if ((sak.saksbehandlere.eier || sak.steg !== "OPPRETTET") && !ansvarligNavIdent) {
         throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
       }
 
@@ -318,7 +298,7 @@ export async function mockAction(
       if (ansvarligNavIdent && !nyAnsvarlig) {
         throw data("Ugyldig saksbehandler", { status: 400 });
       }
-      if (nyAnsvarlig?.navIdent === sak.saksbehandlere.eier?.navIdent) {
+      if (nyAnsvarlig && nyAnsvarlig.navIdent === sak.saksbehandlere.eier?.navIdent) {
         throw data("Velg en annen ansvarlig saksbehandler", { status: 409 });
       }
 

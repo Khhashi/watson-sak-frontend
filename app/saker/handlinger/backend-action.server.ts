@@ -96,8 +96,10 @@ export async function backendAction(
       return { ok: true, sak };
     }
     case "FRISTILL": {
-      const sak = await backendApi.fristillKontrollsak(token, sakId);
-      return { ok: true, sak };
+      throw data(
+        "Ansvarlig saksbehandler kan ikke fjernes. Overfør saken til en ny saksbehandler.",
+        { status: 409 },
+      );
     }
     case "endre_steg":
     case "endre_steg_dialog": {
@@ -283,7 +285,7 @@ export async function backendAction(
       const ansvarligNavIdent = hentValgfriTekst(formData, "ansvarligNavIdent");
       if (!ansvarligNavIdent) {
         const nåværendeSak = await backendApi.hentKontrollsak(token, sakId);
-        if (nåværendeSak.steg !== "OPPRETTET") {
+        if (nåværendeSak.saksbehandlere.eier || nåværendeSak.steg !== "OPPRETTET") {
           throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
         }
       }

@@ -39,53 +39,56 @@ describe("SendTilAnnenEnhetModal", () => {
     submitMock.mockClear();
   });
 
-  it("beholder valgt ny ansvarlig gjennom bekreftelse og innsending", async () => {
-    render(
-      <SendTilAnnenEnhetModal
-        sakId="101"
-        steg="UTREDNING"
-        nåværendeEnhet="4812"
-        ansvarligSaksbehandler={saksbehandlere[0]}
-        saksbehandlerDetaljer={saksbehandlere}
-        innloggetNavIdent="Z111111"
-        åpen={true}
-        onClose={vi.fn()}
-      />,
-    );
+  it.each(["OPPRETTET", "UTREDNING"] as const)(
+    "beholder valgt ny ansvarlig gjennom bekreftelse og innsending i %s",
+    async (steg) => {
+      render(
+        <SendTilAnnenEnhetModal
+          sakId="101"
+          steg={steg}
+          nåværendeEnhet="4812"
+          ansvarligSaksbehandler={saksbehandlere[0]}
+          saksbehandlerDetaljer={saksbehandlere}
+          innloggetNavIdent="Z111111"
+          åpen={true}
+          onClose={vi.fn()}
+        />,
+      );
 
-    await act(async () => {});
+      await act(async () => {});
 
-    await act(async () => {
-      fireEvent.change(screen.getByRole("combobox", { name: "Ny enhet" }), {
-        target: { value: "4813" },
+      await act(async () => {
+        fireEvent.change(screen.getByRole("combobox", { name: "Ny enhet" }), {
+          target: { value: "4813" },
+        });
+        fireEvent.change(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" }), {
+          target: { value: "Ny Saksbehandler" },
+        });
+        fireEvent.pointerUp(screen.getByRole("option", { name: "Ny Saksbehandler (Z222222)" }));
       });
-      fireEvent.change(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" }), {
-        target: { value: "Ny Saksbehandler" },
+
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
       });
-      fireEvent.pointerUp(screen.getByRole("option", { name: "Ny Saksbehandler (Z222222)" }));
-    });
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
-    });
+      expect(screen.getByText("Ny Saksbehandler (Z222222)")).toBeDefined();
 
-    expect(screen.getByText("Ny Saksbehandler (Z222222)")).toBeDefined();
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Send til annen enhet" }));
+      });
 
-    await act(async () => {
-      fireEvent.click(screen.getByRole("button", { name: "Send til annen enhet" }));
-    });
-
-    expect(submitMock).toHaveBeenCalledOnce();
-    const [formData] = submitMock.mock.calls[0];
-    expect(formData.get("seksjon")).toBe("4813");
-    expect(formData.get("ansvarligNavIdent")).toBe("Z222222");
-  });
+      expect(submitMock).toHaveBeenCalledOnce();
+      const [formData] = submitMock.mock.calls[0];
+      expect(formData.get("seksjon")).toBe("4813");
+      expect(formData.get("ansvarligNavIdent")).toBe("Z222222");
+    },
+  );
 
   it("fjerner valideringsfeilen når en ny ansvarlig velges", async () => {
     render(
       <SendTilAnnenEnhetModal
         sakId="101"
-        steg="UTREDNING"
+        steg="OPPRETTET"
         nåværendeEnhet="4812"
         ansvarligSaksbehandler={saksbehandlere[0]}
         saksbehandlerDetaljer={saksbehandlere}
@@ -99,6 +102,7 @@ describe("SendTilAnnenEnhetModal", () => {
       fireEvent.change(screen.getByRole("combobox", { name: "Ny enhet" }), {
         target: { value: "4813" },
       });
+
       fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     });
 
@@ -112,6 +116,37 @@ describe("SendTilAnnenEnhetModal", () => {
     });
 
     expect(screen.queryByText("Velg en ny ansvarlig saksbehandler")).toBeNull();
+  });
+
+  it("sender en eierløs sak i Opprettet uten ny ansvarlig", async () => {
+    render(
+      <SendTilAnnenEnhetModal
+        sakId="101"
+        steg="OPPRETTET"
+        nåværendeEnhet="4812"
+        ansvarligSaksbehandler={null}
+        saksbehandlerDetaljer={saksbehandlere}
+        innloggetNavIdent="Z111111"
+        åpen={true}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByRole("combobox", { name: "Ny ansvarlig saksbehandler" })).toBeNull();
+    await act(async () => {
+      fireEvent.change(screen.getByRole("combobox", { name: "Ny enhet" }), {
+        target: { value: "4813" },
+      });
+      fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByRole("button", { name: "Send til annen enhet" }));
+    });
+
+    expect(submitMock).toHaveBeenCalledOnce();
+    const [formData] = submitMock.mock.calls[0];
+    expect(formData.get("seksjon")).toBe("4813");
+    expect(formData.get("ansvarligNavIdent")).toBe("");
   });
 
   it("beholder valgt ny ansvarlig når brukeren går tilbake fra bekreftelsen", async () => {

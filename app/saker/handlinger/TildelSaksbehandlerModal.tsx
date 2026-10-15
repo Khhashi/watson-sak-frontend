@@ -18,7 +18,6 @@ interface TildelSaksbehandlerModalProps {
   saksbehandlere: string[];
   saksbehandlerDetaljer?: KontrollsakSaksbehandler[];
   nåværendeSaksbehandler?: KontrollsakSaksbehandler | null;
-  kanFristille?: boolean;
   submitPath?: string;
   åpen: boolean;
   onClose: () => void;
@@ -29,7 +28,6 @@ export function TildelSaksbehandlerModal({
   saksbehandlere,
   saksbehandlerDetaljer = [],
   nåværendeSaksbehandler,
-  kanFristille = false,
   submitPath,
   åpen,
   onClose,
@@ -60,11 +58,6 @@ export function TildelSaksbehandlerModal({
     },
   });
   const navIdentControl = useInputControl(fields.navIdent);
-
-  function handleFjernSaksbehandler() {
-    fetcher.submit({ handling: "FRISTILL", sakId }, { method: "post", action: actionPath });
-    handleClose();
-  }
 
   function handleClose() {
     form.reset();
@@ -138,17 +131,6 @@ export function TildelSaksbehandlerModal({
           <Button type="button" variant="secondary" onClick={handleClose}>
             Avbryt
           </Button>
-          {nåværendeSaksbehandler && kanFristille && (
-            <Button
-              type="button"
-              variant="tertiary-neutral"
-              onClick={handleFjernSaksbehandler}
-              disabled={erSubmitting}
-              className="ml-auto"
-            >
-              Fjern saksbehandler
-            </Button>
-          )}
         </Modal.Footer>
       </fetcher.Form>
     </Modal>

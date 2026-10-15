@@ -199,23 +199,29 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(resultat).toMatchObject({ ok: true, sak: { steg: "OPPRETTET" } });
   });
 
-  it("avviser videresending uten ny ansvarlig utenfor Opprettet i backend-stien", async () => {
-    mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, steg: "UTREDNING" });
-    const formData = new FormData();
-    formData.set("handling", "send_til_annen_enhet");
-    formData.set("seksjon", "NORD");
-    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
-    const { action } = await import("./SakDetaljSide.server");
+  it.each(["OPPRETTET", "UTREDNING"])(
+    "avviser videresending av tildelt sak uten ny ansvarlig i %s i backend-stien",
+    async (steg) => {
+      mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, steg });
+      const formData = new FormData();
+      formData.set("handling", "send_til_annen_enhet");
+      formData.set("seksjon", "NORD");
+      const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+      const { action } = await import("./SakDetaljSide.server");
 
-    await expect(
-      action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
-    ).rejects.toMatchObject({ init: { status: 409 } });
-    expect(mockHentKontrollsak).toHaveBeenCalledWith("mock-token", "1");
-    expect(mockVideresend).not.toHaveBeenCalled();
-  });
+      await expect(
+        action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+      ).rejects.toMatchObject({ init: { status: 409 } });
+      expect(mockHentKontrollsak).toHaveBeenCalledWith("mock-token", "1");
+      expect(mockVideresend).not.toHaveBeenCalled();
+    },
+  );
 
-  it("lar saken i Opprettet videresendes uten ny ansvarlig", async () => {
-    mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
+  it("lar en eierløs sak i Opprettet videresendes uten ny ansvarlig", async () => {
+    mockHentKontrollsak.mockResolvedValue({
+      ...grunnleggendeSak,
+      saksbehandlere: { ...grunnleggendeSak.saksbehandlere, eier: null },
+    });
     const formData = new FormData();
     formData.set("handling", "send_til_annen_enhet");
     formData.set("seksjon", "NORD");
@@ -226,6 +232,21 @@ describe("SakDetaljSide loader — backend-sti", () => {
       await action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
     ).toMatchObject({ ok: true });
     expect(mockVideresend).toHaveBeenCalledWith("mock-token", "1", "NORD", undefined, undefined);
+  });
+
+  it("avviser FRISTILL i backend-stien uten å kalle fristilling i API-et", async () => {
+    mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
+    const formData = new FormData();
+    formData.set("handling", "FRISTILL");
+    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+    const { action } = await import("./SakDetaljSide.server");
+
+    await expect(
+      action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+    ).rejects.toMatchObject({
+      data: "Ansvarlig saksbehandler kan ikke fjernes. Overfør saken til en ny saksbehandler.",
+      init: { status: 409 },
+    });
   });
 
   it("skjuler filområdet stille når hentFiler gir 403 (mangler fil-tilgang)", async () => {
