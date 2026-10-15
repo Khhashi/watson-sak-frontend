@@ -81,7 +81,7 @@ export function SaksbehandlereKort({
   const kodeverk = useKodeverk();
   const fetcher = useFetcher();
   const tildelMegFetcher = useFetcher();
-  const fjernSaksbehandlerFetcher = useFetcher();
+  const fristillFetcher = useFetcher();
   const stegregler = hentStegbaserteSaksregler(sak.steg);
   const erAktivStatus = sak.status === null || sak.status === "AKTIV";
   const kanEndreTilgang = stegregler.erAktiv && erAktivStatus;
@@ -102,11 +102,7 @@ export function SaksbehandlereKort({
     tildelMegFetcher.submit({ handling: "TILDEL_MEG" }, { method: "post", action: sakPath });
   }
 
-  function handleFjernSaksbehandler() {
-    fjernSaksbehandlerFetcher.submit({ handling: "FRISTILL" }, { method: "post", action: sakPath });
-  }
-
-  // Kun sakens ansvarlige saksbehandler eller en leder kan endre eller fjerne ansvarlig saksbehandler.
+  // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
   const kanFristilleAnsvarlig = kanEndreAnsvarlig && sak.steg === "OPPRETTET";
   const kanEndreStatus =
@@ -220,19 +216,20 @@ export function SaksbehandlereKort({
                         onClick={() => setVisOverforModal(true)}
                       />
                       {kanFristilleAnsvarlig && (
-                        <Tooltip content="Fjern saksbehandler">
-                          <Button
-                            type="button"
-                            variant="tertiary"
-                            size="xsmall"
-                            icon={<XMarkIcon aria-hidden />}
-                            aria-label="Fjern saksbehandler"
-                            onClick={handleFjernSaksbehandler}
-                            loading={fjernSaksbehandlerFetcher.state !== "idle"}
-                          >
-                            <span className="hidden xl:inline">Fjern</span>
-                          </Button>
-                        </Tooltip>
+                        <Button
+                          type="button"
+                          variant="tertiary"
+                          size="xsmall"
+                          loading={fristillFetcher.state !== "idle"}
+                          onClick={() =>
+                            fristillFetcher.submit(
+                              { handling: "FRISTILL" },
+                              { method: "post", action: sakPath },
+                            )
+                          }
+                        >
+                          Fjern
+                        </Button>
                       )}
                     </HStack>
                   ) : null
@@ -359,7 +356,6 @@ export function SaksbehandlereKort({
         sakId={String(sak.id)}
         saksbehandlere={[]}
         saksbehandlerDetaljer={saksbehandlerDetaljer}
-        kanFristille={sak.steg === "OPPRETTET"}
         åpen={visTildelModal}
         onClose={() => setVisTildelModal(false)}
       />

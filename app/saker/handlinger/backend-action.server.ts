@@ -82,6 +82,7 @@ export async function backendAction(
     const innlogget = await hentInnloggetBruker({ request });
     const nåværendeSak = sakFraTilgangskontroll ?? (await backendApi.hentKontrollsak(token, sakId));
     sjekkEierEllerLeder(handling, nåværendeSak, innlogget);
+    sakFraTilgangskontroll = nåværendeSak;
   }
 
   switch (handling) {
@@ -96,6 +97,9 @@ export async function backendAction(
       return { ok: true, sak };
     }
     case "FRISTILL": {
+      if (sakFraTilgangskontroll?.steg !== "OPPRETTET") {
+        throw data("Ansvarlig saksbehandler kan bare fjernes i steget Opprettet", { status: 409 });
+      }
       const sak = await backendApi.fristillKontrollsak(token, sakId);
       return { ok: true, sak };
     }
