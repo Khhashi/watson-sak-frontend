@@ -1,5 +1,6 @@
 import { isRouteErrorResponse } from "react-router";
 import { IkkeInnlogget } from "~/feilhåndtering/IkkeInnlogget";
+import { ForMyeTrafikk } from "~/feilhåndtering/ForMyeTrafikk";
 import { InternalServerError } from "~/feilhåndtering/InternalServerError";
 import { PageNotFound } from "~/feilhåndtering/PageNotFound";
 import { logger } from "~/logging/logging";
@@ -13,6 +14,14 @@ export function RootErrorBoundary({ error }: Route.ErrorBoundaryProps) {
     return (
       <HtmlRamme umamiSiteId="">
         <IkkeInnlogget />
+      </HtmlRamme>
+    );
+  }
+  if (isRouteErrorResponse(error) && error.status === 429) {
+    logger.warn("Backend svarte 429, viser for-mye-trafikk-side");
+    return (
+      <HtmlRamme umamiSiteId="">
+        <ForMyeTrafikk />
       </HtmlRamme>
     );
   }
