@@ -16,6 +16,7 @@ import type { Route } from "./+types/SakDetaljSide.route";
 import { action, loader } from "./SakDetaljSide.server";
 import { hentMockTillatteHandlinger } from "./mock-tillatte-handlinger.server";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
+import { getSaksenhet } from "./selectors";
 
 vi.mock("~/config/env.server", () => ({
   skalBrukeMockdata: true,
@@ -747,41 +748,48 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     expect(kontrollsak.saksbehandlere.opprettetAv.enhet).toBe("Øst");
   });
 
-  it("sender sak til annen enhet og setter ny ansvarlig i senere steg", async () => {
-    const kontrollsak = hentFordelingssaker(state())[0];
-    const kontrollsakRef = getSaksreferanse(kontrollsak.id);
-    kontrollsak.steg = "UTREDES";
+  it.each(["send_til_annen_enhet", "videresend_seksjon"])(
+    "beholder valgt mottaksenhet ved %s selv om ny ansvarlig har en annen enhet",
+    async (handling) => {
+      const kontrollsak = hentFordelingssaker(state())[0];
+      const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+      kontrollsak.steg = "UTREDES";
+      kontrollsak.enhet = "GAMMEL_ENHET";
 
-    kontrollsak.saksbehandlere.eier = {
-      navn: "Tidligere Saksbehandler",
-      navIdent: "Z999999",
-      enhet: "Nord",
-    };
-    kontrollsak.saksbehandlere.opprettetAv = {
-      navn: "Kari Oppretter",
-      navIdent: "Z654321",
-      enhet: "Nord",
-    };
+      kontrollsak.saksbehandlere.eier = {
+        navn: "Tidligere Saksbehandler",
+        navIdent: "Z999999",
+        enhet: "Nord",
+      };
+      kontrollsak.saksbehandlere.opprettetAv = {
+        navn: "Kari Oppretter",
+        navIdent: "Z654321",
+        enhet: "Nord",
+      };
 
-    const formData = new FormData();
-    formData.set("handling", "send_til_annen_enhet");
-    formData.set("seksjon", "NORD");
-    formData.set("ansvarligNavIdent", "Z123456");
+      const formData = new FormData();
+      formData.set("handling", handling);
+      formData.set("seksjon", "NORD");
+      formData.set("ansvarligNavIdent", "Z123456");
 
-    await action({
-      request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
-        method: "POST",
-        body: formData,
-      }),
-      params: { sakId: kontrollsakRef },
-    } as Route.ActionArgs);
+      await action({
+        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+          method: "POST",
+          body: formData,
+        }),
+        params: { sakId: kontrollsakRef },
+      } as Route.ActionArgs);
 
-    expect(kontrollsak.saksbehandlere.eier?.navIdent).toBe("Z123456");
-    expect(kontrollsak.saksbehandlere.opprettetAv.enhet).toBe("NORD");
-    expect(hentHistorikk(testRequest, String(kontrollsak.id))[0]?.hendelsesType).toBe(
-      "MOTTAKSENHET_ENDRET",
-    );
-  });
+      expect(kontrollsak.saksbehandlere.eier?.navIdent).toBe("Z123456");
+      expect(kontrollsak.saksbehandlere.eier?.enhet).not.toBe("NORD");
+      expect(kontrollsak.enhet).toBe("NORD");
+      expect(getSaksenhet(kontrollsak)).toBe("NORD");
+      expect(kontrollsak.saksbehandlere.opprettetAv.enhet).toBe("NORD");
+      expect(hentHistorikk(testRequest, String(kontrollsak.id))[0]?.hendelsesType).toBe(
+        "MOTTAKSENHET_ENDRET",
+      );
+    },
+  );
 
   it("oppdaterer redigerbare saksdetaljer uten å endre låste felt", async () => {
     const kontrollsak = hentFordelingssaker(state())[0];
@@ -1459,6 +1467,7 @@ describe("SakDetaljSide tilgangskontroll", () => {
       });
       const sak = hentFordelingssaker(state())[0];
       sak.steg = "OPPRETTET";
+      sak.enhet = "GAMMEL_ENHET";
       sak.saksbehandlere.eier = eier
         ? {
             navIdent: eier,
@@ -1482,6 +1491,8 @@ describe("SakDetaljSide tilgangskontroll", () => {
       ).toMatchObject({ ok: true });
       expect(sak.saksbehandlere.eier).toBeNull();
       expect(sak.saksbehandlere.opprettetAv.enhet).toBe("NORD");
+      expect(sak.enhet).toBe("NORD");
+      expect(getSaksenhet(sak)).toBe("NORD");
     },
   );
 

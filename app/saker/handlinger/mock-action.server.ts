@@ -307,6 +307,7 @@ export async function mockAction(
         throw data("Velg en annen ansvarlig saksbehandler", { status: 409 });
       }
 
+      sak.enhet = nySeksjon;
       sak.saksbehandlere.opprettetAv = {
         ...sak.saksbehandlere.opprettetAv,
         enhet: nySeksjon,
