@@ -6,7 +6,7 @@
   "CLUSTER": "prod-gcp",
   "TENANT": "nav.no",
   "FARO_URL": "https://telemetry.nav.no/collect",
-  "UMAMI_SITE_ID": "6dd2ad0d-28d2-4934-93dc-b95448b37915",
+  "UMAMI_SITE_ID": "857b890b-75c3-42f3-9312-78a22ce5eec6",
   "ENVIRONMENT": "prod",
   "WATSON_ADMIN_API_URL": "http://watson-admin-api",
   "WATSON_SOK_URL": "https://watson-sok.intern.nav.no",

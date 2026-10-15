@@ -20,7 +20,6 @@ export function AnalyticsTags({ sporingId, sporingScriptUrl }: AnalyticsTagProps
         nonce={nonce}
         defer
         src={sporingScriptUrl}
-        data-host-url="https://umami.nav.no"
         data-website-id={sporingId}
         data-before-send="watsonUmamiBeforeSend"
       />
