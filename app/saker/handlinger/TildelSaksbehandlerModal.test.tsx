@@ -51,7 +51,7 @@ describe("TildelSaksbehandlerModal", () => {
     expect(document.querySelector<HTMLInputElement>('input[type="hidden"]')?.value).toBe("Z999999");
   });
 
-  it("nullstiller valgt saksbehandler når ansvarlig fjernes", async () => {
+  it("nullstiller valgt saksbehandler når dialogen avbrytes", async () => {
     const onClose = vi.fn();
 
     render(
@@ -60,7 +60,6 @@ describe("TildelSaksbehandlerModal", () => {
         saksbehandlere={[]}
         saksbehandlerDetaljer={saksbehandlerDetaljer}
         nåværendeSaksbehandler={saksbehandlerDetaljer[0]}
-        kanFristille={true}
         åpen={true}
         onClose={onClose}
       />,
@@ -69,18 +68,15 @@ describe("TildelSaksbehandlerModal", () => {
     await act(async () => {
       fireEvent.click(screen.getByRole("combobox", { name: "Saksbehandler" }));
       fireEvent.pointerUp(screen.getByRole("option", { name: "Saks Behandlersen (Z999999)" }));
-      fireEvent.click(screen.getByRole("button", { name: "Fjern saksbehandler" }));
+      fireEvent.click(screen.getByRole("button", { name: "Avbryt" }));
     });
 
-    expect(submitMock).toHaveBeenCalledWith(
-      { handling: "FRISTILL", sakId: "101" },
-      expect.objectContaining({ method: "post" }),
-    );
+    expect(submitMock).not.toHaveBeenCalled();
     expect(document.querySelector<HTMLInputElement>('input[type="hidden"]')?.value).toBe("");
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("viser nåværende saksbehandler, men ikke fristilling når saken ikke tillater det", async () => {
+  it("viser nåværende saksbehandler uten mulighet for fjerning", async () => {
     await act(async () => {
       render(
         <TildelSaksbehandlerModal
@@ -88,7 +84,6 @@ describe("TildelSaksbehandlerModal", () => {
           saksbehandlere={[]}
           saksbehandlerDetaljer={saksbehandlerDetaljer}
           nåværendeSaksbehandler={saksbehandlerDetaljer[0]}
-          kanFristille={false}
           åpen={true}
           onClose={vi.fn()}
         />,
