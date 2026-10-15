@@ -201,6 +201,7 @@ describe("Migreringsprototypens loader", () => {
       ansatteValg: [],
       filter: ingenFilter,
       erLeder: false,
+      egenNavIdent: "L999999",
       utilgjengelig: true,
     });
 

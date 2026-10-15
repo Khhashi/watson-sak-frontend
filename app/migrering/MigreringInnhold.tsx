@@ -15,7 +15,7 @@ import {
   Tag,
   VStack,
 } from "@navikt/ds-react";
-import { useEffect, useRef, useState, type MouseEvent } from "react";
+import { Fragment, useEffect, useRef, useState, type MouseEvent } from "react";
 import { Form, Link, useFetcher, useSearchParams } from "react-router";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
@@ -44,6 +44,20 @@ const STATUSFARGE: Record<Migreringsstatus, "neutral" | "warning" | "success"> =
 function formaterAccessDato(iso: string | null | undefined) {
   const treff = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
   return treff ? `${treff[3]}.${treff[2]}.${treff[1]}` : (iso ?? "–");
+}
+
+/**
+ * Backend legger lederens egne saker først. Hver gruppe får sin egen radgruppe (`tbody`), slik at overskriften
+ * «Dine saker» eller «Andre saker» bare omfatter radene under seg i tabellsemantikken. Andre enn ledere får én gruppe uten overskrift.
+ */
+function delIGrupper(kandidater: MigreringKandidat[], egenNavIdent: string | undefined) {
+  if (!egenNavIdent) return [{ overskrift: null, kandidater }];
+  const egne = kandidater.filter((k) => k.ansvar.navIdent === egenNavIdent);
+  const andres = kandidater.filter((k) => k.ansvar.navIdent !== egenNavIdent);
+  return [
+    ...(egne.length > 0 ? [{ overskrift: "Dine saker", kandidater: egne }] : []),
+    ...(andres.length > 0 ? [{ overskrift: "Andre saker", kandidater: andres }] : []),
+  ];
 }
 
 function klikkRad(event: MouseEvent<HTMLTableRowElement>) {
@@ -85,7 +99,12 @@ export function MigreringInnhold({ lister }: { lister: MigreringLister }) {
               </BodyShort>
             </VStack>
           </Box>
-          <Kandidatliste side={lister.liste} erLeder={erLeder} ansatteValg={lister.ansatteValg} />
+          <Kandidatliste
+            side={lister.liste}
+            erLeder={erLeder}
+            egenNavIdent={lister.egenNavIdent}
+            ansatteValg={lister.ansatteValg}
+          />
         </div>
         <Filterpanel lister={lister} />
       </HGrid>
@@ -105,10 +124,12 @@ function StatusTag({ kandidat }: { kandidat: Pick<MigreringKandidat, "migrerings
 function Kandidatliste({
   side,
   erLeder,
+  egenNavIdent,
   ansatteValg,
 }: {
   side: MigreringSide;
   erLeder: boolean;
+  egenNavIdent?: string;
   ansatteValg: MigreringAnsatt[];
 }) {
   const [endrer, setEndrer] = useState<MigreringKandidat | null>(null);
@@ -133,48 +154,60 @@ function Kandidatliste({
               )}
             </Table.Row>
           </Table.Header>
-          <Table.Body>
-            {side.kandidater.map((k) => (
-              <Table.Row
-                key={`${k.kilde}:${k.legacyPid}`}
-                onClick={klikkRad}
-                className="cursor-pointer hover:bg-ax-bg-neutral-soft"
-              >
-                <Table.DataCell>
-                  <KandidatLenke kandidat={k} />
-                </Table.DataCell>
-                <Table.DataCell>
-                  {k.ansvar.type === "BEKREFTET" && k.personIdent
-                    ? formaterFødselsnummer(k.personIdent)
-                    : "–"}
-                </Table.DataCell>
-                <Table.DataCell>{formaterAccessDato(k.referansedato)}</Table.DataCell>
-                <Table.DataCell>
-                  <StatusTag kandidat={k} />
-                </Table.DataCell>
-                {erLeder && (
-                  <>
-                    <Table.DataCell>{k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}</Table.DataCell>
+          {delIGrupper(side.kandidater, erLeder ? egenNavIdent : undefined).map((gruppe) => (
+            <Table.Body key={gruppe.overskrift ?? "alle"}>
+              {gruppe.overskrift && (
+                <Table.Row>
+                  <Table.HeaderCell scope="rowgroup" colSpan={6} className="bg-ax-bg-neutral-soft">
+                    {gruppe.overskrift}
+                  </Table.HeaderCell>
+                </Table.Row>
+              )}
+              {gruppe.kandidater.map((k) => (
+                <Fragment key={`${k.kilde}:${k.legacyPid}`}>
+                  <Table.Row
+                    onClick={klikkRad}
+                    className="cursor-pointer hover:bg-ax-bg-neutral-soft"
+                  >
                     <Table.DataCell>
-                      {hentMigreringsstatus(k) === "IKKE_PABEGYNT" &&
-                        ansatteValg.some((a) => a.navIdent !== k.ansvar.navIdent) && (
-                          <Button
-                            type="button"
-                            data-rad-handling
-                            variant="secondary"
-                            size="small"
-                            aria-label={`Endre tildeling for PID ${k.legacyPid}`}
-                            onClick={() => setEndrer(k)}
-                          >
-                            Endre tildeling
-                          </Button>
-                        )}
+                      <KandidatLenke kandidat={k} />
                     </Table.DataCell>
-                  </>
-                )}
-              </Table.Row>
-            ))}
-          </Table.Body>
+                    <Table.DataCell>
+                      {k.ansvar.type === "BEKREFTET" && k.personIdent
+                        ? formaterFødselsnummer(k.personIdent)
+                        : "–"}
+                    </Table.DataCell>
+                    <Table.DataCell>{formaterAccessDato(k.referansedato)}</Table.DataCell>
+                    <Table.DataCell>
+                      <StatusTag kandidat={k} />
+                    </Table.DataCell>
+                    {erLeder && (
+                      <>
+                        <Table.DataCell>
+                          {k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}
+                        </Table.DataCell>
+                        <Table.DataCell>
+                          {hentMigreringsstatus(k) === "IKKE_PABEGYNT" &&
+                            ansatteValg.some((a) => a.navIdent !== k.ansvar.navIdent) && (
+                              <Button
+                                type="button"
+                                data-rad-handling
+                                variant="secondary"
+                                size="small"
+                                aria-label={`Endre tildeling for PID ${k.legacyPid}`}
+                                onClick={() => setEndrer(k)}
+                              >
+                                Endre tildeling
+                              </Button>
+                            )}
+                        </Table.DataCell>
+                      </>
+                    )}
+                  </Table.Row>
+                </Fragment>
+              ))}
+            </Table.Body>
+          ))}
         </Table>
       </div>
       {side.totalAntall === 0 && (
