@@ -293,10 +293,7 @@ export async function mockAction(
       if (nySeksjon === getSaksenhet(sak)) {
         throw data("Velg en annen enhet", { status: 400 });
       }
-      const eier = sak.saksbehandlere.eier;
-      const kreverNyAnsvarlig =
-        sak.steg !== "OPPRETTET" || (eier && eier.navIdent !== innloggetBruker.navIdent);
-      if (kreverNyAnsvarlig && !ansvarligNavIdent) {
+      if (sak.steg !== "OPPRETTET" && !ansvarligNavIdent) {
         throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
       }
 

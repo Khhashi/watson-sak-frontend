@@ -70,9 +70,7 @@ export function SendTilAnnenEnhetModal({
   const [valgtEnhet, setValgtEnhet] = useState("");
   const [bekreftetEnhet, setBekreftetEnhet] = useState<string | null>(null);
   const [feilmelding, setFeilmelding] = useState<string | null>(null);
-  const kreverNyAnsvarlig =
-    sakSteg !== "OPPRETTET" ||
-    (ansvarligSaksbehandler !== null && ansvarligSaksbehandler.navIdent !== innloggetNavIdent);
+  const kreverNyAnsvarlig = sakSteg !== "OPPRETTET";
   const valgbareSaksbehandlere = saksbehandlerDetaljer.filter(
     (saksbehandler) => saksbehandler.navIdent !== ansvarligSaksbehandler?.navIdent,
   );
@@ -232,41 +230,42 @@ export function SendTilAnnenEnhetModal({
                   </option>
                 ))}
               </Select>
-              {kreverNyAnsvarlig && (
-                <>
-                  <input
-                    type="hidden"
-                    name={fields.ansvarligNavIdent.name}
-                    value={valgtAnsvarligNavIdent}
-                    tabIndex={-1}
-                    onFocus={() => ansvarligNavIdent.focus()}
-                  />
-                  <UNSAFE_Combobox
-                    key={fields.ansvarligNavIdent.key}
-                    id={fields.ansvarligNavIdent.id}
-                    label="Ny ansvarlig saksbehandler"
-                    placeholder="Søk etter saksbehandler"
-                    options={valgbareSaksbehandlere.map((saksbehandler) => ({
-                      value: saksbehandler.navIdent,
-                      label: `${saksbehandler.navn} (${saksbehandler.navIdent})`,
-                    }))}
-                    selectedOptions={
-                      valgtAnsvarlig
-                        ? [
-                            {
-                              value: valgtAnsvarlig.navIdent,
-                              label: `${valgtAnsvarlig.navn} (${valgtAnsvarlig.navIdent})`,
-                            },
-                          ]
-                        : []
-                    }
-                    onToggleSelected={(navIdent, erValgt) => {
-                      ansvarligNavIdent.change(erValgt ? navIdent : "");
-                    }}
-                    error={fields.ansvarligNavIdent.errors?.[0]}
-                  />
-                </>
-              )}
+              <input
+                type="hidden"
+                name={fields.ansvarligNavIdent.name}
+                value={valgtAnsvarligNavIdent}
+                tabIndex={-1}
+                onFocus={() => ansvarligNavIdent.focus()}
+              />
+              <UNSAFE_Combobox
+                key={fields.ansvarligNavIdent.key}
+                id={fields.ansvarligNavIdent.id}
+                label="Ny ansvarlig saksbehandler"
+                description={
+                  kreverNyAnsvarlig
+                    ? undefined
+                    : "Valgfritt. Uten ny ansvarlig blir saken ufordelt i mottaksenheten."
+                }
+                placeholder="Søk etter saksbehandler"
+                options={valgbareSaksbehandlere.map((saksbehandler) => ({
+                  value: saksbehandler.navIdent,
+                  label: `${saksbehandler.navn} (${saksbehandler.navIdent})`,
+                }))}
+                selectedOptions={
+                  valgtAnsvarlig
+                    ? [
+                        {
+                          value: valgtAnsvarlig.navIdent,
+                          label: `${valgtAnsvarlig.navn} (${valgtAnsvarlig.navIdent})`,
+                        },
+                      ]
+                    : []
+                }
+                onToggleSelected={(navIdent, erValgt) => {
+                  ansvarligNavIdent.change(erValgt ? navIdent : "");
+                }}
+                error={fields.ansvarligNavIdent.errors?.[0]}
+              />
             </VStack>
           )}
           {steg === "bekreft" && (
@@ -282,16 +281,14 @@ export function SendTilAnnenEnhetModal({
                       valgtEnhet
                     }
                   />
-                  {kreverNyAnsvarlig && (
-                    <SammendragRad
-                      label="Ny ansvarlig saksbehandler"
-                      verdi={
-                        valgtAnsvarlig
-                          ? `${valgtAnsvarlig.navn} (${valgtAnsvarlig.navIdent})`
-                          : valgtAnsvarligNavIdent
-                      }
-                    />
-                  )}
+                  <SammendragRad
+                    label="Ny ansvarlig saksbehandler"
+                    verdi={
+                      valgtAnsvarlig
+                        ? `${valgtAnsvarlig.navn} (${valgtAnsvarlig.navIdent})`
+                        : "Ingen, saken blir ufordelt"
+                    }
+                  />
                 </HGrid>
               </div>
               {tilgangsvarsel && (

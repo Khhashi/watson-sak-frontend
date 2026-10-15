@@ -39,9 +39,13 @@ describe("SendTilAnnenEnhetModal", () => {
     submitMock.mockClear();
   });
 
-  it.each(["OPPRETTET", "UTREDNING"] as const)(
-    "beholder valgt ny ansvarlig gjennom bekreftelse og innsending i %s",
-    async (steg) => {
+  it.each(
+    (["OPPRETTET", "UTREDNING"] as const).flatMap((steg) =>
+      ["Z111111", "Z333333"].map((innloggetNavIdent) => ({ steg, innloggetNavIdent })),
+    ),
+  )(
+    "beholder valgt ny ansvarlig gjennom bekreftelse og innsending i $steg med innlogget $innloggetNavIdent",
+    async ({ steg, innloggetNavIdent }) => {
       render(
         <SendTilAnnenEnhetModal
           sakId="101"
@@ -49,7 +53,7 @@ describe("SendTilAnnenEnhetModal", () => {
           nåværendeEnhet="4812"
           ansvarligSaksbehandler={saksbehandlere[0]}
           saksbehandlerDetaljer={saksbehandlere}
-          innloggetNavIdent="Z333333"
+          innloggetNavIdent={innloggetNavIdent}
           åpen={true}
           onClose={vi.fn()}
         />,
@@ -88,7 +92,7 @@ describe("SendTilAnnenEnhetModal", () => {
     render(
       <SendTilAnnenEnhetModal
         sakId="101"
-        steg="OPPRETTET"
+        steg="UTREDNING"
         nåværendeEnhet="4812"
         ansvarligSaksbehandler={saksbehandlere[0]}
         saksbehandlerDetaljer={saksbehandlere}
@@ -118,9 +122,13 @@ describe("SendTilAnnenEnhetModal", () => {
     expect(screen.queryByText("Velg en ny ansvarlig saksbehandler")).toBeNull();
   });
 
-  it.each([null, saksbehandlere[0]])(
-    "sender egen eller eierløs sak i Opprettet uten ny ansvarlig (%j)",
-    async (ansvarlig) => {
+  it.each([
+    [null, "Z111111"],
+    [saksbehandlere[0], "Z111111"],
+    [saksbehandlere[0], "Z333333"],
+  ] as const)(
+    "sender sak i Opprettet uten ny ansvarlig med eier %j og innlogget %s",
+    async (ansvarlig, innloggetNavIdent) => {
       render(
         <SendTilAnnenEnhetModal
           sakId="101"
@@ -128,13 +136,16 @@ describe("SendTilAnnenEnhetModal", () => {
           nåværendeEnhet="4812"
           ansvarligSaksbehandler={ansvarlig}
           saksbehandlerDetaljer={saksbehandlere}
-          innloggetNavIdent="Z111111"
+          innloggetNavIdent={innloggetNavIdent}
           åpen={true}
           onClose={vi.fn()}
         />,
       );
 
-      expect(screen.queryByRole("combobox", { name: "Ny ansvarlig saksbehandler" })).toBeNull();
+      expect(screen.getByRole("combobox", { name: "Ny ansvarlig saksbehandler" })).toBeDefined();
+      expect(
+        screen.getByText("Valgfritt. Uten ny ansvarlig blir saken ufordelt i mottaksenheten."),
+      ).toBeDefined();
       await act(async () => {
         fireEvent.change(screen.getByRole("combobox", { name: "Ny enhet" }), {
           target: { value: "4813" },
@@ -142,6 +153,7 @@ describe("SendTilAnnenEnhetModal", () => {
         fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
       });
       await act(async () => {
+        expect(screen.getByText("Ingen, saken blir ufordelt")).toBeDefined();
         fireEvent.click(screen.getByRole("button", { name: "Send til annen enhet" }));
       });
 

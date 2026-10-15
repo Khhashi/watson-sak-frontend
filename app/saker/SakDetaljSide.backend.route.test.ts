@@ -202,7 +202,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
   });
 
   it.each([
-    ["OPPRETTET", "Z111111"],
     ["UTREDNING", "Z999999"],
     ["UTREDNING", "Z111111"],
   ])(
@@ -230,15 +229,29 @@ describe("SakDetaljSide loader — backend-sti", () => {
     },
   );
 
-  it.each([null, grunnleggendeSak.saksbehandlere.eier])(
-    "lar egen eller eierløs sak i Opprettet videresendes uten ny ansvarlig (%j)",
-    async (eier) => {
+  it.each(
+    ["send_til_annen_enhet", "videresend_seksjon"].flatMap((handling) =>
+      [true, false].flatMap((erLeder) =>
+        [null, "Z999999", "Z111111"].map((eierIdent) => ({ handling, erLeder, eierIdent })),
+      ),
+    ),
+  )(
+    "lar $handling sende sak i Opprettet uten ny ansvarlig med leder=$erLeder og eier=$eierIdent",
+    async ({ handling, erLeder, eierIdent }) => {
+      mockHentInnloggetBruker.mockResolvedValue({
+        preferredUsername: "z999999",
+        name: "Saks Behandlersen",
+        navIdent: "Z999999",
+        enhet: "4812",
+        erLeder,
+      });
+      const eier = eierIdent ? { navIdent: eierIdent, navn: "Saksbehandler", enhet: "4812" } : null;
       mockHentKontrollsak.mockResolvedValue({
         ...grunnleggendeSak,
         saksbehandlere: { ...grunnleggendeSak.saksbehandlere, eier },
       });
       const formData = new FormData();
-      formData.set("handling", "send_til_annen_enhet");
+      formData.set("handling", handling);
       formData.set("seksjon", "NORD");
       const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
       const { action } = await import("./SakDetaljSide.server");

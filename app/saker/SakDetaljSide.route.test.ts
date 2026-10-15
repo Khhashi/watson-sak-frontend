@@ -1409,7 +1409,6 @@ describe("SakDetaljSide tilgangskontroll", () => {
   });
 
   it.each([
-    ["OPPRETTET", "Z111111"],
     ["UTREDES", "Z999999"],
     ["UTREDES", "Z111111"],
   ] as const)(
@@ -1441,24 +1440,32 @@ describe("SakDetaljSide tilgangskontroll", () => {
     },
   );
 
-  it.each(["send_til_annen_enhet", "videresend_seksjon"])(
-    "tillater %s uten ny ansvarlig for egen sak i Opprettet",
-    async (handling) => {
+  it.each(
+    ["send_til_annen_enhet", "videresend_seksjon"].flatMap((handling) =>
+      [true, false].flatMap((erLeder) =>
+        ["Z999999", "Z111111", null].map((eier) => ({ handling, erLeder, eier })),
+      ),
+    ),
+  )(
+    "tillater $handling uten ny ansvarlig i Opprettet med leder=$erLeder og eier=$eier",
+    async ({ handling, erLeder, eier }) => {
       vi.mocked(hentInnloggetBruker).mockResolvedValue({
         navIdent: "Z999999",
         name: "Test Saksbehandler",
         preferredUsername: "test@nav.no",
         enhet: "4812",
         enhetId: "by295h",
-        erLeder: false,
+        erLeder,
       });
       const sak = hentFordelingssaker(state())[0];
       sak.steg = "OPPRETTET";
-      sak.saksbehandlere.eier = {
-        navIdent: "Z999999",
-        navn: "Test Saksbehandler",
-        enhet: "4812",
-      };
+      sak.saksbehandlere.eier = eier
+        ? {
+            navIdent: eier,
+            navn: "Saksbehandler",
+            enhet: "4812",
+          }
+        : null;
       const sakRef = getSaksreferanse(sak.id);
       const formData = new FormData();
       formData.set("handling", handling);
@@ -1474,6 +1481,7 @@ describe("SakDetaljSide tilgangskontroll", () => {
         } as Route.ActionArgs),
       ).toMatchObject({ ok: true });
       expect(sak.saksbehandlere.eier).toBeNull();
+      expect(sak.saksbehandlere.opprettetAv.enhet).toBe("NORD");
     },
   );
 

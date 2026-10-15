@@ -287,9 +287,7 @@ export async function backendAction(
       const ansvarligNavIdent = hentValgfriTekst(formData, "ansvarligNavIdent");
       if (!ansvarligNavIdent) {
         const nåværendeSak = await backendApi.hentKontrollsak(token, sakId);
-        const innlogget = await hentInnloggetBruker({ request });
-        const eier = nåværendeSak.saksbehandlere.eier;
-        if (nåværendeSak.steg !== "OPPRETTET" || (eier && eier.navIdent !== innlogget.navIdent)) {
+        if (nåværendeSak.steg !== "OPPRETTET") {
           throw data("Velg en ny ansvarlig saksbehandler", { status: 409 });
         }
       }
