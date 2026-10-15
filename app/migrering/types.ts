@@ -103,6 +103,8 @@ export interface MigreringLister {
   ansatteValg: MigreringAnsatt[];
   filter: MigreringFilter;
   erLeder: boolean;
+  /** Innlogget brukers NAV-ident. Lederens egne saker ligger først i listen. */
+  egenNavIdent?: string;
   /** NOM, tilgangsmaskinen eller migreringstabellen svarte ikke. Listene kan da mangle kandidater. */
   utilgjengelig: boolean;
 }

@@ -63,6 +63,14 @@ function medFilter(kandidater: MigreringKandidat[], filter: MigreringFilter): Mi
   );
 }
 
+/** Som backend: lederens egne først, resten i opprinnelig rekkefølge. */
+function egneFørst(navIdent: string, kandidater: MigreringKandidat[]) {
+  return [
+    ...kandidater.filter((k) => k.ansvar.navIdent === navIdent),
+    ...kandidater.filter((k) => k.ansvar.navIdent !== navIdent),
+  ];
+}
+
 /** Gjenskaper backend-reglene med syntetiske data. Tildelinger lagres i mock-sesjonen. */
 export function mockMigreringKilde(request: Request): MigreringKilde {
   return {
@@ -100,7 +108,10 @@ export function mockMigreringKilde(request: Request): MigreringKilde {
         });
       // Syntetiske ansatte vises bare for ledere, slik at saksbehandlere ikke ser andres saker.
       const alle = bruker.erLeder
-        ? [...egne, ...hentMockAnsattKandidater(tildelinger, ansatteValg)]
+        ? egneFørst(bruker.navIdent, [
+            ...egne,
+            ...hentMockAnsattKandidater(tildelinger, ansatteValg),
+          ])
         : egne;
       const liste = medFilter(
         alle,
@@ -112,6 +123,7 @@ export function mockMigreringKilde(request: Request): MigreringKilde {
         ansatteValg,
         filter,
         erLeder: bruker.erLeder,
+        egenNavIdent: bruker.navIdent,
         utilgjengelig: false,
       };
     },

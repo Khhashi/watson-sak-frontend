@@ -251,6 +251,51 @@ describe("MigreringInnhold", () => {
       expect(screen.getByTestId("sok").textContent).toBe("enhet=4812");
     });
 
+    it("skiller lederens egne saker fra andres med overskrifter", () => {
+      const egen = (pid: string) =>
+        kandidat(pid, "IKKE_PABEGYNT", null, { ansvar: { type: "BEKREFTET", navIdent: "L1" } });
+      const andres = (pid: string) =>
+        kandidat(pid, "IKKE_PABEGYNT", null, {
+          ansvar: { type: "BEKREFTET", navIdent: "Z999001" },
+        });
+      renderSide(
+        lagLister({
+          erLeder: true,
+          ansatteValg,
+          egenNavIdent: "L1",
+          liste: lagSide([egen("1"), egen("2"), andres("3"), andres("4")]),
+        }),
+      );
+
+      expect(screen.getAllByRole("rowheader").map((e) => e.textContent)).toEqual([
+        "Dine saker",
+        "Andre saker",
+      ]);
+    });
+
+    it("viser bare «Andre saker» når siden bare har andres saker", () => {
+      const andres = (pid: string) =>
+        kandidat(pid, "IKKE_PABEGYNT", null, {
+          ansvar: { type: "BEKREFTET", navIdent: "Z999001" },
+        });
+      renderSide(
+        lagLister({
+          erLeder: true,
+          ansatteValg,
+          egenNavIdent: "L1",
+          liste: lagSide([andres("3"), andres("4")]),
+        }),
+      );
+
+      expect(screen.getAllByRole("rowheader").map((e) => e.textContent)).toEqual(["Andre saker"]);
+    });
+
+    it("viser ingen overskrifter for andre enn ledere", () => {
+      renderSide(lagLister({ liste: lagSide([kandidat("1", "IKKE_PABEGYNT")]) }));
+
+      expect(screen.queryAllByRole("rowheader")).toEqual([]);
+    });
+
     it("begrenser saksbehandlerlisten til valgt avdeling", () => {
       renderSide(
         lagLister({

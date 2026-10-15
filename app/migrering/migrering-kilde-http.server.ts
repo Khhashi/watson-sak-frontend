@@ -82,6 +82,7 @@ export function httpMigreringKilde(request: Request): MigreringKilde {
         ansatteValg: ansatteValg ?? [],
         filter,
         erLeder: bruker.erLeder,
+        egenNavIdent: bruker.navIdent,
         utilgjengelig: liste.utilgjengelig || ansatteValg === null,
       };
     },
