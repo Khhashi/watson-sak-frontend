@@ -47,6 +47,12 @@ describe("kastHvisUtlogget", () => {
     await waitFor(() => expect(screen.getByText("Feilstatus: 401")).toBeDefined());
   });
 
+  it("kaster en route-feilrespons med status 429 når backend svarer 429", async () => {
+    renderMedLoader(429);
+
+    await waitFor(() => expect(screen.getByText("Feilstatus: 429")).toBeDefined());
+  });
+
   it("gjør ingenting når responsen ikke er 401, slik at siden lastes normalt", async () => {
     renderMedLoader(403);
 

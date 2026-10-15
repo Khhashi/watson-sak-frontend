@@ -2,7 +2,8 @@ import { data } from "react-router";
 
 /**
  * Kaster en route-feilrespons med statuskode 401 dersom backend-kallet
- * avviste forespørselen på grunn av manglende/utløpt autentisering.
+ * avviste forespørselen på grunn av manglende/utløpt autentisering, eller
+ * statuskode 429 dersom backend har mottatt for mange forespørsler.
  *
  * Dette skiller en utlogget bruker (behandles av `RootErrorBoundary` med en
  * egen «logg inn på nytt»-side) fra uventede serverfeil, som ellers ville
@@ -11,6 +12,9 @@ import { data } from "react-router";
 export function kastHvisUtlogget(respons: Response): void {
   if (respons.status === 401) {
     throw data("Sesjonen er utløpt. Logg inn på nytt.", { status: 401 });
+  }
+  if (respons.status === 429) {
+    throw data("For mange forespørsler. Prøv igjen om et par minutter.", { status: 429 });
   }
 }
 
