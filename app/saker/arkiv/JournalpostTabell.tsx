@@ -24,7 +24,7 @@ const typeikoner: Record<string, ComponentType<{ "aria-hidden"?: boolean }>> = {
 
 /** Har samme høyde som chevron-knappen, så alle rader blir like høye. */
 function Radhøyde() {
-  return <div aria-hidden className="h-8" />;
+  return <div aria-hidden className="h-6" />;
 }
 
 interface JournalpostTabellProps {
@@ -50,7 +50,7 @@ export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
 
   return (
     <div className="overflow-x-auto rounded-lg border border-ax-border-neutral-subtle">
-      <Table size="small">
+      <Table>
         <Table.Header>
           <Table.Row className="bg-ax-bg-neutral-soft">
             <Table.ColumnHeader scope="col">Dato</Table.ColumnHeader>
@@ -97,7 +97,7 @@ export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
                         <Tooltip content={knappetekst} describesChild>
                           <Button
                             type="button"
-                            size="small"
+                            size="xsmall"
                             variant="tertiary-neutral"
                             icon={
                               erÅpen ? (
