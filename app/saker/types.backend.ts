@@ -300,6 +300,7 @@ const kontrollsakTilgangSchema = z.object({
   kanSeRelaterteSaker: z.boolean().default(true),
   kanTildeleSak: z.boolean().default(true),
   kanSeArkiv: z.boolean().default(false),
+  kanSeFiler: z.boolean().default(false),
 });
 
 /**
