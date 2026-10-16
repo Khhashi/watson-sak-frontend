@@ -25,6 +25,7 @@ import { GosysDokumentpanel } from "./arkiv/GosysDokumentpanel";
 import { SakHandlingerKnapper } from "./handlinger/SakHandlingerKnapper";
 import { action, loader } from "./SakDetaljSide.server";
 import { hentStegbaserteSaksregler } from "./stegregler";
+import { useLukketBekreftelse } from "./useLukketBekreftelse";
 import { useTilbakeLenke } from "./tilbake";
 import type { KontrollsakResponse, KontrollsakSaksbehandler } from "./types.backend";
 import { useDisclosure } from "~/utils/useDisclosure";
@@ -58,7 +59,7 @@ export default function SakDetaljSide() {
     saksbehandlerDetaljer,
   } = useLoaderData<typeof loader>();
   const [sak, setSak] = useState(loaderSak);
-  const [visEksempelBekreftelse, setVisEksempelBekreftelse] = useState(true);
+  const { vis: visEksempelBekreftelse, lukk: lukkBekreftelse } = useLukketBekreftelse(loaderSak.id);
   const [visSaksflytModal, setVisSaksflytModal] = useState(false);
   const navigate = useNavigate();
   const tilbake = useTilbakeLenke({ to: RouteConfig.MINE_SAKER, label: "Mine saker" });
@@ -101,7 +102,6 @@ export default function SakDetaljSide() {
 
   useEffect(() => {
     setSak(loaderSak);
-    setVisEksempelBekreftelse(true);
   }, [loaderSak]);
 
   return (
@@ -184,7 +184,7 @@ export default function SakDetaljSide() {
                         size="xsmall"
                         icon={<XMarkIcon aria-hidden />}
                         aria-label="Lukk bekreftelsen"
-                        onClick={() => setVisEksempelBekreftelse(false)}
+                        onClick={lukkBekreftelse}
                       />
                     </HStack>
                   </Box>
