@@ -299,6 +299,7 @@ const kontrollsakTilgangSchema = z.object({
   kanSeHistorikk: z.boolean().default(true),
   kanSeRelaterteSaker: z.boolean().default(true),
   kanTildeleSak: z.boolean().default(true),
+  kanSeArkiv: z.boolean().default(false),
 });
 
 /**
