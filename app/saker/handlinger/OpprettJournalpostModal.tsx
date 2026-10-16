@@ -88,6 +88,8 @@ interface OpprettJournalpostModalProps {
   sakId: string;
   åpen: boolean;
   onClose: () => void;
+  /** Kalles når journalposten er opprettet. */
+  onOpprettet?: () => void;
   /** PDF-filer lastet opp på saken som kan velges som vedlegg. */
   filer: FilResponse[];
   /** Dokumenter opprettet i Watson Sak som kan velges for arkivering (konverteres til PDF). */
@@ -98,6 +100,7 @@ export function OpprettJournalpostModal({
   sakId,
   åpen,
   onClose,
+  onOpprettet,
   filer,
   dokumenter,
 }: OpprettJournalpostModalProps) {
@@ -203,12 +206,13 @@ export function OpprettJournalpostModal({
     if (fetcher.data && "ok" in fetcher.data && fetcher.data.ok) {
       setFeilmelding(null);
       setSteg("suksess");
+      onOpprettet?.();
     } else {
       setFeilmelding("Kunne ikke opprette journalpost. Prøv igjen.");
       setSteg("bekreft");
     }
     submitPågår.current = false;
-  }, [fetcher.data, fetcher.state]);
+  }, [fetcher.data, fetcher.state, onOpprettet]);
 
   const journalpostFormData = innsendingFormData;
   const oppgaveFormData = innsendingFormData && knyttTilOppgave ? innsendingFormData : null;

@@ -269,8 +269,21 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const andreSaker = alleSaker.filter(
     (annenSak) => annenSak.personIdent === sak.personIdent && annenSak.id !== sak.id,
   );
+  // Backend setter `tilgang` på saken. Mocksakene mangler den, så vi speiler
+  // backend sin arkivregel: den som kan lese saksinnholdet, kan se arkivet.
+  const sakMedTilgang = {
+    ...sak,
+    tilgang: {
+      kreverUtvidetTilgang: false,
+      kanSeHistorikk: true,
+      kanSeRelaterteSaker: true,
+      kanTildeleSak: true,
+      ...sak.tilgang,
+      kanSeArkiv: sak.tilgang?.kanSeArkiv ?? harDirekteTilgang,
+    },
+  };
   return {
-    sak,
+    sak: sakMedTilgang,
     migreringsstatus,
     migreringsnotatEksempel,
     tillatteHandlinger,
