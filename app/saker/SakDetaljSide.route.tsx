@@ -21,6 +21,8 @@ import { MigreringSjekkliste } from "./komponenter/MigreringSjekkliste";
 import { SaksflytStepper } from "./komponenter/SaksflytStepper";
 import { SaksinformasjonKort } from "./komponenter/SaksinformasjonKort";
 import { getAlder, getNavn } from "./selectors";
+import { GosysDokumentpanel } from "./arkiv/GosysDokumentpanel";
+import { SakHandlingerKnapper } from "./handlinger/SakHandlingerKnapper";
 import { action, loader } from "./SakDetaljSide.server";
 import { hentStegbaserteSaksregler } from "./stegregler";
 import { useTilbakeLenke } from "./tilbake";
@@ -217,6 +219,22 @@ export default function SakDetaljSide() {
               <IngenFiltilgangKort />
             )}
 
+            <GosysDokumentpanel
+              key={sak.id}
+              sakId={saksreferanse}
+              saksreferanse={saksreferanse}
+              kanSeArkiv={sak.tilgang?.kanSeArkiv ?? kanLese}
+              renderHandlinger={({ onJournalpostOpprettet }) => (
+                <SakHandlingerKnapper
+                  sak={sak}
+                  erEier={erEier}
+                  filer={filer}
+                  dokumenter={dokumenter}
+                  onJournalpostOpprettet={onJournalpostOpprettet}
+                />
+              )}
+            />
+
             <SakerPåSammePerson
               saker={andreSaker}
               gjeldendeSak={sak}
@@ -230,8 +248,6 @@ export default function SakDetaljSide() {
             ansvarligSaksbehandler={ansvarligSaksbehandler}
             tillatteHandlinger={tillatteHandlinger}
             historikk={historikk}
-            dokumenter={dokumenter}
-            filer={filer}
             erEier={erEier}
             kanTildeleSak={sak.tilgang?.kanTildeleSak ?? true}
             kanRedigere={kanRedigere}

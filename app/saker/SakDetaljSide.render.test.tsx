@@ -94,7 +94,8 @@ describe("SakDetaljSide render", () => {
     renderDetaljside(deltMedSakId);
 
     expect((await screen.findAllByText("Saksbehandler")).length).toBeGreaterThan(0);
-    expect(screen.queryByRole("heading", { name: "Handlinger" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Opprett oppgave i Gosys" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Arkiver dokument(er) i Gosys" })).toBeNull();
     expect(screen.getByText("Delt tilgang")).toBeDefined();
     expect(screen.getByText("Ingen ansvarlig saksbehandler satt.")).toBeDefined();
     expect(screen.getAllByText("Kari Nordmann").length).toBeGreaterThan(0);
@@ -311,6 +312,21 @@ describe("SakDetaljSide render", () => {
     expect(
       screen.queryByText("Du må få delt tilgang til saken for å kunne se dokumenter og vedlegg."),
     ).toBeNull();
+  }, 15000);
+
+  it("viser dokumentoversikten i Gosys under Filer, med Gosys-handlingene for eier", async () => {
+    renderDetaljside();
+
+    const overskrift = await screen.findByRole("heading", {
+      name: `Dokumentoversikt i Gosys for sak ${testSakId}`,
+    });
+    const filer = screen.getByRole("heading", { name: "Filer" });
+    expect(
+      filer.compareDocumentPosition(overskrift) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Vis dokumentoversikt" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Opprett oppgave i Gosys" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Arkiver dokument(er) i Gosys" })).toBeDefined();
   }, 15000);
 
   it("skjuler Filer-blokken og viser tilgangsmelding for koblet sak uten direkte tilgang", async () => {

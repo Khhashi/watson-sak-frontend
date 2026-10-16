@@ -1,5 +1,4 @@
 import { VStack } from "@navikt/ds-react";
-import { SakHandlingerKnapper } from "~/saker/handlinger/SakHandlingerKnapper";
 import { IngenHistorikktilgangKort } from "~/saker/historikk/IngenHistorikktilgangKort";
 import { SakHistorikk } from "~/saker/historikk/SakHistorikk";
 import type {
@@ -7,7 +6,6 @@ import type {
   KontrollsakSaksbehandler,
   TillatteHandlingerResponse,
 } from "~/saker/types.backend";
-import type { DokumentNode, FilResponse } from "../filer/typer";
 import type { SakHendelse } from "../historikk/typer";
 import { SaksbehandlereKort } from "./SaksbehandlereKort";
 
@@ -17,8 +15,6 @@ interface SakDetaljSidePanelProps {
   ansvarligSaksbehandler: KontrollsakSaksbehandler | null;
   tillatteHandlinger: TillatteHandlingerResponse;
   historikk: SakHendelse[];
-  dokumenter: DokumentNode[];
-  filer: FilResponse[];
   erEier: boolean;
   kanTildeleSak: boolean;
   kanRedigere: boolean;
@@ -32,8 +28,6 @@ export function SakDetaljSidePanel({
   ansvarligSaksbehandler,
   tillatteHandlinger,
   historikk,
-  dokumenter,
-  filer,
   erEier,
   kanTildeleSak,
   kanRedigere,
@@ -49,14 +43,6 @@ export function SakDetaljSidePanel({
         erEier={erEier}
         kanTildeleSak={kanTildeleSak}
         tillatteHandlinger={tillatteHandlinger}
-      />
-
-      <SakHandlingerKnapper
-        sak={sak}
-        tillatteHandlinger={tillatteHandlinger}
-        erEier={erEier}
-        filer={filer}
-        dokumenter={dokumenter}
       />
 
       {historikkTilstand === "vis" ? (
