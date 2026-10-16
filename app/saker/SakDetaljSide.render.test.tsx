@@ -64,6 +64,13 @@ function renderDetaljside(sakId = testSakId) {
 
 describe("SakDetaljSide render", () => {
   beforeEach(() => {
+    const lager = new Map<string, string>();
+    vi.stubGlobal("localStorage", {
+      getItem: (nøkkel: string) => lager.get(nøkkel) ?? null,
+      setItem: (nøkkel: string, verdi: string) => void lager.set(nøkkel, verdi),
+      removeItem: (nøkkel: string) => void lager.delete(nøkkel),
+      clear: () => lager.clear(),
+    });
     resetDefaultSession();
     erLeder = false;
     visningsmiljø.verdi = "local-mock";
@@ -281,6 +288,18 @@ describe("SakDetaljSide render", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lukk bekreftelsen" }));
     expect(screen.queryByText("Saken er ferdig flyttet 🎉")).toBeNull();
     expect(screen.getByRole("link", { name: "Notat fra opprettelse" })).toBeDefined();
+  }, 15000);
+
+  it("husker at bekreftelsen er lukket etter at siden lastes på nytt", async () => {
+    const første = renderDetaljside("1181");
+    await screen.findByText("Saken er ferdig flyttet 🎉");
+    fireEvent.click(screen.getByRole("button", { name: "Lukk bekreftelsen" }));
+    expect(screen.queryByText("Saken er ferdig flyttet 🎉")).toBeNull();
+    første.unmount();
+
+    renderDetaljside("1181");
+    await screen.findByRole("link", { name: "Notat fra opprettelse" });
+    expect(screen.queryByText("Saken er ferdig flyttet 🎉")).toBeNull();
   }, 15000);
 
   it("utleverer ikke mockstatus for migreringssak som eies av en annen", async () => {
