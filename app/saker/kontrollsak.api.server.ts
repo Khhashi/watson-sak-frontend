@@ -18,7 +18,6 @@ import { sakHendelseSchema } from "./historikk/typer";
 import { sti as byggSti } from "./sti-param.server";
 import {
   saksbehandlerListeSchema,
-  journalpostReferanseSchema,
   apiUrl,
   authHeaders,
   håndterFeil,
@@ -121,20 +120,6 @@ export async function hentHendelser(token: string, sakId: string) {
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke hente hendelser");
   return parseEllerKastFeil(z.array(sakHendelseSchema), await respons.json(), "hentHendelser");
-}
-
-// --- Journalposter ---
-
-export async function hentJournalposter(token: string, sakId: string) {
-  const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/journalposter`), {
-    headers: authHeaders(token),
-  });
-  if (!respons.ok) await håndterFeil(respons, "Kunne ikke hente journalposter");
-  return parseEllerKastFeil(
-    z.array(journalpostReferanseSchema),
-    await respons.json(),
-    "hentJournalposter",
-  );
 }
 
 // --- Handlinger ---

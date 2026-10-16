@@ -455,7 +455,7 @@ describe("SakFilområde", () => {
     expect(await screen.findByText("Kunne ikke flytte elementet")).toBeDefined();
   });
 
-  it("flytter arkiverte filer til Arkivert-seksjonen, ikke mappetreet", () => {
+  it("viser ikke arkiverte filer og dokumenter i filområdet, siden de ligger i Gosys", () => {
     const arkivertFil: FilResponse = {
       ...mockFiler[0],
       id: "fil-arkivert",
@@ -463,84 +463,25 @@ describe("SakFilområde", () => {
       arkivert: "2026-03-01T10:00:00Z",
       arkivertAv: "Z999999",
     };
+    const arkivertDokument: DokumentNode = {
+      ...mockDokumenter[0],
+      id: "3",
+      tittel: "Arkivert dokument",
+      arkivert: "2026-03-01T10:00:00Z",
+      arkivertAv: "Z999999",
+    };
 
     renderOmråde({
-      dokumenter: [],
+      dokumenter: [...mockDokumenter, arkivertDokument],
       filer: [...mockFiler, arkivertFil],
       sakId: "ABC-123",
       steg: "UTREDNING",
     });
 
-    expect(screen.getByRole("heading", { name: "Arkivert" })).toBeDefined();
-
-    const opplastedeFiler = screen.getByRole("list", { name: "Dokumenter og filer" });
-    const arkivertListe = screen.getByRole("list", { name: "Arkivert" });
-
-    expect(within(opplastedeFiler).getByText("rapport.pdf")).toBeDefined();
-    expect(within(opplastedeFiler).queryByText("arkivert.pdf")).toBeNull();
-
-    expect(within(arkivertListe).getByText("arkivert.pdf")).toBeDefined();
-    expect(within(arkivertListe).queryByText("rapport.pdf")).toBeNull();
-  });
-
-  it("viser ikke Arkivert-seksjonen når ingen filer eller dokumenter er arkivert", () => {
-    renderOmråde({ dokumenter: [], filer: mockFiler, sakId: "ABC-123", steg: "UTREDNING" });
+    expect(screen.getByText("rapport.pdf")).toBeDefined();
+    expect(screen.queryByText("arkivert.pdf")).toBeNull();
+    expect(screen.queryByText("Arkivert dokument")).toBeNull();
     expect(screen.queryByRole("heading", { name: "Arkivert" })).toBeNull();
-  });
-
-  it("viser arkiverte dokumenter kun i Arkivert-seksjonen, ikke i mappetreet", () => {
-    const arkivertDokument: DokumentNode = {
-      ...mockDokumenter[0],
-      id: "3",
-      tittel: "Arkivert dokument",
-      arkivert: "2026-03-01T10:00:00Z",
-      arkivertAv: "Z999999",
-    };
-
-    renderOmråde({
-      dokumenter: [...mockDokumenter, arkivertDokument],
-      filer: [],
-      sakId: "ABC-123",
-      steg: "UTREDNING",
-    });
-
-    const redigerbareDokumenter = screen.getByRole("list", { name: "Dokumenter og filer" });
-    const arkivertListe = screen.getByRole("list", { name: "Arkivert" });
-
-    expect(within(redigerbareDokumenter).queryByText("Arkivert dokument")).toBeNull();
-    expect(within(arkivertListe).getByText("Arkivert dokument")).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Handlinger for Arkivert dokument" })).toBeNull();
-  });
-
-  it("skjuler et arkivert dokument fra Arkivert-seksjonen når det allerede har en arkivert fil", () => {
-    const arkivertDokument: DokumentNode = {
-      ...mockDokumenter[0],
-      id: "3",
-      tittel: "Arkivert dokument",
-      arkivert: "2026-03-01T10:00:00Z",
-      arkivertAv: "Z999999",
-    };
-    const arkivertFilFraDokument: FilResponse = {
-      ...mockFiler[0],
-      id: "fil-fra-dokument",
-      filnavn: "Arkivert dokument.pdf",
-      arkivert: "2026-03-01T10:00:00Z",
-      arkivertAv: "Z999999",
-      arkivertFraDokumentId: "3",
-    };
-
-    renderOmråde({
-      dokumenter: [...mockDokumenter, arkivertDokument],
-      filer: [arkivertFilFraDokument],
-      sakId: "ABC-123",
-      steg: "UTREDNING",
-    });
-
-    const arkivertListe = screen.getByRole("list", { name: "Arkivert" });
-
-    // Bare PDF-en (filen) skal vises, ikke også en duplikatrad for kildedokumentet
-    expect(within(arkivertListe).getByText("Arkivert dokument.pdf")).toBeDefined();
-    expect(within(arkivertListe).queryByText("Arkivert dokument")).toBeNull();
   });
 
   describe("tilgang via koblet sak (kun les)", () => {
@@ -590,58 +531,6 @@ describe("SakFilområde", () => {
         screen.queryByRole("button", { name: `Handlinger for ${mockFiler[0].filnavn}` }),
       ).toBeNull();
     });
-  });
-});
-
-describe("Arkivert", () => {
-  const journalposter = [
-    {
-      journalpostId: "453912345",
-      journalposttype: "NOTAT",
-      tittel: "Notat om kontroll",
-      opprettet: "2026-03-01T10:00:00Z",
-    },
-  ];
-
-  it("grupperer arkiverte filer under journalposten de tilhører, med type som tag", () => {
-    const vedlegg: FilResponse = {
-      ...mockFiler[0],
-      id: "fil-arkivert",
-      filnavn: "kontoutskrift.pdf",
-      arkivert: "2026-03-01T10:00:00Z",
-      arkivertAv: "Z999999",
-      arkivertJournalpostId: "453912345",
-    };
-    const ukjent: FilResponse = {
-      ...vedlegg,
-      id: "fil-ukjent",
-      filnavn: "gammel.pdf",
-      arkivertJournalpostId: "999",
-    };
-
-    renderOmråde({
-      dokumenter: [],
-      filer: [vedlegg, ukjent],
-      journalposter,
-      sakId: "ABC-123",
-      steg: "UTREDNING",
-    });
-
-    expect(screen.getByText("Journalført i dokumentarkiv – koblet til journalpost")).toBeDefined();
-    const kort = screen.getByRole("list", { name: "Vedlegg i Notat om kontroll" });
-    expect(within(kort).getByText("kontoutskrift.pdf")).toBeDefined();
-    expect(within(kort).getByText(/Vedlegg · PDF ·/)).toBeDefined();
-    expect(screen.getByText("Notat")).toBeDefined();
-    expect(screen.getByText(/Journalpost 453912345 · Arkivert .* · 1 vedlegg/)).toBeDefined();
-
-    const reserve = screen.getByRole("list", { name: "Vedlegg i Journalpost 999" });
-    expect(within(reserve).getByText("gammel.pdf")).toBeDefined();
-  });
-
-  it("viser journalposter også når de ikke har arkiverte vedlegg", () => {
-    renderOmråde({ dokumenter: [], filer: [], journalposter, sakId: "ABC-123", steg: "UTREDNING" });
-    expect(screen.getByText("Notat om kontroll")).toBeDefined();
-    expect(screen.getByText(/0 vedlegg/)).toBeDefined();
   });
 });
 

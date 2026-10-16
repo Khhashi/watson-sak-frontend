@@ -54,7 +54,6 @@ export default function SakDetaljSide() {
     migreringsstatus,
     migreringsnotatEksempel,
     mapper,
-    journalposter,
     andreSaker,
     saksbehandlerDetaljer,
   } = useLoaderData<typeof loader>();
@@ -201,7 +200,6 @@ export default function SakDetaljSide() {
                 dokumenter={dokumenter}
                 filer={filer}
                 mapper={mapper}
-                journalposter={journalposter}
                 sakId={saksreferanse}
                 steg={sak.steg}
                 redigerbar={harDirekteTilgang && stegregler.kanRedigereDokumenter}
