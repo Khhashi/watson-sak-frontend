@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, within } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GosysDokumentpanel } from "./GosysDokumentpanel";
 import type { ArkivJournalpost } from "./typer";
@@ -62,7 +62,8 @@ describe("GosysDokumentpanel", () => {
 
     expect(await screen.findByText("Svarbrev om kontoopplysninger")).toBeDefined();
     expect(mockFetch).toHaveBeenCalledWith("/api/saker/14/arkiv/journalposter", expect.anything());
-    const rad = screen.getByText("Svarbrev om kontoopplysninger").closest("tr")!;
+    const rad = screen.getByText("Svarbrev om kontoopplysninger").closest("tr");
+    if (!rad) throw new Error("Fant ikke tabellraden");
     expect(within(rad).getByText("12.10.2026")).toBeDefined();
     expect(within(rad).getByText("Journalført")).toBeDefined();
     expect(within(rad).getByText("Kontroll")).toBeDefined();
@@ -162,8 +163,10 @@ describe("GosysDokumentpanel", () => {
     åpneOversikt();
     await screen.findByText("Ingen journalføringer å vise for denne saken.");
 
-    varsleOpprettet();
+    await act(async () => {
+      varsleOpprettet();
+    });
 
-    await vi.waitFor(() => expect(mockFetch).toHaveBeenCalledTimes(2));
+    expect(mockFetch).toHaveBeenCalledTimes(2);
   });
 });

@@ -5,7 +5,7 @@ import { z } from "zod";
  * returnerer dem. Kodeverdiene (type, status, tema) holdes åpne som tekst, slik at
  * nye koder fra SAF ikke får hele listen til å feile.
  */
-export const arkivJournalpostSchema = z.object({
+const arkivJournalpostSchema = z.object({
   journalpostId: z.string(),
   datoOpprettet: z.string(),
   journalposttype: z.string().nullish().default(null),
