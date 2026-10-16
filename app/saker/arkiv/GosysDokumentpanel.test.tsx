@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GosysDokumentpanel } from "./GosysDokumentpanel";
 import type { ArkivJournalpost, OpprettetJournalpost } from "./typer";
@@ -285,6 +285,64 @@ describe("GosysDokumentpanel", () => {
 
       await varsleOpprettet({ ...opprettet, journalpostId: null });
       await ventPå(SYNK_FORSINKELSER_MS[0]);
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("tilbyr manuell oppdatering når de automatiske forsøkene er brukt opp", async () => {
+      mockFetch.mockReturnValue(svar({ status: "ok", journalposter: [] }));
+      const varsleOpprettet = renderMedHandlinger();
+      åpneOversikt();
+      await screen.findByText("Ingen journalføringer å vise for denne saken.");
+      vi.useFakeTimers();
+      await varsleOpprettet(opprettet);
+
+      for (const forsinkelse of SYNK_FORSINKELSER_MS) {
+        expect(screen.queryByRole("button", { name: "Oppdater" })).toBeNull();
+        await ventPå(forsinkelse);
+      }
+      expect(mockFetch).toHaveBeenCalledTimes(1 + SYNK_FORSINKELSER_MS.length);
+
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [iGosys] }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Oppdater" }));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      expect(within(radFor("Varsel om kontroll")).getByText("Journalført")).toBeDefined();
+      expect(screen.queryByRole("button", { name: "Oppdater" })).toBeNull();
+    });
+
+    it("viser journalposten selv om oversikten ikke er hentet ennå og hentingen feiler", async () => {
+      mockFetch.mockReturnValue(svar({ status: "feil", årsak: "utilgjengelig" }, 503));
+      const varsleOpprettet = renderMedHandlinger();
+
+      await varsleOpprettet(opprettet);
+
+      expect(
+        await screen.findByText("Kunne ikke hente dokumentoversikten fra Gosys. Prøv igjen."),
+      ).toBeDefined();
+      expect(within(radFor("Varsel om kontroll")).getByText("Venter på Gosys")).toBeDefined();
+    });
+
+    it("synkroniserer ikke videre når panelet fjernes mens en henting pågår", async () => {
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [] }));
+      let fullfør: (respons: Response) => void = () => {};
+      const varsleOpprettet = renderMedHandlinger();
+      åpneOversikt();
+      await screen.findByText("Ingen journalføringer å vise for denne saken.");
+      vi.useFakeTimers();
+      await varsleOpprettet(opprettet);
+
+      mockFetch.mockReturnValueOnce(new Promise<Response>((resolve) => (fullfør = resolve)));
+      await ventPå(SYNK_FORSINKELSER_MS[0]);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      cleanup();
+      await act(async () => {
+        fullfør(Response.json({ status: "ok", journalposter: [] }));
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
 
       expect(mockFetch).toHaveBeenCalledTimes(2);
     });

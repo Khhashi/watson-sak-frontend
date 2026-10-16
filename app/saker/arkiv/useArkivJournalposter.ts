@@ -34,6 +34,7 @@ const ingenVentende: readonly ArkivJournalpost[] = [];
  *
  * En nyopprettet journalpost vises med en gang (optimistisk) og står som ventende
  * til den finnes i SAF. Vi henter i bakgrunnen etter `SYNK_FORSINKELSER_MS`.
+ * Når forsøkene er brukt opp, kan brukeren oppdatere manuelt med `oppdater`.
  */
 export function useArkivJournalposter(sakId: string) {
   const [tilstand, settTilstand] = useState<ArkivTilstand>({ status: "ikke-hentet" });
@@ -43,6 +44,8 @@ export function useArkivJournalposter(sakId: string) {
   const synkTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const synkForsøk = useRef(0);
   const harHentet = useRef(false);
+  const avmontert = useRef(false);
+  const [synkUttømt, settSynkUttømt] = useState(false);
   const bakgrunnshent = useRef<() => void>(() => {});
 
   const settVentende = useCallback((neste: readonly ArkivJournalpost[]) => {
@@ -51,9 +54,12 @@ export function useArkivJournalposter(sakId: string) {
   }, []);
 
   const planleggSynk = useCallback(() => {
-    if (synkTimer.current !== undefined) return;
+    if (avmontert.current || synkTimer.current !== undefined) return;
     const forsinkelse = SYNK_FORSINKELSER_MS[synkForsøk.current];
-    if (forsinkelse === undefined) return;
+    if (forsinkelse === undefined) {
+      settSynkUttømt(true);
+      return;
+    }
     synkForsøk.current += 1;
     synkTimer.current = setTimeout(() => {
       synkTimer.current = undefined;
@@ -61,7 +67,16 @@ export function useArkivJournalposter(sakId: string) {
     }, forsinkelse);
   }, []);
 
-  useEffect(() => () => clearTimeout(synkTimer.current), []);
+  // Ved avmontering avvises svar på pågående hentinger, så de ikke planlegger nye oppslag.
+  useEffect(() => {
+    avmontert.current = false;
+    return () => {
+      avmontert.current = true;
+      sisteForespørsel.current += 1;
+      clearTimeout(synkTimer.current);
+      synkTimer.current = undefined;
+    };
+  }, []);
 
   const hent = useCallback(
     async ({ bakgrunn = false }: { bakgrunn?: boolean } = {}) => {
@@ -105,6 +120,7 @@ export function useArkivJournalposter(sakId: string) {
         if (uløste.length !== ventendeRef.current.length) settVentende(uløste);
         settTilstand(resultat.data);
         if (uløste.length > 0) planleggSynk();
+        else settSynkUttømt(false);
       } catch {
         if (erGjeldende()) settFeil("utilgjengelig");
       }
@@ -131,10 +147,17 @@ export function useArkivJournalposter(sakId: string) {
       clearTimeout(synkTimer.current);
       synkTimer.current = undefined;
       synkForsøk.current = 0;
+      settSynkUttømt(false);
       if (harHentet.current) planleggSynk();
     },
     [planleggSynk, settVentende],
   );
+
+  /** Manuell synk når de automatiske forsøkene er brukt opp. */
+  const oppdater = useCallback(() => {
+    settSynkUttømt(false);
+    void hent({ bakgrunn: true });
+  }, [hent]);
 
   const synligTilstand: ArkivTilstand =
     tilstand.status === "ok" && ventende.length > 0
@@ -143,8 +166,12 @@ export function useArkivJournalposter(sakId: string) {
 
   return {
     tilstand: synligTilstand,
+    /** Ventende journalposter, også før oversikten er hentet. */
+    ventende,
     ventendeIder: new Set(ventende.map((jp) => jp.journalpostId)),
+    synkUttømt: synkUttømt && ventende.length > 0,
     hent,
+    oppdater,
     journalpostOpprettet,
   };
 }

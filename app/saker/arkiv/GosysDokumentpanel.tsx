@@ -36,7 +36,8 @@ export function GosysDokumentpanel({
   renderHandlinger,
 }: GosysDokumentpanelProps) {
   const [åpen, settÅpen] = useState(false);
-  const { tilstand, ventendeIder, hent, journalpostOpprettet } = useArkivJournalposter(sakId);
+  const { tilstand, ventende, ventendeIder, synkUttømt, hent, oppdater, journalpostOpprettet } =
+    useArkivJournalposter(sakId);
 
   // Henter når panelet er åpent og ikke hentet, også om tilgangen kommer etter åpning.
   useEffect(() => {
@@ -92,8 +93,11 @@ export function GosysDokumentpanel({
               <Innhold
                 kanSeArkiv={kanSeArkiv}
                 tilstand={tilstand}
+                ventende={ventende}
                 ventendeIder={ventendeIder}
+                synkUttømt={synkUttømt}
                 onPrøvIgjen={() => void hent()}
+                onOppdater={oppdater}
               />
             </div>
           ) : null}
@@ -131,13 +135,19 @@ function tilVentendeJournalpost(journalpost: OpprettetJournalpost): ArkivJournal
 function Innhold({
   kanSeArkiv,
   tilstand,
+  ventende,
   ventendeIder,
+  synkUttømt,
   onPrøvIgjen,
+  onOppdater,
 }: {
   kanSeArkiv: boolean;
   tilstand: ArkivTilstand;
+  ventende: readonly ArkivJournalpost[];
   ventendeIder: ReadonlySet<string>;
+  synkUttømt: boolean;
   onPrøvIgjen: () => void;
+  onOppdater: () => void;
 }) {
   if (!kanSeArkiv) {
     return (
@@ -150,17 +160,27 @@ function Innhold({
     );
   }
 
+  // Ventende journalposter vises selv om oversikten ikke er hentet ennå, eller feilet.
+  const ventendeTabell =
+    ventende.length > 0 ? (
+      <JournalpostTabell journalposter={[...ventende]} ventendeIder={ventendeIder} />
+    ) : null;
+
   switch (tilstand.status) {
     case "ikke-hentet":
     case "laster":
       return (
-        <HStack justify="center" className="py-4">
-          <Loader size="medium" title="Henter dokumentoversikten fra Gosys" />
-        </HStack>
+        <VStack gap="space-8">
+          {ventendeTabell}
+          <HStack justify="center" className="py-4">
+            <Loader size="medium" title="Henter dokumentoversikten fra Gosys" />
+          </HStack>
+        </VStack>
       );
     case "feil":
       return (
         <VStack gap="space-8" align="start">
+          {ventendeTabell ? <div className="w-full">{ventendeTabell}</div> : null}
           <InfoCard size="small" data-color="warning" className="w-full">
             <InfoCard.Message icon={<ExclamationmarkTriangleIcon aria-hidden />}>
               {feilmeldinger[tilstand.årsak]}
@@ -179,7 +199,19 @@ function Innhold({
           Ingen journalføringer å vise for denne saken.
         </BodyShort>
       ) : (
-        <JournalpostTabell journalposter={tilstand.journalposter} ventendeIder={ventendeIder} />
+        <VStack gap="space-8">
+          {synkUttømt ? (
+            <HStack gap="space-8" align="center" justify="space-between" wrap>
+              <BodyShort size="small" textColor="subtle">
+                Gosys har ikke registrert den nye journalposten ennå.
+              </BodyShort>
+              <Button type="button" size="small" variant="secondary" onClick={onOppdater}>
+                Oppdater
+              </Button>
+            </HStack>
+          ) : null}
+          <JournalpostTabell journalposter={tilstand.journalposter} ventendeIder={ventendeIder} />
+        </VStack>
       );
   }
 }
