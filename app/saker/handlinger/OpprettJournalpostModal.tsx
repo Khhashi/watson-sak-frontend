@@ -40,6 +40,8 @@ import {
   SammendragRad,
   VedleggSammendrag,
 } from "./opprett-formatering";
+import { formaterTemavalg, temaSkjema } from "./tema";
+import { TemaVelger } from "./TemaVelger";
 
 /** Kombinert grense for antall filer og dokumenter som til sammen kan velges for arkivering. */
 const MAKS_ANTALL_VALGTE_ELEMENTER = 10;
@@ -53,6 +55,7 @@ type ValgbartElement =
 const opprettJournalpostSkjema = z
   .object({
     journalposttype: z.string({ error: "Velg journalposttype" }).min(1, "Velg journalposttype"),
+    tema: temaSkjema,
     tittel: z.string({ error: "Skriv en tittel" }).trim().min(1, "Skriv en tittel"),
     innhold: z.string({ error: "Skriv innhold" }).trim().min(1, "Skriv innhold"),
     knyttTilOppgave: z.string().optional(),
@@ -283,6 +286,8 @@ export function OpprettJournalpostModal({
                 <Radio value="NOTAT">Notat</Radio>
               </RadioGroup>
 
+              <TemaVelger felt={fields.tema} />
+
               <TextField
                 key={fields.tittel.key}
                 name={fields.tittel.name}
@@ -385,6 +390,10 @@ export function OpprettJournalpostModal({
                       )}
                     />
                     <SammendragRad
+                      label="Tema"
+                      verdi={formaterTemavalg(journalpostFormData.get("tema")?.toString() ?? "")}
+                    />
+                    <SammendragRad
                       label="Tittel"
                       verdi={journalpostFormData.get("tittel")?.toString() ?? ""}
                     />
@@ -401,6 +410,10 @@ export function OpprettJournalpostModal({
                       Oppgave
                     </BodyShort>
                     <HGrid columns="auto 1fr" gap="space-4 space-16">
+                      <SammendragRad
+                        label="Tema"
+                        verdi={formaterTemavalg(oppgaveFormData.get("tema")?.toString() ?? "")}
+                      />
                       <SammendragRad
                         label="Type"
                         verdi={formaterOppgavetype(

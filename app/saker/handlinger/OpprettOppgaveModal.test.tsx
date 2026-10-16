@@ -53,6 +53,10 @@ describe("OpprettOppgaveModal", () => {
   it("kaller submit med riktig payload", async () => {
     await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
 
+    expect(
+      (screen.getByRole("radio", { name: "Kontroll (KTR)" }) as HTMLInputElement).checked,
+    ).toBe(true);
+    fireEvent.click(screen.getByRole("radio", { name: "Kontroll anmeldelse (KTA)" }));
     fireEvent.change(screen.getByLabelText("Oppgavetype"), {
       target: { value: "VURD_HENV" },
     });
@@ -71,6 +75,7 @@ describe("OpprettOppgaveModal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
     await waitFor(() => {});
     expect(screen.getByText("Du oppretter nå en oppgave:")).toBeDefined();
+    expect(screen.getByText("Kontroll anmeldelse (KTA)")).toBeDefined();
     fireEvent.click(screen.getByRole("button", { name: "Opprett" }));
     await waitFor(() => {});
 
@@ -78,6 +83,7 @@ describe("OpprettOppgaveModal", () => {
     const [formData, options] = submitMock.mock.calls[0];
     expect(formData).toBeInstanceOf(FormData);
     expect(formData.get("handling")).toBe("opprett_oppgave");
+    expect(formData.get("tema")).toBe("KTA");
     expect(formData.get("oppgavetype")).toBe("VURD_HENV");
     expect(formData.get("prioritet")).toBe("HOY");
     expect(formData.get("beskrivelse")).toBe("En beskrivelse");

@@ -363,7 +363,14 @@ describe("opprettJournalpost", () => {
       vi.stubGlobal("fetch", fetchMock);
 
       const { opprettJournalpost } = await import("./api.server");
-      await opprettJournalpost("token-123", "42", journalposttype, "Testtittel", "Testinnhold");
+      await opprettJournalpost(
+        "token-123",
+        "42",
+        "KTA",
+        journalposttype,
+        "Testtittel",
+        "Testinnhold",
+      );
 
       expect(fetchMock).toHaveBeenCalledWith(
         "https://backend.test/api/v1/kontrollsaker/42/journalposter",
@@ -371,6 +378,7 @@ describe("opprettJournalpost", () => {
           method: "POST",
           body: JSON.stringify({
             journalposttype,
+            tema: "KTA",
             tittel: "Testtittel",
             tekst: "Testinnhold",
             vedleggIds: [],
@@ -387,7 +395,9 @@ describe("opprettJournalpost", () => {
     vi.stubGlobal("fetch", fetchMock);
 
     const { opprettJournalpost } = await import("./api.server");
-    await expect(opprettJournalpost("token", "42", "NOTAT", "Tittel", "Tekst")).rejects.toThrow();
+    await expect(
+      opprettJournalpost("token", "42", "KTR", "NOTAT", "Tittel", "Tekst"),
+    ).rejects.toThrow();
   });
 });
 

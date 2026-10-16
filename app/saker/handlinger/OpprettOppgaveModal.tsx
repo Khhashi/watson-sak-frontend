@@ -19,8 +19,11 @@ import {
   formaterOppgavetype,
   SammendragRad,
 } from "./opprett-formatering";
+import { formaterTemavalg, temaSkjema } from "./tema";
+import { TemaVelger } from "./TemaVelger";
 
 const opprettOppgaveSkjema = z.object({
+  tema: temaSkjema,
   oppgavetype: z.string({ error: "Velg oppgavetype" }).min(1, "Velg oppgavetype"),
   prioritet: z.string({ error: "Velg prioritet" }).min(1, "Velg prioritet"),
   frist: z.string({ error: "Velg frist" }).min(1, "Velg frist"),
@@ -130,6 +133,7 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
         <Modal.Body>
           {steg === "skjema" && (
             <VStack gap="space-4">
+              <TemaVelger felt={fields.tema} />
               <OppgaveSkjema
                 fields={{
                   oppgavetype: fields.oppgavetype,
@@ -146,6 +150,10 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
               <BodyShort>Du oppretter nå en oppgave:</BodyShort>
               <Box background="neutral-soft" padding="space-16" borderRadius="8">
                 <HGrid columns="auto 1fr" gap="space-4 space-16">
+                  <SammendragRad
+                    label="Tema"
+                    verdi={formaterTemavalg(innsendingFormData.get("tema")?.toString() ?? "")}
+                  />
                   <SammendragRad
                     label="Type"
                     verdi={formaterOppgavetype(

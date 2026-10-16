@@ -5,10 +5,10 @@ import type {
   DokumentInnhold,
   DokumentNode,
   FilResponse,
-  JournalpostReferanse,
   MappeResponse,
 } from "~/saker/filer/typer";
 import type { Varsel } from "~/varsler/typer";
+import type { MockJournalpost } from "./journalposter.server";
 import { lagInitialKontrollsaker } from "./saker/fordeling.server";
 import { lagInitialMineKontrollsaker } from "./saker/mine-saker.server";
 import { lagInitialeVarsler } from "./varsler.server";
@@ -31,7 +31,7 @@ export interface MockState {
   /** Mapper per sak. Tomme mapper lagres også her. */
   mapper: Map<string, MappeResponse[]>;
   /** Journalposter opprettet fra saken, per sak. */
-  journalposter: Map<string, JournalpostReferanse[]>;
+  journalposter: Map<string, MockJournalpost[]>;
   varsler: Varsel[];
   /** Ny ansvarlig per migreringskandidat (kandidatId) etter «Endre tildeling» i mockmiljø. */
   migreringTildelinger: Map<string, string>;

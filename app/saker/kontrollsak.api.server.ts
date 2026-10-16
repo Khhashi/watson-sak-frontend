@@ -15,6 +15,7 @@ import {
   tillatteHandlingerResponseSchema,
 } from "./types.backend";
 import { sakHendelseSchema } from "./historikk/typer";
+import type { Tema } from "./handlinger/tema";
 import { sti as byggSti } from "./sti-param.server";
 import {
   saksbehandlerListeSchema,
@@ -218,6 +219,7 @@ const opprettJournalpostResponseSchema = z.object({
 export async function opprettJournalpost(
   token: string,
   sakId: string,
+  tema: Tema,
   journalposttype: string,
   tittel: string,
   tekst: string,
@@ -227,7 +229,7 @@ export async function opprettJournalpost(
   const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/journalposter`), {
     method: "POST",
     headers: authHeaders(token),
-    body: JSON.stringify({ journalposttype, tittel, tekst, vedleggIds, dokumentIds }),
+    body: JSON.stringify({ journalposttype, tema, tittel, tekst, vedleggIds, dokumentIds }),
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke opprette journalpost");
   return parseEllerKastFeil(
@@ -246,6 +248,7 @@ export type OppgaveResponse = z.infer<typeof oppgaveResponseSchema>;
 export async function opprettOppgave(
   token: string,
   sakId: string,
+  tema: Tema,
   tildeltEnhetsnr: string,
   prioritet: string,
   fristDato: string,
@@ -258,6 +261,7 @@ export async function opprettOppgave(
     headers: authHeaders(token),
     body: JSON.stringify({
       tildeltEnhetsnr,
+      tema,
       prioritet,
       fristDato,
       beskrivelse,

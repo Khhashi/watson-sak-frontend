@@ -10,6 +10,7 @@ import type {
   KontrollsakStatus,
 } from "~/saker/types.backend";
 import { hentTekstfelt, hentValgfriTekst } from "~/utils/form-data";
+import { hentTema } from "./tema.server";
 import { hentDokumenttreForSak } from "../filer/mock-data.server";
 import { leggTilJournalpost } from "~/testing/mock-store/journalposter.server";
 import { arkiverFil, opprettArkivertFilFraDokument } from "../filer/mock-data-filer.server";
@@ -541,6 +542,7 @@ export async function mockAction(
       break;
     }
     case "opprett_journalpost": {
+      const tema = hentTema(formData);
       const journalposttype = hentValgfriTekst(formData, "journalposttype") ?? "NOTAT";
       const jpTittel = hentValgfriTekst(formData, "tittel") ?? "Journalpost";
       const dokumentIds = formData.getAll("dokumentId").map(String);
@@ -568,6 +570,7 @@ export async function mockAction(
       leggTilJournalpost(hentMockState(request), sakId, {
         journalpostId,
         journalposttype,
+        tema,
         tittel: jpTittel,
         opprettet: new Date().toISOString(),
       });
@@ -600,6 +603,7 @@ export async function mockAction(
       return { ok: true, journalpostId } satisfies ActionResult;
     }
     case "opprett_oppgave": {
+      hentTema(formData);
       const oppgavetype = hentValgfriTekst(formData, "oppgavetype") ?? "";
       leggTilBrukerhendelse(sak, "OPPGAVE_OPPRETTET", undefined, {
         tittel: oppgavetype || "Oppgave",
