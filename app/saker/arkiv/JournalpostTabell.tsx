@@ -1,6 +1,12 @@
-import { ChevronDownIcon, ChevronUpIcon } from "@navikt/aksel-icons";
-import { Button, Table, Tooltip } from "@navikt/ds-react";
-import { Fragment, useState } from "react";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  InboxDownIcon,
+  InboxUpIcon,
+  NotePencilIcon,
+} from "@navikt/aksel-icons";
+import { Button, HStack, Table, Tooltip } from "@navikt/ds-react";
+import { Fragment, type ComponentType, useState } from "react";
 import type { ArkivJournalpost } from "./typer";
 import {
   beskrivJournalposttype,
@@ -9,6 +15,17 @@ import {
   formaterJournalstatus,
   formaterTema,
 } from "./visning";
+
+const typeikoner: Record<string, ComponentType<{ "aria-hidden"?: boolean }>> = {
+  I: InboxDownIcon,
+  U: InboxUpIcon,
+  N: NotePencilIcon,
+};
+
+/** Har samme høyde som chevron-knappen, så alle rader blir like høye. */
+function Radhøyde() {
+  return <div aria-hidden className="h-8" />;
+}
 
 interface JournalpostTabellProps {
   journalposter: ArkivJournalpost[];
@@ -62,12 +79,10 @@ export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
                   <Table.DataCell className="whitespace-nowrap">{dato}</Table.DataCell>
                   <Table.DataCell>
                     {journalpost.journalposttype ? (
-                      <>
-                        <span aria-hidden title={typebeskrivelse ?? undefined}>
-                          {journalpost.journalposttype}
-                        </span>
-                        <span className="sr-only">{typebeskrivelse}</span>
-                      </>
+                      <Journalposttype
+                        kode={journalpost.journalposttype}
+                        beskrivelse={typebeskrivelse ?? journalpost.journalposttype}
+                      />
                     ) : null}
                   </Table.DataCell>
                   <Table.DataCell>{formaterAvsenderMottaker(journalpost)}</Table.DataCell>
@@ -78,23 +93,27 @@ export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
                   <Table.DataCell>{formaterTema(journalpost)}</Table.DataCell>
                   <Table.DataCell align="right">
                     {harDokumenter ? (
-                      <Tooltip content={knappetekst} describesChild>
-                        <Button
-                          type="button"
-                          size="small"
-                          variant="tertiary-neutral"
-                          icon={
-                            erÅpen ? (
-                              <ChevronUpIcon title={`${knappetekst} for ${tittel}`} />
-                            ) : (
-                              <ChevronDownIcon title={`${knappetekst} for ${tittel}`} />
-                            )
-                          }
-                          aria-expanded={erÅpen}
-                          onClick={() => veksle(journalpost.journalpostId)}
-                        />
-                      </Tooltip>
-                    ) : null}
+                      <div className="flex justify-end">
+                        <Tooltip content={knappetekst} describesChild>
+                          <Button
+                            type="button"
+                            size="small"
+                            variant="tertiary-neutral"
+                            icon={
+                              erÅpen ? (
+                                <ChevronUpIcon title={`${knappetekst} for ${tittel}`} />
+                              ) : (
+                                <ChevronDownIcon title={`${knappetekst} for ${tittel}`} />
+                              )
+                            }
+                            aria-expanded={erÅpen}
+                            onClick={() => veksle(journalpost.journalpostId)}
+                          />
+                        </Tooltip>
+                      </div>
+                    ) : (
+                      <Radhøyde />
+                    )}
                   </Table.DataCell>
                 </Table.Row>
                 {erÅpen
@@ -103,8 +122,11 @@ export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
                         <Table.DataCell className="whitespace-nowrap">{dato}</Table.DataCell>
                         <Table.DataCell />
                         <Table.DataCell />
-                        <Table.DataCell colSpan={4}>
+                        <Table.DataCell colSpan={3}>
                           {dokument.tittel ?? "Dokument uten tittel"}
+                        </Table.DataCell>
+                        <Table.DataCell>
+                          <Radhøyde />
                         </Table.DataCell>
                       </Table.Row>
                     ))
@@ -115,5 +137,18 @@ export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
         </Table.Body>
       </Table>
     </div>
+  );
+}
+
+function Journalposttype({ kode, beskrivelse }: { kode: string; beskrivelse: string }) {
+  const Ikon = typeikoner[kode];
+  return (
+    <Tooltip content={beskrivelse} describesChild>
+      <HStack as="span" gap="space-4" align="center" wrap={false} className="w-fit">
+        {Ikon ? <Ikon aria-hidden /> : null}
+        <span aria-hidden>{kode}</span>
+        <span className="sr-only">{beskrivelse}</span>
+      </HStack>
+    </Tooltip>
   );
 }
