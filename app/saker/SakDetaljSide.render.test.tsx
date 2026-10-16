@@ -104,7 +104,7 @@ describe("SakDetaljSide render", () => {
     expect(screen.queryByRole("button", { name: "Fjern deling med Kari Nordmann" })).toBeNull();
   }, 15000);
 
-  it("viser tilgangsmelding for historikk (og skjuler Tildel meg) for skjermet sak som krever utvidet tilgang", async () => {
+  it("viser tilgangsmelding for historikk (og skjuler Tildel meg) når tilgangsmaskinen ikke gir tilgang til personen", async () => {
     const { hentMockState } = await import("~/testing/mock-store/session.server");
     const { hentAlleSaker } = await import("~/testing/mock-store/alle-saker.server");
     const sak = hentAlleSaker(hentMockState(testRequest)).find(
@@ -117,21 +117,21 @@ describe("SakDetaljSide render", () => {
     sak.adresseskjermet = true;
     sak.saksbehandlere.eier = null;
     // Gi innlogget bruker (Z999999) direkte tilgang (delt-med) slik at vi isolerer
-    // skjermet-sak-effekten (sak.tilgang.kanSeHistorikk) fra harDirekteTilgang-sjekken.
+    // effekten av manglende persontilgang (sak.tilgang.kanSeHistorikk) fra harDirekteTilgang-sjekken.
     sak.saksbehandlere.deltMed = [
       { navIdent: "Z999999", navn: "Test Saksbehandler", enhet: "4812" },
     ];
     (
       sak as unknown as {
         tilgang?: {
-          kreverUtvidetTilgang: boolean;
+          harTilgangTilKontrollobjekt: boolean;
           kanSeHistorikk: boolean;
           kanSeRelaterteSaker: boolean;
           kanTildeleSak: boolean;
         };
       }
     ).tilgang = {
-      kreverUtvidetTilgang: true,
+      harTilgangTilKontrollobjekt: false,
       kanSeHistorikk: false,
       kanSeRelaterteSaker: false,
       kanTildeleSak: false,
@@ -142,7 +142,7 @@ describe("SakDetaljSide render", () => {
     await screen.findByRole("heading", { level: 1, name: /^Sak / });
     expect(
       await screen.findByText(
-        "Denne saken er skjermet. Du må ha utvidet tilgang for å se historikk.",
+        "Du har ikke tilgang til personen saken gjelder, og kan derfor ikke se historikk.",
       ),
     ).toBeDefined();
     expect(screen.queryByRole("button", { name: "Tildel meg" })).toBeNull();

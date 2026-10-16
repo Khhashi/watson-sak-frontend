@@ -295,7 +295,7 @@ const kontrollobjektSchema = z.object({
 });
 
 const kontrollsakTilgangSchema = z.object({
-  kreverUtvidetTilgang: z.boolean().default(false),
+  harTilgangTilKontrollobjekt: z.boolean().default(true),
   kanSeHistorikk: z.boolean().default(true),
   kanSeRelaterteSaker: z.boolean().default(true),
   kanTildeleSak: z.boolean().default(true),

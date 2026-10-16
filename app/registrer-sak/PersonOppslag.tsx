@@ -167,7 +167,7 @@ export function PersonOppslag({
             )}
           </VStack>
 
-          {/* Skjema sperret: saksbehandler mangler Utvidet tilgang til skjermet person.
+          {/* Skjema sperret: tilgangsmaskinen gir ikke saksbehandler tilgang til personen.
               Skjemaet rendres bevisst ikke i det hele tatt — se RAILS-9. */}
           {skjemaSperret && (
             <LocalAlert status="warning" className="max-w-2xl">
@@ -217,7 +217,7 @@ export function PersonOppslag({
           )}
 
           {/* Skjema — rendres kun når saksbehandler har rett til å opprette sak.
-              For skjermet person uten Utvidet tilgang sperres skjemaet proaktivt
+              Uten tilgang til personen sperres skjemaet proaktivt
               ved at det ikke rendres i det hele tatt, se RAILS-9. */}
           {!skjemaSperret && children}
         </VStack>

@@ -7,9 +7,8 @@ export type MockPerson = {
   alder: number;
   /**
    * true for en skjermet person i mockdata — brukes til å teste at frontend sperrer
-   * skjemaet for sak-opprettelse proaktivt (RAILS-9). Mockdata skiller ikke mellom
-   * Basic/Utvidet tilgang, så en skjermet mock-person representerer alltid scenariet
-   * der saksbehandler mangler tilgang til å opprette sak.
+   * skjemaet for sak-opprettelse proaktivt (RAILS-9). En skjermet mock-person representerer
+   * scenariet der tilgangsmaskinen ikke gir saksbehandler tilgang til personen.
    */
   skjermet?: boolean;
 };

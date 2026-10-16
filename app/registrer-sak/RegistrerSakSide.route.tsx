@@ -158,9 +158,9 @@ export default function OpprettSakSide() {
     personFetcher.data && "søktMedHistoriskIdent" in personFetcher.data
       ? personFetcher.data.søktMedHistoriskIdent
       : false;
-  // Skjermet person der saksbehandler mangler Utvidet tilgang: sperr skjemaet proaktivt
+  // Tilgangsmaskinen gir ikke tilgang til personen: sperr skjemaet proaktivt
   // i stedet for å la saksbehandler fylle det ut og først få avvist ved innsending.
-  const skjemaSperret = Boolean(person?.adresseskjermet) && person?.kanOppretteSak === false;
+  const skjemaSperret = person?.kanOppretteSak === false;
 
   const åpneSaker = useMemo(
     () => eksisterendeSaker.filter((sak) => !erLukketStatus(sak.status)),
