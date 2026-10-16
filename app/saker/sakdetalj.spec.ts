@@ -159,20 +159,36 @@ test.describe("Sakdetalj", () => {
   test("er UU-compliant", async ({ page }) => {
     await sjekkTilgjengelighet(page);
   });
+});
+
+test.describe("Sakdetalj – dokumentoversikt i Gosys", () => {
+  test.describe.configure({ mode: "serial" });
+
+  // Sak 201 står i utredning og eies av innlogget bruker, så Gosys-handlingene vises
+  test.beforeEach(async ({ page }) => {
+    await resetMockData(page);
+    await page.goto("/saker/201", { waitUntil: "networkidle" });
+    await expect(page.getByRole("heading", { name: /^Sak 201/ })).toBeVisible();
+  });
+
   test("kan åpne dokumentoversikten i Gosys og se dokumentene i en journalpost", async ({
     page,
   }) => {
-    const panel = page.getByRole("region", { name: "Dokumentoversikt i Gosys for sak 101" });
+    const panel = page.getByRole("region", { name: "Dokumentoversikt i Gosys for sak 201" });
     await expect(panel.getByRole("button", { name: "Opprett oppgave i Gosys" })).toBeVisible();
     await expect(panel.getByRole("button", { name: "Arkiver dokument(er) i Gosys" })).toBeVisible();
 
     await panel.getByRole("button", { name: "Vis dokumentoversikt" }).click();
-    await expect(panel.getByRole("cell", { name: "Svarbrev om kontoopplysninger" })).toBeVisible();
+    await expect(
+      panel.getByRole("cell", { name: "Svarbrev om kontoopplysninger", exact: true }),
+    ).toBeVisible();
 
     await panel
       .getByRole("button", { name: "Vis dokumenter for Svarbrev om kontoopplysninger" })
       .click();
-    await expect(panel.getByRole("cell", { name: "Kontoutskrift januar" })).toBeVisible();
+    await expect(
+      panel.getByRole("cell", { name: "Kontoutskrift januar", exact: true }),
+    ).toBeVisible();
 
     await sjekkTilgjengelighet(page);
   });
@@ -180,10 +196,10 @@ test.describe("Sakdetalj", () => {
   test("viser feilmelding i dokumentoversikten når Gosys feiler, uten at siden går ned", async ({
     page,
   }) => {
-    await page.route("**/api/saker/101/arkiv/journalposter", (route) =>
+    await page.route("**/api/saker/201/arkiv/journalposter", (route) =>
       route.fulfill({ status: 503, json: { status: "feil", årsak: "utilgjengelig" } }),
     );
-    const panel = page.getByRole("region", { name: "Dokumentoversikt i Gosys for sak 101" });
+    const panel = page.getByRole("region", { name: "Dokumentoversikt i Gosys for sak 201" });
 
     await panel.getByRole("button", { name: "Vis dokumentoversikt" }).click();
 
