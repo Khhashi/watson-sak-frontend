@@ -19,7 +19,7 @@ interface SakDetaljSidePanelProps {
   kanTildeleSak: boolean;
   kanRedigere: boolean;
   kanLeggeTilHistorikk: boolean;
-  historikkTilstand: "vis" | "ikke-delt" | "skjermet";
+  historikkTilstand: "vis" | "ikke-delt" | "ingen-persontilgang";
 }
 
 export function SakDetaljSidePanel({

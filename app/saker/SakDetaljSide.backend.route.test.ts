@@ -836,7 +836,7 @@ describe("SakDetaljSide loader — backend-sti", () => {
       ...grunnleggendeSak,
       personIdent: "12345678901",
       tilgang: {
-        kreverUtvidetTilgang: true,
+        harTilgangTilKontrollobjekt: false,
         kanSeHistorikk: false,
         kanSeRelaterteSaker: false,
         kanTildeleSak: false,
@@ -859,7 +859,7 @@ describe("SakDetaljSide loader — backend-sti", () => {
       ...grunnleggendeSak,
       personIdent: "12345678901",
       tilgang: {
-        kreverUtvidetTilgang: true,
+        harTilgangTilKontrollobjekt: false,
         kanSeHistorikk: false,
         kanSeRelaterteSaker: true,
         kanTildeleSak: false,

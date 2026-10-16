@@ -81,11 +81,11 @@ export default function SakDetaljSide() {
     migreringsstatus === "FULLSTENDIG";
   const harDirekteTilgang = harDirekteSakstilgang(sak, innloggetBruker);
   const kanLese = kanLeseSaksinnhold(sak, innloggetBruker);
-  const historikkTilstand: "vis" | "ikke-delt" | "skjermet" = !kanLese
+  const historikkTilstand: "vis" | "ikke-delt" | "ingen-persontilgang" = !kanLese
     ? "ikke-delt"
     : (sak.tilgang?.kanSeHistorikk ?? true)
       ? "vis"
-      : "skjermet";
+      : "ingen-persontilgang";
   const saksreferanse = getSaksreferanse(sak.id);
   const navn = getNavn(sak);
   const alder = getAlder(sak);

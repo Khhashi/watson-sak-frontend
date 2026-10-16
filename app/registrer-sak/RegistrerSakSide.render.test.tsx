@@ -9,6 +9,7 @@ const state = vi.hoisted(() => ({
   legacyPid: null as string | null,
   legacyKilde: null as string | null,
   featureFlags: {} as Record<string, boolean>,
+  kanOppretteSak: true,
 }));
 vi.mock("~/miljø/useMiljø", () => ({ useMiljø: () => state.miljø }));
 vi.mock("~/kodeverk/useKodeverk", () => ({ useKodeverk: () => mockKodeverk }));
@@ -32,7 +33,7 @@ vi.mock("react-router", async (importOriginal) => {
           personnummer: "11111111111",
           alder: 42,
           adresseskjermet: false,
-          kanOppretteSak: true,
+          kanOppretteSak: state.kanOppretteSak,
         },
         eksisterendeSaker: [],
       },
@@ -61,6 +62,7 @@ describe("Notat i Opprett sak", () => {
     state.legacyPid = null;
     state.legacyKilde = null;
     state.featureFlags = {};
+    state.kanOppretteSak = true;
   });
 
   it.each(["local-mock", "local-backend"])(
@@ -257,4 +259,22 @@ describe("Nedtrekksfelt i Opprett sak", () => {
       );
     },
   );
+});
+
+describe("Sperret skjema i Opprett sak", () => {
+  beforeEach(() => {
+    state.miljø = "local-backend";
+    state.legacyPid = null;
+    state.legacyKilde = null;
+    state.featureFlags = {};
+    state.kanOppretteSak = true;
+  });
+
+  it("sperrer skjemaet når backend sier at sak ikke kan opprettes, også for person uten adresseskjerming", async () => {
+    state.kanOppretteSak = false;
+    renderSide();
+
+    expect(await screen.findByText("Du kan ikke opprette sak på denne personen")).toBeDefined();
+    expect(screen.queryByRole("form", { name: "Grunnleggende saksinformasjon" })).toBeNull();
+  });
 });

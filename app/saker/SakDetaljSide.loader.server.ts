@@ -274,7 +274,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   const sakMedTilgang = {
     ...sak,
     tilgang: {
-      kreverUtvidetTilgang: false,
+      harTilgangTilKontrollobjekt: true,
       kanSeHistorikk: true,
       kanSeRelaterteSaker: true,
       kanTildeleSak: true,
