@@ -5,7 +5,7 @@ import {
   PadlockLockedIcon,
 } from "@navikt/aksel-icons";
 import { BodyShort, Button, Heading, HStack, InfoCard, Loader, VStack } from "@navikt/ds-react";
-import { useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { Kort } from "~/komponenter/Kort";
 import { JournalpostTabell } from "./JournalpostTabell";
 import { useArkivJournalposter, type ArkivTilstand } from "./useArkivJournalposter";
@@ -34,12 +34,15 @@ export function GosysDokumentpanel({
   const [åpen, settÅpen] = useState(false);
   const { tilstand, hent } = useArkivJournalposter(sakId);
 
+  // Henter når panelet er åpent og ikke hentet, også om tilgangen kommer etter åpning.
+  useEffect(() => {
+    if (åpen && kanSeArkiv && tilstand.status === "ikke-hentet") void hent();
+  }, [åpen, kanSeArkiv, tilstand.status, hent]);
+
   function veksleOversikt() {
     const skalÅpnes = !åpen;
     settÅpen(skalÅpnes);
-    if (skalÅpnes && kanSeArkiv && tilstand.status !== "ok" && tilstand.status !== "laster") {
-      void hent();
-    }
+    if (skalÅpnes && kanSeArkiv && tilstand.status === "feil") void hent();
   }
 
   function onJournalpostOpprettet() {

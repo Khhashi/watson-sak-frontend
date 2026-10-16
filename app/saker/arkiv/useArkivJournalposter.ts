@@ -36,10 +36,11 @@ export function useArkivJournalposter(sakId: string) {
     try {
       const respons = await fetch(
         RouteConfig.API.SAK_ARKIV_JOURNALPOSTER.replace(":sakId", encodeURIComponent(sakId)),
-        { headers: { Accept: "application/json" } },
+        // Utløpt sesjon gir redirect til innlogging. Den skal ikke følges av fetch.
+        { headers: { Accept: "application/json" }, redirect: "manual" },
       );
       if (!erGjeldende()) return;
-      if (respons.status === 401) {
+      if (respons.status === 401 || respons.type === "opaqueredirect") {
         settTilstand({ status: "feil", årsak: "utlogget" });
         return;
       }

@@ -1,4 +1,4 @@
-import { data } from "react-router";
+import { data, redirect } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { Route } from "./+types/journalposter.api";
 
@@ -6,9 +6,8 @@ const mockHentArkivJournalposter = vi.fn();
 const mockLoggerError = vi.fn();
 
 vi.mock("~/config/env.server", () => ({ skalBrukeMockdata: false }));
-vi.mock("~/auth/access-token", () => ({
-  getBackendOboToken: vi.fn().mockResolvedValue("mock-token"),
-}));
+const mockGetBackendOboToken = vi.fn();
+vi.mock("~/auth/access-token", () => ({ getBackendOboToken: mockGetBackendOboToken }));
 vi.mock("~/logging/logging", () => ({
   logger: { error: mockLoggerError, warn: vi.fn(), info: vi.fn() },
 }));
@@ -35,6 +34,16 @@ function somDataMedInit(verdi: unknown) {
 describe("journalposter.api – backend", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockGetBackendOboToken.mockResolvedValue("mock-token");
+  });
+
+  it("gjør redirect til innlogging om til 401, så fetch ikke følger den", async () => {
+    mockGetBackendOboToken.mockRejectedValue(redirect("/oauth2/login"));
+
+    const feil = await kjørLoader().catch((e: unknown) => e);
+
+    expect(somDataMedInit(feil).init.status).toBe(401);
+    expect(mockHentArkivJournalposter).not.toHaveBeenCalled();
   });
 
   it("returnerer journalpostene fra backend", async () => {

@@ -151,6 +151,31 @@ describe("GosysDokumentpanel", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
+  it("henter når tilgangen kommer mens oversikten er åpen", async () => {
+    mockFetch.mockReturnValue(svar({ status: "ok", journalposter: [journalpost] }));
+    const { rerender } = renderPanel({ kanSeArkiv: false });
+    åpneOversikt();
+
+    rerender(<GosysDokumentpanel sakId="14" saksreferanse="14" kanSeArkiv={true} />);
+
+    expect(await screen.findByText("Svarbrev om kontoopplysninger")).toBeDefined();
+    expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("viser utløpt sesjon når innloggingen gir redirect", async () => {
+    mockFetch.mockResolvedValue({ type: "opaqueredirect", status: 0 } as Response);
+    renderPanel();
+    åpneOversikt();
+
+    expect(
+      await screen.findByText("Sesjonen din er utløpt. Last inn siden på nytt for å logge inn."),
+    ).toBeDefined();
+    expect(mockFetch).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({ redirect: "manual" }),
+    );
+  });
+
   it("henter på nytt når en journalpost er opprettet", async () => {
     mockFetch.mockReturnValue(svar({ status: "ok", journalposter: [] }));
     let varsleOpprettet = () => {};
