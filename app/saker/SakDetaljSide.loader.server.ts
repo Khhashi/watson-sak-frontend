@@ -164,9 +164,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     // metadata om dokumenter/filer likevel bli sendt til klienten i SSR-payloaden
     // selv om komponenten ikke rendrer dem. Sperren må gjelde både det dedikerte
     // `dokumenter`-feltet og `sak.dokumenter` (samme metadata nøstet i sak-objektet),
-    // ellers lekker dokumentmetadata likevel via `sak` i loader-responsen.
+    // ellers lekker dokumentmetadata likevel via `sak` i loader-responsen. Uten tilgang til
+    // personen (`sak.tilgang.kanSeFiler`) gjelder samme sperre, også for eier og delt-med.
     const erEier = erSakseier(sak, innlogget.navIdent);
-    const harDirekteTilgang = kanLeseSaksinnhold(sak, innlogget);
+    const harDirekteTilgang =
+      kanLeseSaksinnhold(sak, innlogget) && (sak.tilgang?.kanSeFiler ?? true);
     const sakForRespons = harDirekteTilgang ? sak : { ...sak, dokumenter: [] };
     let kandidat = null;
     if (migreringErÅpen(env.ENVIRONMENT) && erEier && sak.legacyKilde && sak.legacyPid) {
@@ -232,7 +234,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   // Lesetilgang (eier/delt-med/leder, eller avsluttet sak) gir rett til å se dokumenter/filer.
   // `harFilTilgang` er bredere (inkluderer tilgang via koblet sak) og brukes ikke til å
   // avgjøre om dokument-/filmetadata skal eksponeres i loader-responsen.
-  const harDirekteTilgang = kanLeseSaksinnhold(sak, innlogget);
+  const harDirekteTilgang = kanLeseSaksinnhold(sak, innlogget) && (sak.tilgang?.kanSeFiler ?? true);
   const dokumenter = harDirekteTilgang ? hentDokumenttreForSak(request, String(sak.id)) : [];
   const migreringsnotatEksempel =
     erEier &&
@@ -259,6 +261,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       kanSeHistorikk: true,
       kanSeRelaterteSaker: true,
       kanTildeleSak: true,
+      kanSeFiler: true,
       ...sak.tilgang,
       kanSeArkiv: sak.tilgang?.kanSeArkiv ?? harDirekteTilgang,
     },

@@ -132,6 +132,37 @@ describe("Kontrollsak-kontrakter", () => {
     );
   });
 
+  it("leser kanSeFiler fra tilgang og bruker false når feltet mangler", () => {
+    const grunnlag = {
+      id: 7,
+      personIdent: "12345678901",
+      saksbehandlere: {
+        ansvarlig: null,
+        deltMed: [],
+        opprettetAv: { navIdent: "Z123456", navn: "Oppretter", enhet: null },
+      },
+      steg: "OPPRETTET",
+      status: null,
+      kategori: "ARBEID",
+      kilde: "PUBLIKUM",
+      misbruktype: [],
+      prioritet: "NORMAL",
+      ytelser: [],
+      merking: [],
+      kobledeSaker: [],
+      opprettet: "2026-03-20T12:34:56Z",
+      oppdatert: null,
+    };
+
+    expect(
+      kontrollsakResponseSchema.parse({ ...grunnlag, tilgang: { kanSeFiler: true } }).tilgang
+        ?.kanSeFiler,
+    ).toBe(true);
+    expect(kontrollsakResponseSchema.parse({ ...grunnlag, tilgang: {} }).tilgang?.kanSeFiler).toBe(
+      false,
+    );
+  });
+
   it("parser side-respons med kontrollsaker", () => {
     expect(
       kontrollsakPageResponseSchema.parse({

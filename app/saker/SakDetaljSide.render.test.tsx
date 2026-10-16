@@ -135,6 +135,7 @@ describe("SakDetaljSide render", () => {
           kanSeHistorikk: boolean;
           kanSeRelaterteSaker: boolean;
           kanTildeleSak: boolean;
+          kanSeFiler: boolean;
         };
       }
     ).tilgang = {
@@ -142,6 +143,7 @@ describe("SakDetaljSide render", () => {
       kanSeHistorikk: false,
       kanSeRelaterteSaker: false,
       kanTildeleSak: false,
+      kanSeFiler: false,
     };
 
     renderDetaljside(deltMedSakId);
@@ -152,6 +154,13 @@ describe("SakDetaljSide render", () => {
         "Du har ikke tilgang til personen saken gjelder, og kan derfor ikke se historikk.",
       ),
     ).toBeDefined();
+    expect(
+      screen.getByText(
+        "Du har ikke tilgang til personen saken gjelder, og kan derfor ikke se dokumenter og vedlegg.",
+      ),
+    ).toBeDefined();
+    expect(screen.queryByRole("heading", { name: "Filer" })).toBeNull();
+    expect(screen.queryByText("Ingen dokumenter eller filer ennå")).toBeNull();
     expect(screen.queryByRole("button", { name: "Tildel meg" })).toBeNull();
   }, 15000);
 

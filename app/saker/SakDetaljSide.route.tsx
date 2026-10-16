@@ -86,6 +86,11 @@ export default function SakDetaljSide() {
     : (sak.tilgang?.kanSeHistorikk ?? true)
       ? "vis"
       : "ingen-persontilgang";
+  const filTilstand: "vis" | "ikke-delt" | "ingen-persontilgang" = !kanLese
+    ? "ikke-delt"
+    : (sak.tilgang?.kanSeFiler ?? true)
+      ? "vis"
+      : "ingen-persontilgang";
   const saksreferanse = getSaksreferanse(sak.id);
   const navn = getNavn(sak);
   const alder = getAlder(sak);
@@ -195,7 +200,7 @@ export default function SakDetaljSide() {
                 />
               ))}
 
-            {kanLese ? (
+            {filTilstand === "vis" ? (
               <SakFilområde
                 dokumenter={dokumenter}
                 filer={filer}
@@ -214,7 +219,7 @@ export default function SakDetaljSide() {
                 )}
               />
             ) : (
-              <IngenFiltilgangKort />
+              <IngenFiltilgangKort årsak={filTilstand} />
             )}
 
             <GosysDokumentpanel

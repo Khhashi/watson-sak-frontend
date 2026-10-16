@@ -805,6 +805,32 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(resultat.sak.dokumenter.length).toBe(1);
   });
 
+  it("eksponerer ikke dokumenter/filer/mapper for sakseier når kanSeFiler er false", async () => {
+    mockHentKontrollsak.mockResolvedValue({
+      ...grunnleggendeSak,
+      tilgang: {
+        harTilgangTilKontrollobjekt: false,
+        kanSeHistorikk: false,
+        kanSeRelaterteSaker: false,
+        kanTildeleSak: false,
+        kanSeArkiv: false,
+        kanSeFiler: false,
+      },
+    });
+    mockHentHendelser.mockResolvedValue([]);
+    mockHentSaksbehandlere.mockResolvedValue([]);
+    mockHentFiler.mockResolvedValue([{ id: "f1", filnavn: "vedlegg.pdf" }]);
+    mockHentMapper.mockResolvedValueOnce([{ sti: "Notater" }]);
+
+    const { loader } = await import("./SakDetaljSide.server");
+    const resultat = await loader(lagLoaderArgs());
+
+    expect(resultat.dokumenter).toEqual([]);
+    expect(resultat.filer).toEqual([]);
+    expect(resultat.mapper).toEqual([]);
+    expect(resultat.sak.dokumenter).toEqual([]);
+  });
+
   it("hopper over søk etter relaterte saker når kapabiliteten kanSeRelaterteSaker er false", async () => {
     mockHentKontrollsak.mockResolvedValue({
       ...grunnleggendeSak,
