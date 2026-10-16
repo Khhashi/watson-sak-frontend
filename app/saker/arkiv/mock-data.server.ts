@@ -68,8 +68,8 @@ export function hentMockArkivJournalposter(state: MockState, sakId: string): Ark
       journalposttype: tilJournalposttypekode(journalpost.journalposttype),
       journalstatus: "JOURNALFOERT",
       tittel: journalpost.tittel,
-      tema: "KTR",
-      temanavn: "Kontroll",
+      tema: journalpost.tema ?? "KTR",
+      temanavn: journalpost.tema === "KTA" ? "Kontroll anmeldelse" : "Kontroll",
       avsenderMottaker: null,
       dokumenter: filer
         .filter((fil) => fil.arkivertJournalpostId === journalpost.journalpostId)

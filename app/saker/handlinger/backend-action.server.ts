@@ -8,6 +8,8 @@ import { bygFeilkartFraIssues, parseYtelseRader } from "~/registrer-sak/skjema-h
 import * as backendApi from "~/saker/api.server";
 import type { KontrollsakSteg, LagreResultatRequest } from "~/saker/types.backend";
 import { hentTekstfelt, hentValgfriTekst } from "~/utils/form-data";
+import { STANDARD_TEMA } from "./tema";
+import { hentTema } from "./tema.server";
 import { migreringErÅpen } from "~/migrering/miljo";
 import { byggLagreResultatRequest, validerResultatFeltNavn } from "../handlinger/resultat-request";
 import {
@@ -200,10 +202,18 @@ export async function backendAction(
       }
       const malLabel = finnNotatMalLabel(formData.get("mal"));
       const tittel = malLabel ?? "Notat";
-      await backendApi.opprettJournalpost(token, sakId, "NOTAT", tittel, notatRaw.trim());
+      await backendApi.opprettJournalpost(
+        token,
+        sakId,
+        STANDARD_TEMA,
+        "NOTAT",
+        tittel,
+        notatRaw.trim(),
+      );
       return { ok: true };
     }
     case "opprett_journalpost": {
+      const tema = hentTema(formData);
       const journalposttype = hentTekstfelt(
         formData,
         "journalposttype",
@@ -218,6 +228,7 @@ export async function backendAction(
       const journalpostRespons = await backendApi.opprettJournalpost(
         token,
         sakId,
+        tema,
         journalposttype,
         tittel.trim(),
         innhold.trim(),
@@ -238,6 +249,7 @@ export async function backendAction(
         await backendApi.opprettOppgave(
           token,
           sakId,
+          tema,
           tildeltEnhetsnr,
           prioritet,
           fristDato,
@@ -250,6 +262,7 @@ export async function backendAction(
       return { ok: true, journalpostId: journalpostRespons.journalpostId };
     }
     case "opprett_oppgave": {
+      const tema = hentTema(formData);
       const tildeltEnhetsnr = hentTekstfelt(
         formData,
         "behandlendeEnhet",
@@ -262,6 +275,7 @@ export async function backendAction(
       await backendApi.opprettOppgave(
         token,
         sakId,
+        tema,
         tildeltEnhetsnr,
         prioritet,
         fristDato,

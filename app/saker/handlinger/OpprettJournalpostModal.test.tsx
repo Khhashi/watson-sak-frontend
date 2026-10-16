@@ -152,6 +152,7 @@ describe("OpprettJournalpostModal", () => {
     expect(formData).toBeInstanceOf(FormData);
     expect(formData.get("handling")).toBe("opprett_journalpost");
     expect(formData.get("journalposttype")).toBe("INNGAAENDE");
+    expect(formData.get("tema")).toBe("KTR");
     expect(formData.get("tittel")).toBe("Min journalpost");
     expect(formData.get("innhold")).toBe("Innholdet i journalposten");
     expect(options).toEqual(expect.objectContaining({ method: "post" }));

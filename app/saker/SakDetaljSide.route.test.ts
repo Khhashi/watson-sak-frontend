@@ -975,6 +975,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
+    formData.set("tema", "KTR");
     formData.set("journalposttype", "INNGAAENDE");
     formData.set("tittel", "Dokumentasjon mottatt");
     formData.set("innhold", "Vedlagt kopi av arbeidsavtale");
@@ -1008,6 +1009,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
+    formData.set("tema", "KTR");
     formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert dokument");
     formData.set("innhold", "Dokumentinnhold");
@@ -1053,6 +1055,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
+    formData.set("tema", "KTR");
     formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert vedlegg");
     formData.set("innhold", "Innhold");
@@ -1091,6 +1094,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
+    formData.set("tema", "KTR");
     formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert dokument");
     formData.set("innhold", "Dokumentinnhold");
@@ -1126,6 +1130,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
     const formData = new FormData();
     formData.set("handling", "opprett_oppgave");
+    formData.set("tema", "KTR");
     formData.set("oppgavetype", "VUR");
     formData.set("prioritet", "HOY");
     formData.set("frist", "2026-06-01");
@@ -1146,6 +1151,38 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     expect(historikk[0]?.beskrivelse).toBe("Oppgave opprettet");
     expect(historikk[0]?.opprettetAvNavn).toBe("Test Saksbehandler");
   });
+
+  it.each(["opprett_oppgave", "opprett_journalpost"])(
+    "%s avviser ukjent tema med 400",
+    async (handling) => {
+      const kontrollsak = hentFordelingssaker(state())[0];
+      const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+      kontrollsak.steg = "UTREDES";
+      kontrollsak.saksbehandlere.eier = {
+        navIdent: "Z999999",
+        navn: "Test Saksbehandler",
+        enhet: "4812",
+      };
+
+      const formData = new FormData();
+      formData.set("handling", handling);
+      formData.set("tema", "SYK");
+      formData.set("journalposttype", "NOTAT");
+      formData.set("tittel", "Tittel");
+      formData.set("innhold", "Innhold");
+      formData.set("oppgavetype", "VUR");
+
+      await expect(
+        action({
+          request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+            method: "POST",
+            body: formData,
+          }),
+          params: { sakId: kontrollsakRef },
+        } as Route.ActionArgs),
+      ).rejects.toMatchObject({ init: { status: 400 } });
+    },
+  );
 });
 
 describe("SakDetaljSide tilgangskontroll", () => {
@@ -1682,6 +1719,7 @@ describe("SakDetaljSide rediger arbeidsgivere", () => {
 
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
+    formData.set("tema", "KTR");
     formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Kontrollnotat");
     formData.set("innhold", "Innhold i notatet");
