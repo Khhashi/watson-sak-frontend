@@ -1,5 +1,6 @@
 import { HStack, Button } from "@navikt/ds-react";
 import { useState } from "react";
+import type { OpprettetJournalpost } from "~/saker/arkiv/typer";
 import type { DokumentNode, FilResponse } from "~/saker/filer/typer";
 import type { KontrollsakResponse } from "~/saker/types.backend";
 import { OpprettJournalpostModal } from "./OpprettJournalpostModal";
@@ -12,7 +13,7 @@ interface SakHandlingerKnapperProps {
   filer: FilResponse[];
   dokumenter: DokumentNode[];
   /** Kalles når en journalpost er opprettet, slik at dokumentoversikten kan hentes på nytt. */
-  onJournalpostOpprettet?: () => void;
+  onJournalpostOpprettet?: (journalpost: OpprettetJournalpost) => void;
 }
 
 const handlingsvisning: Record<Sakshandling, { label: string; variant: "primary" | "secondary" }> =

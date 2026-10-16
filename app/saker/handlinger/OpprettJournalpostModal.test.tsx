@@ -5,6 +5,7 @@ import { OpprettJournalpostModal } from "./OpprettJournalpostModal";
 import type { DokumentNode, FilResponse } from "~/saker/filer/typer";
 
 const submitMock = vi.fn();
+let fetcherData: unknown;
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
@@ -13,6 +14,7 @@ vi.mock("react-router", async () => {
     ...actual,
     useFetcher: () => ({
       state: "idle",
+      data: fetcherData,
       submit: submitMock,
       Form: "form",
     }),
@@ -93,7 +95,8 @@ const defaultProps = {
 
 describe("OpprettJournalpostModal", () => {
   beforeEach(() => {
-    submitMock.mockClear();
+    submitMock.mockReset();
+    fetcherData = undefined;
     defaultProps.onClose.mockClear();
   });
 
@@ -224,6 +227,36 @@ describe("OpprettJournalpostModal", () => {
 
     const vedlegg = screen.getByText("Vedlegg").parentElement;
     expect(vedlegg?.textContent).toContain("Ingen");
+  });
+
+  it("sender den opprettede journalposten videre, så den kan vises før Gosys har den", async () => {
+    const onOpprettet = vi.fn();
+    submitMock.mockImplementation(() => {
+      fetcherData = { ok: true, journalpostId: "jp-99" };
+    });
+    const { rerender } = render(
+      <OpprettJournalpostModal {...defaultProps} filer={[pdfFil]} onOpprettet={onOpprettet} />,
+    );
+
+    fireEvent.click(screen.getByRole("radio", { name: "Utgående" }));
+    fireEvent.change(screen.getByLabelText("Tittel"), { target: { value: " Varsel " } });
+    fireEvent.change(screen.getByLabelText("Innhold"), { target: { value: "Innhold" } });
+    fireEvent.click(screen.getByRole("checkbox", { name: /rapport\.pdf/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
+    await screen.findByText("Du oppretter nå:");
+    fireEvent.click(screen.getByRole("button", { name: "Opprett" }));
+    rerender(
+      <OpprettJournalpostModal {...defaultProps} filer={[pdfFil]} onOpprettet={onOpprettet} />,
+    );
+
+    await waitFor(() =>
+      expect(onOpprettet).toHaveBeenCalledWith({
+        journalpostId: "jp-99",
+        journalposttype: "UTGAAENDE",
+        tittel: "Varsel",
+        dokumenttitler: ["rapport.pdf"],
+      }),
+    );
   });
 
   it("inkluderer valgte vedlegg-ID-er i form payload", async () => {

@@ -980,7 +980,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     formData.set("innhold", "Vedlagt kopi av arbeidsavtale");
     formData.set("knyttTilOppgave", "false");
 
-    await action({
+    const resultat = await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
         method: "POST",
         body: formData,
@@ -988,6 +988,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
       params: { sakId: kontrollsakRef },
     } as Route.ActionArgs);
 
+    expect(resultat).toMatchObject({ ok: true, journalpostId: expect.stringMatching(/^demo-/) });
     const historikk = hentHistorikk(testRequest, String(kontrollsak.id));
     expect(historikk[0]?.hendelsesType).toBe("JOURNALPOST_OPPRETTET");
     expect(historikk[0]?.tittel).toBe("INNGAAENDE");

@@ -247,7 +247,7 @@ export async function backendAction(
         );
       }
 
-      return { ok: true };
+      return { ok: true, journalpostId: journalpostRespons.journalpostId };
     }
     case "opprett_oppgave": {
       const tildeltEnhetsnr = hentTekstfelt(

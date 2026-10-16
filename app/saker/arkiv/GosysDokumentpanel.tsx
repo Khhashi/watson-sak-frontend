@@ -8,7 +8,9 @@ import { BodyShort, Button, Heading, HStack, InfoCard, Loader, VStack } from "@n
 import { useEffect, useState, type ReactNode } from "react";
 import { Kort } from "~/komponenter/Kort";
 import { JournalpostTabell } from "./JournalpostTabell";
+import type { ArkivJournalpost, OpprettetJournalpost } from "./typer";
 import { useArkivJournalposter, type ArkivTilstand } from "./useArkivJournalposter";
+import { tilJournalposttypekode } from "./visning";
 
 interface GosysDokumentpanelProps {
   sakId: string;
@@ -16,7 +18,9 @@ interface GosysDokumentpanelProps {
   /** Om brukeren har tilgang til å se journalposter i Gosys (`tilgang.kanSeArkiv`). */
   kanSeArkiv: boolean;
   /** Handlingsknapper som vises ved siden av «Vis dokumentoversikt». */
-  renderHandlinger?: (props: { onJournalpostOpprettet: () => void }) => ReactNode;
+  renderHandlinger?: (props: {
+    onJournalpostOpprettet: (journalpost: OpprettetJournalpost) => void;
+  }) => ReactNode;
 }
 
 const feilmeldinger: Record<Extract<ArkivTilstand, { status: "feil" }>["årsak"], string> = {
@@ -32,7 +36,7 @@ export function GosysDokumentpanel({
   renderHandlinger,
 }: GosysDokumentpanelProps) {
   const [åpen, settÅpen] = useState(false);
-  const { tilstand, hent } = useArkivJournalposter(sakId);
+  const { tilstand, ventendeIder, hent, journalpostOpprettet } = useArkivJournalposter(sakId);
 
   // Henter når panelet er åpent og ikke hentet, også om tilgangen kommer etter åpning.
   useEffect(() => {
@@ -45,8 +49,10 @@ export function GosysDokumentpanel({
     if (skalÅpnes && kanSeArkiv && tilstand.status === "feil") void hent();
   }
 
-  function onJournalpostOpprettet() {
-    if (kanSeArkiv && tilstand.status !== "ikke-hentet") void hent();
+  function onJournalpostOpprettet(journalpost: OpprettetJournalpost) {
+    if (!kanSeArkiv) return;
+    settÅpen(true);
+    journalpostOpprettet(tilVentendeJournalpost(journalpost));
   }
 
   const overskriftId = `gosys-dokumentoversikt-${sakId}`;
@@ -86,6 +92,7 @@ export function GosysDokumentpanel({
               <Innhold
                 kanSeArkiv={kanSeArkiv}
                 tilstand={tilstand}
+                ventendeIder={ventendeIder}
                 onPrøvIgjen={() => void hent()}
               />
             </div>
@@ -96,13 +103,40 @@ export function GosysDokumentpanel({
   );
 }
 
+/** Lokal tid uten tidssone, samme format som `datoOpprettet` fra SAF. */
+function nåSomLokalIso(): string {
+  const nå = new Date();
+  return new Date(nå.getTime() - nå.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
+}
+
+function tilVentendeJournalpost(journalpost: OpprettetJournalpost): ArkivJournalpost | null {
+  const { journalpostId } = journalpost;
+  if (!journalpostId) return null;
+  return {
+    journalpostId,
+    datoOpprettet: nåSomLokalIso(),
+    journalposttype: tilJournalposttypekode(journalpost.journalposttype),
+    journalstatus: null,
+    tittel: journalpost.tittel,
+    tema: null,
+    temanavn: null,
+    avsenderMottaker: null,
+    dokumenter: journalpost.dokumenttitler.map((tittel, indeks) => ({
+      dokumentInfoId: `${journalpostId}-${indeks}`,
+      tittel,
+    })),
+  };
+}
+
 function Innhold({
   kanSeArkiv,
   tilstand,
+  ventendeIder,
   onPrøvIgjen,
 }: {
   kanSeArkiv: boolean;
   tilstand: ArkivTilstand;
+  ventendeIder: ReadonlySet<string>;
   onPrøvIgjen: () => void;
 }) {
   if (!kanSeArkiv) {
@@ -145,7 +179,7 @@ function Innhold({
           Ingen journalføringer å vise for denne saken.
         </BodyShort>
       ) : (
-        <JournalpostTabell journalposter={tilstand.journalposter} />
+        <JournalpostTabell journalposter={tilstand.journalposter} ventendeIder={ventendeIder} />
       );
   }
 }
