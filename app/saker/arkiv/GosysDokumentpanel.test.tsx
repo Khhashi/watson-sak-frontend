@@ -1,7 +1,8 @@
-import { act, fireEvent, render, screen, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { GosysDokumentpanel } from "./GosysDokumentpanel";
-import type { ArkivJournalpost } from "./typer";
+import type { ArkivJournalpost, OpprettetJournalpost } from "./typer";
+import { SYNK_FORSINKELSER_MS } from "./useArkivJournalposter";
 
 const mockFetch = vi.fn();
 
@@ -176,22 +177,174 @@ describe("GosysDokumentpanel", () => {
     );
   });
 
-  it("henter på nytt når en journalpost er opprettet", async () => {
-    mockFetch.mockReturnValue(svar({ status: "ok", journalposter: [] }));
-    let varsleOpprettet = () => {};
-    renderPanel({
-      renderHandlinger: ({ onJournalpostOpprettet }) => {
-        varsleOpprettet = onJournalpostOpprettet;
-        return null;
-      },
-    });
-    åpneOversikt();
-    await screen.findByText("Ingen journalføringer å vise for denne saken.");
+  describe("når en journalpost er opprettet", () => {
+    const opprettet: OpprettetJournalpost = {
+      journalpostId: "jp-ny",
+      journalposttype: "UTGAAENDE",
+      tittel: "Varsel om kontroll",
+      dokumenttitler: ["Varsel.pdf"],
+    };
+    const iGosys: ArkivJournalpost = {
+      ...journalpost,
+      journalpostId: "jp-ny",
+      journalposttype: "U",
+      tittel: "Varsel om kontroll",
+    };
 
-    await act(async () => {
-      varsleOpprettet();
+    afterEach(() => {
+      vi.useRealTimers();
     });
 
-    expect(mockFetch).toHaveBeenCalledTimes(2);
+    function renderMedHandlinger() {
+      let varsle: (journalpost: OpprettetJournalpost) => void = () => {};
+      renderPanel({
+        renderHandlinger: ({ onJournalpostOpprettet }) => {
+          varsle = onJournalpostOpprettet;
+          return null;
+        },
+      });
+      return (journalpost: OpprettetJournalpost) => act(() => varsle(journalpost));
+    }
+
+    function radFor(tittel: string) {
+      const rad = screen.getByText(tittel).closest("tr");
+      if (!rad) throw new Error(`Fant ikke raden for ${tittel}`);
+      return rad;
+    }
+
+    async function ventPå(ms: number) {
+      await act(async () => {
+        await vi.advanceTimersByTimeAsync(ms);
+      });
+    }
+
+    it("viser journalposten med en gang og synkroniserer med Gosys etter noen sekunder", async () => {
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [] }));
+      const varsleOpprettet = renderMedHandlinger();
+      åpneOversikt();
+      await screen.findByText("Ingen journalføringer å vise for denne saken.");
+      vi.useFakeTimers();
+
+      await varsleOpprettet(opprettet);
+
+      expect(within(radFor("Varsel om kontroll")).getByText("Venter på Gosys")).toBeDefined();
+      expect(within(radFor("Varsel om kontroll")).getByText("Utgående")).toBeDefined();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [iGosys] }));
+      await ventPå(SYNK_FORSINKELSER_MS[0]);
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(within(radFor("Varsel om kontroll")).getByText("Journalført")).toBeDefined();
+      expect(screen.queryByText("Venter på Gosys")).toBeNull();
+
+      await ventPå(60_000);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("prøver igjen og beholder listen når Gosys ikke har journalposten ennå eller feiler", async () => {
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [journalpost] }));
+      const varsleOpprettet = renderMedHandlinger();
+      åpneOversikt();
+      await screen.findByText("Svarbrev om kontoopplysninger");
+      vi.useFakeTimers();
+      await varsleOpprettet(opprettet);
+
+      mockFetch.mockReturnValueOnce(svar({ status: "feil", årsak: "utilgjengelig" }, 503));
+      await ventPå(SYNK_FORSINKELSER_MS[0]);
+      expect(screen.getByText("Svarbrev om kontoopplysninger")).toBeDefined();
+      expect(within(radFor("Varsel om kontroll")).getByText("Venter på Gosys")).toBeDefined();
+
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [journalpost] }));
+      await ventPå(SYNK_FORSINKELSER_MS[1]);
+      expect(within(radFor("Varsel om kontroll")).getByText("Venter på Gosys")).toBeDefined();
+
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [iGosys, journalpost] }));
+      await ventPå(SYNK_FORSINKELSER_MS[2]);
+      expect(mockFetch).toHaveBeenCalledTimes(4);
+      expect(screen.queryByText("Venter på Gosys")).toBeNull();
+    });
+
+    it("åpner oversikten og viser journalposten når oversikten var lukket", async () => {
+      mockFetch.mockReturnValue(svar({ status: "ok", journalposter: [] }));
+      const varsleOpprettet = renderMedHandlinger();
+
+      await varsleOpprettet(opprettet);
+
+      expect(await screen.findByText("Varsel om kontroll")).toBeDefined();
+      expect(screen.getByRole("button", { name: "Lukk dokumentoversikt" })).toBeDefined();
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+
+    it("henter likevel på nytt når journalpost-IDen mangler", async () => {
+      mockFetch.mockReturnValue(svar({ status: "ok", journalposter: [] }));
+      const varsleOpprettet = renderMedHandlinger();
+      åpneOversikt();
+      await screen.findByText("Ingen journalføringer å vise for denne saken.");
+      vi.useFakeTimers();
+
+      await varsleOpprettet({ ...opprettet, journalpostId: null });
+      await ventPå(SYNK_FORSINKELSER_MS[0]);
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("tilbyr manuell oppdatering når de automatiske forsøkene er brukt opp", async () => {
+      mockFetch.mockReturnValue(svar({ status: "ok", journalposter: [] }));
+      const varsleOpprettet = renderMedHandlinger();
+      åpneOversikt();
+      await screen.findByText("Ingen journalføringer å vise for denne saken.");
+      vi.useFakeTimers();
+      await varsleOpprettet(opprettet);
+
+      for (const forsinkelse of SYNK_FORSINKELSER_MS) {
+        expect(screen.queryByRole("button", { name: "Oppdater" })).toBeNull();
+        await ventPå(forsinkelse);
+      }
+      expect(mockFetch).toHaveBeenCalledTimes(1 + SYNK_FORSINKELSER_MS.length);
+
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [iGosys] }));
+      await act(async () => {
+        fireEvent.click(screen.getByRole("button", { name: "Oppdater" }));
+        await vi.advanceTimersByTimeAsync(0);
+      });
+
+      expect(within(radFor("Varsel om kontroll")).getByText("Journalført")).toBeDefined();
+      expect(screen.queryByRole("button", { name: "Oppdater" })).toBeNull();
+    });
+
+    it("viser journalposten selv om oversikten ikke er hentet ennå og hentingen feiler", async () => {
+      mockFetch.mockReturnValue(svar({ status: "feil", årsak: "utilgjengelig" }, 503));
+      const varsleOpprettet = renderMedHandlinger();
+
+      await varsleOpprettet(opprettet);
+
+      expect(
+        await screen.findByText("Kunne ikke hente dokumentoversikten fra Gosys. Prøv igjen."),
+      ).toBeDefined();
+      expect(within(radFor("Varsel om kontroll")).getByText("Venter på Gosys")).toBeDefined();
+    });
+
+    it("synkroniserer ikke videre når panelet fjernes mens en henting pågår", async () => {
+      mockFetch.mockReturnValueOnce(svar({ status: "ok", journalposter: [] }));
+      let fullfør: (respons: Response) => void = () => {};
+      const varsleOpprettet = renderMedHandlinger();
+      åpneOversikt();
+      await screen.findByText("Ingen journalføringer å vise for denne saken.");
+      vi.useFakeTimers();
+      await varsleOpprettet(opprettet);
+
+      mockFetch.mockReturnValueOnce(new Promise<Response>((resolve) => (fullfør = resolve)));
+      await ventPå(SYNK_FORSINKELSER_MS[0]);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+
+      cleanup();
+      await act(async () => {
+        fullfør(Response.json({ status: "ok", journalposter: [] }));
+        await vi.advanceTimersByTimeAsync(60_000);
+      });
+
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
   });
 });

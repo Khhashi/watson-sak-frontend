@@ -596,7 +596,8 @@ export async function mockAction(
         });
       }
 
-      break;
+      sak.oppdatert = new Date().toISOString();
+      return { ok: true, journalpostId } satisfies ActionResult;
     }
     case "opprett_oppgave": {
       const oppgavetype = hentValgfriTekst(formData, "oppgavetype") ?? "";

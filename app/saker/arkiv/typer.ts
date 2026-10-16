@@ -36,6 +36,15 @@ export const arkivJournalposterSchema = z.array(arkivJournalpostSchema);
 
 export type ArkivJournalpost = z.infer<typeof arkivJournalpostSchema>;
 
+/** Det vi vet om en journalpost rett etter at den er opprettet fra Watson Sak. */
+export type OpprettetJournalpost = {
+  journalpostId: string | null;
+  /** Typen slik Watson sender den: `INNGAAENDE`, `UTGAAENDE` eller `NOTAT`. */
+  journalposttype: string;
+  tittel: string;
+  dokumenttitler: string[];
+};
+
 /** Svaret fra BFF-ruta til klienten. */
 export type ArkivJournalposterResultat =
   | { status: "ok"; journalposter: ArkivJournalpost[] }

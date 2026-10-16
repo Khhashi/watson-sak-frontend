@@ -1,8 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
-import {
-  hentJournalposterForSak,
-  leggTilJournalpost,
-} from "~/testing/mock-store/journalposter.server";
+import { hentJournalposterForSak } from "~/testing/mock-store/journalposter.server";
 import { hentMockState, resetDefaultSession } from "~/testing/mock-store/session.server";
 import { hentFordelingssaker } from "~/testing/mock-store/alle-saker.server";
 import { required } from "~/testing/required";
@@ -983,7 +980,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     formData.set("innhold", "Vedlagt kopi av arbeidsavtale");
     formData.set("knyttTilOppgave", "false");
 
-    await action({
+    const resultat = await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
         method: "POST",
         body: formData,
@@ -991,6 +988,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
       params: { sakId: kontrollsakRef },
     } as Route.ActionArgs);
 
+    expect(resultat).toMatchObject({ ok: true, journalpostId: expect.stringMatching(/^demo-/) });
     const historikk = hentHistorikk(testRequest, String(kontrollsak.id));
     expect(historikk[0]?.hendelsesType).toBe("JOURNALPOST_OPPRETTET");
     expect(historikk[0]?.tittel).toBe("INNGAAENDE");
@@ -1506,13 +1504,6 @@ describe("SakDetaljSide tilgangskontroll", () => {
       enhet: "4800",
     };
     kontrollsak.saksbehandlere.deltMed = [];
-    leggTilJournalpost(state(), String(kontrollsak.id), {
-      journalpostId: "JP-1",
-      journalposttype: "NOTAT",
-      tittel: "Hemmelig notat",
-      opprettet: "2026-03-01T10:00:00Z",
-    });
-
     const resultat = await loader({
       request: testRequest,
       params: { sakId: kontrollsakRef },
@@ -1520,7 +1511,6 @@ describe("SakDetaljSide tilgangskontroll", () => {
 
     expect(resultat.dokumenter).toEqual([]);
     expect(resultat.mapper).toEqual([]);
-    expect(resultat.journalposter).toEqual([]);
   });
 
   it("returnerer filer i loader for eier", async () => {

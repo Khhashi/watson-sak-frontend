@@ -24,13 +24,6 @@ export const saksbehandlerListeSchema = z.array(
     })),
 );
 
-export const journalpostReferanseSchema = z.object({
-  journalpostId: z.string(),
-  journalposttype: z.string(),
-  tittel: z.string(),
-  opprettet: z.string(),
-});
-
 const dokumentInnholdSchema: z.ZodType<DokumentInnhold> = z.array(
   z.record(z.string(), z.unknown()),
 );

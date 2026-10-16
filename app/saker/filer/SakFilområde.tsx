@@ -8,14 +8,13 @@ import type { MalId } from "~/saker/filer/dokument/maler";
 import type { KontrollsakSteg } from "~/saker/types.backend";
 import { RouteConfig } from "~/routeConfig";
 import { formaterDato } from "~/utils/date-utils";
-import { ArkivertSeksjon } from "./ArkivertSeksjon";
 import { TILLATTE_FILTYPER } from "./fil-type-utils";
 import { FilerSeksjonCaption } from "./FilerRad";
 import { flatMappeliste, byggFilTre } from "./mapper/bygg-filtre";
 import { FilTre } from "./mapper/FilTre";
 import { OpprettMappeModal } from "./mapper/MappeModaler";
 import { OpprettDokumentModal } from "./OpprettDokumentModal";
-import type { DokumentNode, FilResponse, JournalpostReferanse } from "./typer";
+import type { DokumentNode, FilResponse } from "./typer";
 
 function OpprettDokumentKnapp({ sakId, steg }: { sakId: string; steg: KontrollsakSteg }) {
   const action = RouteConfig.API.SAK_DOKUMENTER.replace(":sakId", sakId);
@@ -78,8 +77,6 @@ interface SakFilområdeProps {
   filer: FilResponse[];
   /** Alle mappestier på saken, også tomme mapper. */
   mapper?: string[];
-  /** Journalpostene på saken, brukt til å gruppere arkiverte elementer. */
-  journalposter?: JournalpostReferanse[];
   /** Saksreferansen, brukt til å bygge lenker og opprette-handlingen. */
   sakId: string;
   /** Sakens steg. Styrer hvilke dokumentmaler som kan velges. */
@@ -105,7 +102,6 @@ export function SakFilområde({
   dokumenter,
   filer,
   mapper = [],
-  journalposter = [],
   sakId,
   steg,
   redigerbar = true,
@@ -126,11 +122,6 @@ export function SakFilområde({
     (dokument) => dokument.id !== migreringsnotatEksempel?.id,
   );
   const alleMapper = flatMappeliste(byggFilTre(mapper, synligeDokumenter, filer)).map((m) => m.sti);
-  const arkiverteFiler = filer.filter((fil) => fil.arkivert);
-  const arkiverteDokumenterUtenFil = dokumenter.filter(
-    (dokument) =>
-      dokument.arkivert && !filer.some((fil) => fil.arkivertFraDokumentId === dokument.id),
-  );
 
   const feilFraServer =
     opplastingFetcher.state === "idle" &&
@@ -249,13 +240,6 @@ export function SakFilområde({
             feilFraServer={feilFraServer}
           />
         </VStack>
-
-        <ArkivertSeksjon
-          filer={arkiverteFiler}
-          dokumenterUtenFil={arkiverteDokumenterUtenFil}
-          journalposter={journalposter}
-          sakId={sakId}
-        />
       </VStack>
     </Kort>
   );

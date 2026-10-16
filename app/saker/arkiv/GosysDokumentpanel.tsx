@@ -8,7 +8,9 @@ import { BodyShort, Button, Heading, HStack, InfoCard, Loader, VStack } from "@n
 import { useEffect, useState, type ReactNode } from "react";
 import { Kort } from "~/komponenter/Kort";
 import { JournalpostTabell } from "./JournalpostTabell";
+import type { ArkivJournalpost, OpprettetJournalpost } from "./typer";
 import { useArkivJournalposter, type ArkivTilstand } from "./useArkivJournalposter";
+import { tilJournalposttypekode } from "./visning";
 
 interface GosysDokumentpanelProps {
   sakId: string;
@@ -16,7 +18,9 @@ interface GosysDokumentpanelProps {
   /** Om brukeren har tilgang til å se journalposter i Gosys (`tilgang.kanSeArkiv`). */
   kanSeArkiv: boolean;
   /** Handlingsknapper som vises ved siden av «Vis dokumentoversikt». */
-  renderHandlinger?: (props: { onJournalpostOpprettet: () => void }) => ReactNode;
+  renderHandlinger?: (props: {
+    onJournalpostOpprettet: (journalpost: OpprettetJournalpost) => void;
+  }) => ReactNode;
 }
 
 const feilmeldinger: Record<Extract<ArkivTilstand, { status: "feil" }>["årsak"], string> = {
@@ -32,7 +36,8 @@ export function GosysDokumentpanel({
   renderHandlinger,
 }: GosysDokumentpanelProps) {
   const [åpen, settÅpen] = useState(false);
-  const { tilstand, hent } = useArkivJournalposter(sakId);
+  const { tilstand, ventende, ventendeIder, synkUttømt, hent, oppdater, journalpostOpprettet } =
+    useArkivJournalposter(sakId);
 
   // Henter når panelet er åpent og ikke hentet, også om tilgangen kommer etter åpning.
   useEffect(() => {
@@ -45,8 +50,10 @@ export function GosysDokumentpanel({
     if (skalÅpnes && kanSeArkiv && tilstand.status === "feil") void hent();
   }
 
-  function onJournalpostOpprettet() {
-    if (kanSeArkiv && tilstand.status !== "ikke-hentet") void hent();
+  function onJournalpostOpprettet(journalpost: OpprettetJournalpost) {
+    if (!kanSeArkiv) return;
+    settÅpen(true);
+    journalpostOpprettet(tilVentendeJournalpost(journalpost));
   }
 
   const overskriftId = `gosys-dokumentoversikt-${sakId}`;
@@ -86,7 +93,11 @@ export function GosysDokumentpanel({
               <Innhold
                 kanSeArkiv={kanSeArkiv}
                 tilstand={tilstand}
+                ventende={ventende}
+                ventendeIder={ventendeIder}
+                synkUttømt={synkUttømt}
                 onPrøvIgjen={() => void hent()}
+                onOppdater={oppdater}
               />
             </div>
           ) : null}
@@ -96,14 +107,47 @@ export function GosysDokumentpanel({
   );
 }
 
+/** Lokal tid uten tidssone, samme format som `datoOpprettet` fra SAF. */
+function nåSomLokalIso(): string {
+  const nå = new Date();
+  return new Date(nå.getTime() - nå.getTimezoneOffset() * 60_000).toISOString().slice(0, 19);
+}
+
+function tilVentendeJournalpost(journalpost: OpprettetJournalpost): ArkivJournalpost | null {
+  const { journalpostId } = journalpost;
+  if (!journalpostId) return null;
+  return {
+    journalpostId,
+    datoOpprettet: nåSomLokalIso(),
+    journalposttype: tilJournalposttypekode(journalpost.journalposttype),
+    journalstatus: null,
+    tittel: journalpost.tittel,
+    tema: null,
+    temanavn: null,
+    avsenderMottaker: null,
+    dokumenter: journalpost.dokumenttitler.map((tittel, indeks) => ({
+      dokumentInfoId: `${journalpostId}-${indeks}`,
+      tittel,
+    })),
+  };
+}
+
 function Innhold({
   kanSeArkiv,
   tilstand,
+  ventende,
+  ventendeIder,
+  synkUttømt,
   onPrøvIgjen,
+  onOppdater,
 }: {
   kanSeArkiv: boolean;
   tilstand: ArkivTilstand;
+  ventende: readonly ArkivJournalpost[];
+  ventendeIder: ReadonlySet<string>;
+  synkUttømt: boolean;
   onPrøvIgjen: () => void;
+  onOppdater: () => void;
 }) {
   if (!kanSeArkiv) {
     return (
@@ -116,17 +160,27 @@ function Innhold({
     );
   }
 
+  // Ventende journalposter vises selv om oversikten ikke er hentet ennå, eller feilet.
+  const ventendeTabell =
+    ventende.length > 0 ? (
+      <JournalpostTabell journalposter={[...ventende]} ventendeIder={ventendeIder} />
+    ) : null;
+
   switch (tilstand.status) {
     case "ikke-hentet":
     case "laster":
       return (
-        <HStack justify="center" className="py-4">
-          <Loader size="medium" title="Henter dokumentoversikten fra Gosys" />
-        </HStack>
+        <VStack gap="space-8">
+          {ventendeTabell}
+          <HStack justify="center" className="py-4">
+            <Loader size="medium" title="Henter dokumentoversikten fra Gosys" />
+          </HStack>
+        </VStack>
       );
     case "feil":
       return (
         <VStack gap="space-8" align="start">
+          {ventendeTabell ? <div className="w-full">{ventendeTabell}</div> : null}
           <InfoCard size="small" data-color="warning" className="w-full">
             <InfoCard.Message icon={<ExclamationmarkTriangleIcon aria-hidden />}>
               {feilmeldinger[tilstand.årsak]}
@@ -145,7 +199,19 @@ function Innhold({
           Ingen journalføringer å vise for denne saken.
         </BodyShort>
       ) : (
-        <JournalpostTabell journalposter={tilstand.journalposter} />
+        <VStack gap="space-8">
+          {synkUttømt ? (
+            <HStack gap="space-8" align="center" justify="space-between" wrap>
+              <BodyShort size="small" textColor="subtle">
+                Gosys har ikke registrert den nye journalposten ennå.
+              </BodyShort>
+              <Button type="button" size="small" variant="secondary" onClick={onOppdater}>
+                Oppdater
+              </Button>
+            </HStack>
+          ) : null}
+          <JournalpostTabell journalposter={tilstand.journalposter} ventendeIder={ventendeIder} />
+        </VStack>
       );
   }
 }

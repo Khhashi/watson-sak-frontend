@@ -13,11 +13,9 @@ import type { KontrollsakResponse, TillatteHandlingerResponse } from "~/saker/ty
 import type { FilResponse } from "~/saker/filer/typer";
 import { hentDokumenttreForSak } from "./filer/mock-data.server";
 import { hentMapperstier, hentMapperstierFraMock } from "./filer/mapper/mapper.server";
-import { hentJournalposterForSak } from "~/testing/mock-store/journalposter.server";
 import { hentFilerForSak } from "./filer/mock-data-filer.server";
 import { migreringErÅpen } from "~/migrering/miljo";
 import { migreringsnotatSeed } from "~/testing/mock-store/dokumenter.server";
-import { hentMockState } from "~/testing/mock-store/session.server";
 import { erSakseier } from "./handlinger/tilgjengeligeHandlinger";
 import { hentMockTillatteHandlinger } from "./mock-tillatte-handlinger.server";
 import { hentHistorikk } from "./historikk/mock-data.server";
@@ -66,20 +64,6 @@ async function hentHistorikkMedTilgangskontroll(
 ): Promise<Awaited<ReturnType<typeof backendApi.hentHendelser>>> {
   try {
     return await backendApi.hentHendelser(token, sakId);
-  } catch (feil) {
-    if (feil instanceof backendApi.BackendFeilException && feil.status === 403) {
-      return [];
-    }
-    throw feil;
-  }
-}
-
-async function hentJournalposterMedTilgangskontroll(
-  token: string,
-  sakId: string,
-): Promise<Awaited<ReturnType<typeof backendApi.hentJournalposter>>> {
-  try {
-    return await backendApi.hentJournalposter(token, sakId);
   } catch (feil) {
     if (feil instanceof backendApi.BackendFeilException && feil.status === 403) {
       return [];
@@ -155,7 +139,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     const [
       sak,
       historikk,
-      journalposter,
       saksbehandlerDetaljer,
       filerResultat,
       tillatteHandlinger,
@@ -164,7 +147,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     ] = await Promise.all([
       sakPromise,
       hentHistorikkMedTilgangskontroll(token, sakId),
-      hentJournalposterMedTilgangskontroll(token, sakId),
       backendApi.hentSaksbehandlere(token),
       hentFilerMedTilgangskontroll(token, sakId),
       hentTillatteHandlingerMedTilgangskontroll(token, sakId, sakPromise),
@@ -207,7 +189,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       migreringsnotatEksempel: null,
       tillatteHandlinger,
       historikk,
-      journalposter: harDirekteTilgang ? journalposter : [],
       dokumenter: harDirekteTilgang ? sak.dokumenter : [],
       filer: harDirekteTilgang ? filerResultat.filer : [],
       mapper: harDirekteTilgang ? mapper : [],
@@ -288,9 +269,6 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     migreringsnotatEksempel,
     tillatteHandlinger,
     historikk,
-    journalposter: harDirekteTilgang
-      ? hentJournalposterForSak(hentMockState(request), String(sak.id))
-      : [],
     dokumenter,
     filer,
     mapper,

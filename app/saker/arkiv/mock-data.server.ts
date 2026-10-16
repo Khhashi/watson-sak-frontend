@@ -2,6 +2,7 @@ import { hentFilerForSak } from "~/testing/mock-store/filer.server";
 import { hentJournalposterForSak } from "~/testing/mock-store/journalposter.server";
 import type { MockState } from "~/testing/mock-store/session.server";
 import type { ArkivJournalpost } from "./typer";
+import { tilJournalposttypekode } from "./visning";
 
 /** Syntetiske journalposter for lokal utvikling. Inneholder ingen ekte personopplysninger. */
 const mockJournalposter: ArkivJournalpost[] = [
@@ -53,8 +54,6 @@ const mockJournalposter: ArkivJournalpost[] = [
   },
 ];
 
-const typekoder: Record<string, string> = { INNGAAENDE: "I", UTGAAENDE: "U", NOTAT: "N" };
-
 /**
  * Journalposter for saken i mock-sesjonen: de som er arkivert fra saken, pluss
  * eksempelpostene. Dokumentene til en arkivert journalpost er filene som ble
@@ -66,7 +65,7 @@ export function hentMockArkivJournalposter(state: MockState, sakId: string): Ark
     (journalpost): ArkivJournalpost => ({
       journalpostId: journalpost.journalpostId,
       datoOpprettet: journalpost.opprettet,
-      journalposttype: typekoder[journalpost.journalposttype] ?? journalpost.journalposttype,
+      journalposttype: tilJournalposttypekode(journalpost.journalposttype),
       journalstatus: "JOURNALFOERT",
       tittel: journalpost.tittel,
       tema: "KTR",

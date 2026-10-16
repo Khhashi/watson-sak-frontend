@@ -32,6 +32,17 @@ export function formaterJournalpostdato(iso: string): string {
   return `${dag}.${måned}.${år}`;
 }
 
+const typekoderFraWatson: Record<string, string> = {
+  INNGAAENDE: "I",
+  UTGAAENDE: "U",
+  NOTAT: "N",
+};
+
+/** Gjør journalposttypen fra Watson (`INNGAAENDE` osv.) om til typekoden i SAF (I/U/N). */
+export function tilJournalposttypekode(type: string): string {
+  return typekoderFraWatson[type] ?? type;
+}
+
 /** Full beskrivelse av typekoden (I/U/N). Ukjente koder returneres uendret. */
 export function beskrivJournalposttype(kode: string | null): string | null {
   if (!kode) return null;

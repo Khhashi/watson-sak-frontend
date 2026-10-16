@@ -5,7 +5,7 @@ import {
   InboxUpIcon,
   NotePencilIcon,
 } from "@navikt/aksel-icons";
-import { Button, HStack, Table, Tooltip } from "@navikt/ds-react";
+import { Button, HStack, Loader, Table, Tooltip } from "@navikt/ds-react";
 import { Fragment, type ComponentType, useState } from "react";
 import type { ArkivJournalpost } from "./typer";
 import {
@@ -29,14 +29,21 @@ function Radhøyde() {
 
 interface JournalpostTabellProps {
   journalposter: ArkivJournalpost[];
+  /** Journalposter som er opprettet fra Watson Sak, men som Gosys ikke har vist ennå. */
+  ventendeIder?: ReadonlySet<string>;
 }
+
+const ingenVentende: ReadonlySet<string> = new Set();
 
 /**
  * Tabell over journalposter i Gosys. Hver journalpost kan utvides for å vise
  * dokumentene den består av. Dokumentradene ligger i samme kolonner som
  * journalposten, derfor bruker vi egne rader og ikke `Table.ExpandableRow`.
  */
-export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
+export function JournalpostTabell({
+  journalposter,
+  ventendeIder = ingenVentende,
+}: JournalpostTabellProps) {
   const [åpne, settÅpne] = useState<ReadonlySet<string>>(new Set());
 
   function veksle(journalpostId: string) {
@@ -88,7 +95,14 @@ export function JournalpostTabell({ journalposter }: JournalpostTabellProps) {
                   <Table.DataCell>{formaterAvsenderMottaker(journalpost)}</Table.DataCell>
                   <Table.DataCell>{tittel}</Table.DataCell>
                   <Table.DataCell>
-                    {formaterJournalstatus(journalpost.journalstatus)}
+                    {ventendeIder.has(journalpost.journalpostId) ? (
+                      <HStack gap="space-4" align="center" wrap={false}>
+                        <Loader size="xsmall" aria-hidden />
+                        <span className="whitespace-nowrap">Venter på Gosys</span>
+                      </HStack>
+                    ) : (
+                      formaterJournalstatus(journalpost.journalstatus)
+                    )}
                   </Table.DataCell>
                   <Table.DataCell>{formaterTema(journalpost)}</Table.DataCell>
                   <Table.DataCell align="right">

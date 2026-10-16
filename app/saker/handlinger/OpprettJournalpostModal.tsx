@@ -27,6 +27,7 @@ import { z } from "zod";
 import { sporHendelse } from "~/analytics/analytics";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
+import type { OpprettetJournalpost } from "~/saker/arkiv/typer";
 import type { DokumentNode, FilResponse } from "~/saker/filer/typer";
 import { formaterStorrelse } from "~/utils/number-utils";
 import { formaterDato } from "~/utils/date-utils";
@@ -88,8 +89,8 @@ interface OpprettJournalpostModalProps {
   sakId: string;
   åpen: boolean;
   onClose: () => void;
-  /** Kalles når journalposten er opprettet. */
-  onOpprettet?: () => void;
+  /** Kalles når journalposten er opprettet, slik at den kan vises før Gosys har den. */
+  onOpprettet?: (journalpost: OpprettetJournalpost) => void;
   /** PDF-filer lastet opp på saken som kan velges som vedlegg. */
   filer: FilResponse[];
   /** Dokumenter opprettet i Watson Sak som kan velges for arkivering (konverteres til PDF). */
@@ -108,6 +109,7 @@ export function OpprettJournalpostModal({
   const [knyttTilOppgave, setKnyttTilOppgave] = useState(false);
   const [valgteNøkler, setValgteNøkler] = useState<string[]>([]);
   const submitPågår = useRef(false);
+  const innsendtJournalpost = useRef<Omit<OpprettetJournalpost, "journalpostId"> | null>(null);
   const forrigeÅpen = useRef(false);
   const [steg, setSteg] = useState<Steg>("skjema");
   const [innsendingFormData, setInnsendingFormData] = useState<FormData | null>(null);
@@ -165,6 +167,13 @@ export function OpprettJournalpostModal({
     if (!innsendingFormData) return;
     sporHendelse("journalpost opprettet", { medOppgave: knyttTilOppgave });
     submitPågår.current = true;
+    innsendtJournalpost.current = {
+      journalposttype: innsendingFormData.get("journalposttype")?.toString() ?? "",
+      tittel: innsendingFormData.get("tittel")?.toString().trim() ?? "",
+      dokumenttitler: valgbareElementer
+        .filter((element) => valgteNøkler.includes(element.nøkkel))
+        .map((element) => element.navn),
+    };
     fetcher.submit(innsendingFormData, {
       method: "post",
       action: RouteConfig.SAKER_DETALJ.replace(":sakId", getSaksreferanse(sakId)),
@@ -206,7 +215,13 @@ export function OpprettJournalpostModal({
     if (fetcher.data && "ok" in fetcher.data && fetcher.data.ok) {
       setFeilmelding(null);
       setSteg("suksess");
-      onOpprettet?.();
+      if (innsendtJournalpost.current) {
+        const journalpostId =
+          "journalpostId" in fetcher.data && typeof fetcher.data.journalpostId === "string"
+            ? fetcher.data.journalpostId
+            : null;
+        onOpprettet?.({ ...innsendtJournalpost.current, journalpostId });
+      }
     } else {
       setFeilmelding("Kunne ikke opprette journalpost. Prøv igjen.");
       setSteg("bekreft");

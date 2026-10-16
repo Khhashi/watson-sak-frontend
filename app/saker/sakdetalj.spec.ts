@@ -193,6 +193,31 @@ test.describe("Sakdetalj – dokumentoversikt i Gosys", () => {
     await sjekkTilgjengelighet(page);
   });
 
+  test("viser ny journalpost med en gang og oppdaterer den når Gosys har den", async ({ page }) => {
+    // Gosys har ikke journalposten ennå
+    await page.route("**/api/saker/201/arkiv/journalposter", (route) =>
+      route.fulfill({ json: { status: "ok", journalposter: [] } }),
+    );
+    const panel = page.getByRole("region", { name: "Dokumentoversikt i Gosys for sak 201" });
+
+    await panel.getByRole("button", { name: "Arkiver dokument(er) i Gosys" }).click();
+    const dialog = page.getByRole("dialog");
+    await dialog.getByRole("radio", { name: "Utgående" }).check();
+    await dialog.getByLabel("Tittel").fill("Varsel om kontroll");
+    await dialog.getByLabel("Innhold").fill("Varsel sendt til bruker");
+    await dialog.getByRole("button", { name: "Lagre" }).click();
+    await dialog.getByRole("button", { name: "Opprett" }).click();
+    await dialog.getByRole("button", { name: "Lukk" }).click();
+
+    const rad = panel.getByRole("row", { name: /Varsel om kontroll/ });
+    await expect(rad).toBeVisible();
+    await expect(rad.getByText("Venter på Gosys")).toBeVisible();
+
+    await page.unroute("**/api/saker/201/arkiv/journalposter");
+    await expect(rad.getByText("Journalført")).toBeVisible({ timeout: 10_000 });
+    await expect(rad.getByText("Venter på Gosys")).toHaveCount(0);
+  });
+
   test("viser feilmelding i dokumentoversikten når Gosys feiler, uten at siden går ned", async ({
     page,
   }) => {

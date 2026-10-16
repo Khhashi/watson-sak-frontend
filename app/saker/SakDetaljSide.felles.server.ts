@@ -127,7 +127,7 @@ export function koblingsFeilmelding(feil: unknown): string {
 // --- Typer ---
 
 export type ActionResult =
-  | { ok: true; sak?: Route.ComponentProps["loaderData"]["sak"] }
+  | { ok: true; sak?: Route.ComponentProps["loaderData"]["sak"]; journalpostId?: string }
   | RedigerSaksinformasjonResultat;
 
 // --- Hjelpefunksjoner ---

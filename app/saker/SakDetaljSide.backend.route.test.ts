@@ -11,7 +11,6 @@ import { env } from "~/config/env.server";
 
 const mockHentKontrollsak = vi.fn();
 const mockHentHendelser = vi.fn();
-const mockHentJournalposter = vi.fn();
 const mockHentSaksbehandlere = vi.fn();
 const mockHentFiler = vi.fn();
 const mockHentMapper = vi.fn().mockResolvedValue([]);
@@ -71,7 +70,6 @@ vi.mock("~/saker/api.server", () => ({
   BackendFeilException: MockBackendFeilException,
   hentKontrollsak: mockHentKontrollsak,
   hentHendelser: mockHentHendelser,
-  hentJournalposter: mockHentJournalposter,
   hentSaksbehandlere: mockHentSaksbehandlere,
   hentFiler: mockHentFiler,
   hentMapper: mockHentMapper,
@@ -295,7 +293,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
   it("skjuler filområdet stille når hentFiler gir 403 (mangler fil-tilgang)", async () => {
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockRejectedValue(new MockBackendFeilException(403, "Ingen tilgang til sak 1"));
 
@@ -315,7 +312,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
 
     expect(mockHentKontrollsak).not.toHaveBeenCalled();
     expect(mockHentHendelser).not.toHaveBeenCalled();
-    expect(mockHentJournalposter).not.toHaveBeenCalled();
     expect(mockHentSaksbehandlere).not.toHaveBeenCalled();
     expect(mockHentFiler).not.toHaveBeenCalled();
     expect(mockHentMapper).not.toHaveBeenCalled();
@@ -326,7 +322,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
     const filer = [{ id: "f1", filnavn: "vedlegg.pdf" }];
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue(filer);
 
@@ -340,7 +335,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
   it("laster saken uten handlinger når tillatte handlinger gir 403", async () => {
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue([]);
     mockHentTillatteHandlinger.mockRejectedValue(
@@ -677,7 +671,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
   it("lar andre feil enn 403 fra hentFiler boble opp (kaster fortsatt loaderen)", async () => {
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockRejectedValue(new MockBackendFeilException(500, "Intern feil"));
 
@@ -689,7 +682,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
   it("degraderer historikk stille når hentHendelser gir 403", async () => {
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
     mockHentHendelser.mockRejectedValue(new MockBackendFeilException(403, "Ingen tilgang"));
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue([]);
 
@@ -699,23 +691,9 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(resultat.historikk).toEqual([]);
   });
 
-  it("degraderer journalposter stille når hentJournalposter gir 403", async () => {
-    mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
-    mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockRejectedValue(new MockBackendFeilException(403, "Ingen tilgang"));
-    mockHentSaksbehandlere.mockResolvedValue([]);
-    mockHentFiler.mockResolvedValue([]);
-
-    const { loader } = await import("./SakDetaljSide.server");
-    const resultat = await loader(lagLoaderArgs());
-
-    expect(resultat.journalposter).toEqual([]);
-  });
-
   it("degraderer mapper stille når hentMapper gir 403", async () => {
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue([]);
     mockHentMapper.mockRejectedValueOnce(new MockBackendFeilException(403, "Ingen tilgang"));
@@ -737,7 +715,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
       },
     });
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     // Backend kan gi filtilgang til flere roller enn eier/delt-med (se
     // hentFilerMedTilgangskontroll), men loaderen skal likevel ikke sende
@@ -765,7 +742,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
       },
     });
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue(filer);
 
@@ -789,7 +765,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
       },
     });
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue(filer);
 
@@ -819,7 +794,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
       },
     });
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue(filer);
 
@@ -843,7 +817,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
       },
     });
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue([]);
 
@@ -866,7 +839,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
       },
     });
     mockHentHendelser.mockResolvedValue([]);
-    mockHentJournalposter.mockResolvedValue([]);
     mockHentSaksbehandlere.mockResolvedValue([]);
     mockHentFiler.mockResolvedValue([]);
     mockSøkKontrollsaker.mockRejectedValue(
