@@ -29,6 +29,7 @@ import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
 import type { OpprettetJournalpost } from "~/saker/arkiv/typer";
 import type { DokumentNode, FilResponse } from "~/saker/filer/typer";
+import { JOURNALFØRBARE_CONTENT_TYPES } from "~/saker/filer/fil-type-utils";
 import { formaterStorrelse } from "~/utils/number-utils";
 import { formaterDato } from "~/utils/date-utils";
 import { OppgaveSkjema } from "./OppgaveSkjema";
@@ -91,7 +92,7 @@ interface OpprettJournalpostModalProps {
   onClose: () => void;
   /** Kalles når journalposten er opprettet, slik at den kan vises før Gosys har den. */
   onOpprettet?: (journalpost: OpprettetJournalpost) => void;
-  /** PDF-filer lastet opp på saken som kan velges som vedlegg. */
+  /** PDF- og XLSX-filer lastet opp på saken som kan velges som vedlegg. */
   filer: FilResponse[];
   /** Dokumenter opprettet i Watson Sak som kan velges for arkivering (konverteres til PDF). */
   dokumenter: DokumentNode[];
@@ -117,7 +118,7 @@ export function OpprettJournalpostModal({
 
   const valgbareElementer: ValgbartElement[] = [
     ...filer
-      .filter((fil) => fil.contentType === "application/pdf" && !fil.arkivert)
+      .filter((fil) => JOURNALFØRBARE_CONTENT_TYPES.includes(fil.contentType) && !fil.arkivert)
       .map(
         (fil): ValgbartElement => ({
           nøkkel: `fil:${fil.id}`,

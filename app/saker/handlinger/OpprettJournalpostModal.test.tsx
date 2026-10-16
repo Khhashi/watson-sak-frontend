@@ -53,6 +53,26 @@ const bildeFil: FilResponse = {
   bruktIDokumenter: [],
 };
 
+const xlsxFil: FilResponse = {
+  id: "fil-uuid-4",
+  filnavn: "kontoutskrift.xlsx",
+  storrelse: 30720,
+  contentType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  opprettetAv: "Z123456",
+  opprettet: "2026-01-01T10:00:00Z",
+  bruktIDokumenter: [],
+};
+
+const wordFil: FilResponse = {
+  id: "fil-uuid-5",
+  filnavn: "notat.docx",
+  storrelse: 30720,
+  contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  opprettetAv: "Z123456",
+  opprettet: "2026-01-01T10:00:00Z",
+  bruktIDokumenter: [],
+};
+
 const arkivertFil: FilResponse = {
   id: "fil-uuid-3",
   filnavn: "arkivert.pdf",
@@ -164,11 +184,15 @@ describe("OpprettJournalpostModal", () => {
     expect(screen.getByText(/Ingen filer eller dokumenter/)).toBeDefined();
   });
 
-  it("viser kun PDF-filer i velgeren, ikke bilder", async () => {
-    await renderMedRouter(<OpprettJournalpostModal {...defaultProps} filer={[pdfFil, bildeFil]} />);
+  it("viser PDF- og XLSX-filer i velgeren, men ikke bilder eller Word", async () => {
+    await renderMedRouter(
+      <OpprettJournalpostModal {...defaultProps} filer={[pdfFil, xlsxFil, bildeFil, wordFil]} />,
+    );
 
     expect(screen.getByRole("checkbox", { name: /rapport\.pdf/ })).toBeDefined();
+    expect(screen.getByRole("checkbox", { name: /kontoutskrift\.xlsx/ })).toBeDefined();
     expect(screen.queryByRole("checkbox", { name: /screenshot\.png/ })).toBeNull();
+    expect(screen.queryByRole("checkbox", { name: /notat\.docx/ })).toBeNull();
   });
 
   it("viser ikke arkiverte filer eller dokumenter i velgeren", async () => {

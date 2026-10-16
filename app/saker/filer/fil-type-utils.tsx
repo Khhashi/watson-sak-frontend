@@ -11,6 +11,12 @@ const WORD_CONTENT_TYPES = [
   "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
 ];
 
+/** Content types backend kan journalføre som vedlegg (Dokarkiv godtar PDF og XLSX som arkivvariant). */
+export const JOURNALFØRBARE_CONTENT_TYPES = [
+  "application/pdf",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+];
+
 /** Ikon som representerer en opplastet fils type, basert på `contentType`. */
 export function filTypeIkon(contentType: string): FilIkon {
   if (contentType === "application/pdf") return FilePdfIcon;
