@@ -4,7 +4,6 @@ import { getBackendOboToken } from "~/auth/access-token";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { skalBrukeMockdata } from "~/config/env.server";
 import * as backendApi from "~/saker/api.server";
-import { erSakseier } from "~/saker/handlinger/tilgjengeligeHandlinger";
 import { leggTilHendelse } from "~/saker/historikk/mock-data.server";
 import { hentSakstilgangFraMock } from "~/saker/tilgang.server";
 import {
@@ -18,8 +17,10 @@ import { filnavnSchema } from "./filnavn-utils";
  * Resource route for én enkelt fil på en sak.
  *
  * - GET: streamer filinnhold direkte fra backend (ingen signert URL).
- * - PATCH: endrer navnedelen til filen (kun sakseier).
- * - DELETE: sletter filen (kun sakseier).
+ * - PATCH: endrer navnedelen til filen (se `kanLasteOppFiler` i `sakstilgang.ts`).
+ * - DELETE: sletter filen (se `kanEndreSak` i `sakstilgang.ts`).
+ *
+ * Backend håndhever reglene. Mocksporet speiler dem.
  */
 export async function loader({ request, params }: LoaderFunctionArgs) {
   const sakId = parseSakId(params.sakId);
@@ -73,7 +74,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
       }
     }
 
-    // Sakseier-sjekk håndheves av backend — den returnerer 403 om brukeren ikke er eier.
+    // Tilgang håndheves av backend.
     try {
       await backendApi.slettFil(token, sakId, filId);
     } catch (feil) {
@@ -96,8 +97,9 @@ export async function action({ request, params }: ActionFunctionArgs) {
   }
 
   const innlogget = await hentInnloggetBruker({ request });
-  if (!erSakseier(tilgang.sak, innlogget.navIdent)) {
-    throw data("Kun sakseier kan endre eller slette vedlegg", { status: 403 });
+  const harTilgang = request.method === "PATCH" ? tilgang.kanLasteOppFiler : tilgang.kanEndreFiler;
+  if (!harTilgang) {
+    throw data("Ingen tilgang til å endre eller slette vedlegg", { status: 403 });
   }
 
   if (request.method === "PATCH" && nyttNavn !== undefined) {

@@ -19,6 +19,7 @@ export function hentStegbaserteSaksregler(steg: KontrollsakSteg): StegbaserteSak
     kanLasteOppFiler: erAktiv,
     kanRedigereDokumenter: kanUtføreUtredningsarbeid,
     kanLeggeTilHistorikk: kanUtføreUtredningsarbeid,
-    kanEndreDeltTilgang: kanUtføreUtredningsarbeid,
+    // Deling krever en eier, som sjekkes der deling vises og i backend.
+    kanEndreDeltTilgang: erAktiv,
   };
 }

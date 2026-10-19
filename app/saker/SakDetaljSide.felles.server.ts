@@ -271,8 +271,6 @@ const tildelingshandlinger = new Set([
 ]);
 const koblingshandlinger = new Set(["koble_sak", "fjern_kobling"]);
 export const handlingerSomKreverUtredning = new Set([
-  "del_tilgang",
-  "fjern_delt_tilgang",
   "send_notat",
   "opprett_journalpost",
   "opprett_oppgave",

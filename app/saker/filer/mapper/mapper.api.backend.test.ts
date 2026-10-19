@@ -48,7 +48,7 @@ const { action } = await import("./mapper.api");
 const saksbehandler = { navIdent: "Z999999", navn: "Saks Behandlersen", enhet: "4812" };
 
 function lagSak({
-  eier = saksbehandler,
+  eier = saksbehandler as typeof saksbehandler | null,
   deltMed = [] as (typeof saksbehandler)[],
   steg = "UTREDES",
 }) {
@@ -132,14 +132,35 @@ describe("mapper.api mot backend", () => {
     expect(await send({ handling: "opprett", sti: "Bank" })).toEqual({ ok: true });
   });
 
-  it("gir tilgang til ledere", async () => {
+  it("gir ikke ledere tilgang når de ikke er saksbehandler på saken", async () => {
     mocks.hentKontrollsak.mockResolvedValue(
       lagSak({ eier: { ...saksbehandler, navIdent: "Z111111" } }),
     );
     mocks.hentInnloggetBruker.mockResolvedValue(innlogget({ erLeder: true }));
 
+    expect(await statusFraKastet(send({ handling: "opprett", sti: "Bank" }))).toBe(403);
+  });
+
+  it("lar alle opprette og endre mapper på en ufordelt sak", async () => {
+    mocks.hentKontrollsak.mockResolvedValue(lagSak({ eier: null }));
+    mocks.hentInnloggetBruker.mockResolvedValue(innlogget({ navIdent: "Z333333" }));
+
     expect(await send({ handling: "opprett", sti: "Bank" })).toEqual({ ok: true });
   });
+
+  it.each(["slett", "flytt-dokument"] as const)(
+    "gir 403 for %s på en ufordelt sak, også for den saken er delt med",
+    async (handling) => {
+      mocks.hentKontrollsak.mockResolvedValue(lagSak({ eier: null, deltMed: [saksbehandler] }));
+      mocks.hentInnloggetBruker.mockResolvedValue(innlogget());
+
+      const skjema =
+        handling === "slett"
+          ? { handling, sti: "Bank" }
+          : { handling, id: "00000000-0000-4000-8000-000000000000", mappe: "Bank" };
+      expect(await statusFraKastet(send(skjema))).toBe(403);
+    },
+  );
 
   it("gir 403 når saken er avsluttet", async () => {
     mocks.hentKontrollsak.mockResolvedValue(lagSak({ steg: "AVSLUTTET" }));

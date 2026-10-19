@@ -776,7 +776,7 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(resultat.sak.dokumenter.length).toBe(1);
   });
 
-  it("eksponerer dokumenter/filer i loader-responsen når innlogget bruker er leder", async () => {
+  it("eksponerer ikke dokumenter/filer for leder som ikke er saksbehandler på saken", async () => {
     const filer = [{ id: "f1", filnavn: "vedlegg.pdf" }];
     mockHentInnloggetBruker.mockResolvedValueOnce({
       preferredUsername: "leder",
@@ -800,9 +800,31 @@ describe("SakDetaljSide loader — backend-sti", () => {
     const { loader } = await import("./SakDetaljSide.server");
     const resultat = await loader(lagLoaderArgs());
 
-    expect(resultat.dokumenter.length).toBe(1);
+    expect(resultat.dokumenter).toEqual([]);
+    expect(resultat.filer).toEqual([]);
+    expect(resultat.sak.dokumenter).toEqual([]);
+  });
+
+  it("eksponerer filer, men ikke dokumenter, på en ufordelt sak", async () => {
+    const filer = [{ id: "f1", filnavn: "tips.pdf" }];
+    mockHentKontrollsak.mockResolvedValue({
+      ...grunnleggendeSak,
+      steg: "OPPRETTET",
+      saksbehandlere: {
+        eier: null,
+        deltMed: [],
+        opprettetAv: { navIdent: "Z111111", navn: "Annen Saksbehandler", enhet: "4812" },
+      },
+    });
+    mockHentHendelser.mockResolvedValue([]);
+    mockHentSaksbehandlere.mockResolvedValue([]);
+    mockHentFiler.mockResolvedValue(filer);
+
+    const { loader } = await import("./SakDetaljSide.server");
+    const resultat = await loader(lagLoaderArgs());
+
     expect(resultat.filer).toEqual(filer);
-    expect(resultat.sak.dokumenter.length).toBe(1);
+    expect(resultat.dokumenter).toEqual([]);
   });
 
   it("eksponerer ikke dokumenter/filer/mapper for sakseier når kanSeFiler er false", async () => {

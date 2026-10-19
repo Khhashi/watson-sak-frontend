@@ -20,28 +20,26 @@ import { erSakseier } from "./handlinger/tilgjengeligeHandlinger";
 import { hentMockTillatteHandlinger } from "./mock-tillatte-handlinger.server";
 import { hentHistorikk } from "./historikk/mock-data.server";
 import { finnSakMedReferanse } from "./id";
-import { kanLeseSaksinnhold } from "./sakstilgang";
+import { kanLeseSaksinnhold, kanSeFilområdet } from "./sakstilgang";
 import { parseSakId } from "~/saker/sti-param.server";
 import type { Route } from "./+types/SakDetaljSide.route";
 
 // --- Loader ---
 
 /**
- * Henter filer for saken, men behandler manglende fil-tilgang (HTTP 403) som en
- * gyldig tilstand i stedet for en feil.
+ * Henter filer for saken, men behandler manglende fil-tilgang som en gyldig tilstand
+ * i stedet for en feil.
  *
- * Backend (`FilTilgangService`) kan gi fil-tilgang til flere roller enn eier og
- * delt-med (bl.a. den som opprettet saken eller er ansvarlig på en koblet sak),
- * men enkeltdokumenter kan likevel ikke åpnes av disse rollene. Sakssiden viser
- * derfor filområdet kun for eier/delt-med (se `kanSeFilområde` i
- * `SakDetaljSide.route.tsx`) uavhengig av `harFilTilgang` — feltet brukes her
- * kun til å behandle 403 fra `hentFiler` som en gyldig tilstand, ikke som feil.
+ * Backend (`FilTilgangService`) svarer 403 når saken er fordelt og innlogget ikke er
+ * eier eller delt med, og 404 når innlogget mangler tilgang til personen (så svaret ikke
+ * avslører at saken finnes). Begge betyr «ingen filer å vise». Hvem som ser filområdet,
+ * styres av `kanSeFilområdet` i `sakstilgang.ts`.
  *
  * Kalles fra `Promise.all` i loaderen — dersom `hentFiler` hadde kastet uhåndtert
  * herfra, ville hele loaderen (og dermed hele sakssiden) feilet for enhver
- * saksbehandler uten fil-tilgang, se opprinnelig bug.
+ * saksbehandler uten fil-tilgang.
  *
- * Andre feil enn 403 (5xx, nettverksfeil o.l.) kastes videre som reelle feil.
+ * Andre feil (5xx, nettverksfeil o.l.) kastes videre som reelle feil.
  */
 async function hentFilerMedTilgangskontroll(
   token: string,
@@ -51,7 +49,10 @@ async function hentFilerMedTilgangskontroll(
     const filer = await backendApi.hentFiler(token, sakId);
     return { filer, harFilTilgang: true };
   } catch (feil) {
-    if (feil instanceof backendApi.BackendFeilException && feil.status === 403) {
+    if (
+      feil instanceof backendApi.BackendFeilException &&
+      (feil.status === 403 || feil.status === 404)
+    ) {
       return { filer: [], harFilTilgang: false };
     }
     throw feil;
@@ -167,8 +168,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     // ellers lekker dokumentmetadata likevel via `sak` i loader-responsen. Uten tilgang til
     // personen (`sak.tilgang.kanSeFiler`) gjelder samme sperre, også for eier og delt-med.
     const erEier = erSakseier(sak, innlogget.navIdent);
-    const harDirekteTilgang =
-      kanLeseSaksinnhold(sak, innlogget) && (sak.tilgang?.kanSeFiler ?? true);
+    const harPersontilgang = sak.tilgang?.kanSeFiler ?? true;
+    const harDirekteTilgang = kanLeseSaksinnhold(sak, innlogget) && harPersontilgang;
+    // Filer og mapper vises også på ufordelte saker, se `kanSeFilområdet`.
+    const kanSeFiler = kanSeFilområdet(sak, innlogget) && harPersontilgang;
     const sakForRespons = harDirekteTilgang ? sak : { ...sak, dokumenter: [] };
     let kandidat = null;
     if (migreringErÅpen(env.ENVIRONMENT) && erEier && sak.legacyKilde && sak.legacyPid) {
@@ -192,8 +195,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       tillatteHandlinger,
       historikk,
       dokumenter: harDirekteTilgang ? sak.dokumenter : [],
-      filer: harDirekteTilgang ? filerResultat.filer : [],
-      mapper: harDirekteTilgang ? mapper : [],
+      filer: kanSeFiler ? filerResultat.filer : [],
+      mapper: kanSeFiler ? mapper : [],
       harFilTilgang: filerResultat.harFilTilgang,
       andreSaker,
       saksbehandlere: saksbehandlerDetaljer.map((sb) => sb.navn),
@@ -235,6 +238,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   // `harFilTilgang` er bredere (inkluderer tilgang via koblet sak) og brukes ikke til å
   // avgjøre om dokument-/filmetadata skal eksponeres i loader-responsen.
   const harDirekteTilgang = kanLeseSaksinnhold(sak, innlogget) && (sak.tilgang?.kanSeFiler ?? true);
+  const kanSeFiler = kanSeFilområdet(sak, innlogget) && (sak.tilgang?.kanSeFiler ?? true);
   const dokumenter = harDirekteTilgang ? hentDokumenttreForSak(request, String(sak.id)) : [];
   const migreringsnotatEksempel =
     erEier &&
@@ -247,8 +251,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
           opprettetDato: migreringsnotatSeed.opprettetDato,
         }
       : null;
-  const filer = harDirekteTilgang ? hentFilerForSak(request, String(sak.id)) : [];
-  const mapper = harDirekteTilgang ? hentMapperstierFraMock(request, String(sak.id)) : [];
+  const filer = kanSeFiler ? hentFilerForSak(request, String(sak.id)) : [];
+  const mapper = kanSeFiler ? hentMapperstierFraMock(request, String(sak.id)) : [];
   const andreSaker = alleSaker.filter(
     (annenSak) => annenSak.personIdent === sak.personIdent && annenSak.id !== sak.id,
   );

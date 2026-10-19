@@ -13,7 +13,7 @@ import { erSakseier } from "./handlinger/tilgjengeligeHandlinger";
 import { hentHandlinger } from "./handlinger/saksflyt/saksflyt";
 import { SaksflytModal } from "./handlinger/saksflyt/SaksflytModal";
 import { getSaksreferanse } from "./id";
-import { harDirekteSakstilgang, kanLeseSaksinnhold } from "./sakstilgang";
+import { kanEndreSak, kanLasteOppFiler, kanLeseSaksinnhold, kanSeFilområdet } from "./sakstilgang";
 import { PersonIdentHistorikkModal } from "./komponenter/PersonIdentHistorikkModal";
 import { SakDetaljSidePanel } from "./komponenter/SakDetaljSidePanel";
 import { SakerPåSammePerson } from "./komponenter/SakerPåSammePerson";
@@ -79,14 +79,17 @@ export default function SakDetaljSide() {
     erEier &&
     sak.legacyPid &&
     migreringsstatus === "FULLSTENDIG";
-  const harDirekteTilgang = harDirekteSakstilgang(sak, innloggetBruker);
+  const harDirekteTilgang = kanEndreSak(sak, innloggetBruker);
   const kanLese = kanLeseSaksinnhold(sak, innloggetBruker);
   const historikkTilstand: "vis" | "ikke-delt" | "ingen-persontilgang" = !kanLese
     ? "ikke-delt"
     : (sak.tilgang?.kanSeHistorikk ?? true)
       ? "vis"
       : "ingen-persontilgang";
-  const filTilstand: "vis" | "ikke-delt" | "ingen-persontilgang" = !kanLese
+  const filTilstand: "vis" | "ikke-delt" | "ingen-persontilgang" = !kanSeFilområdet(
+    sak,
+    innloggetBruker,
+  )
     ? "ikke-delt"
     : (sak.tilgang?.kanSeFiler ?? true)
       ? "vis"
@@ -208,7 +211,9 @@ export default function SakDetaljSide() {
                 sakId={saksreferanse}
                 steg={sak.steg}
                 redigerbar={harDirekteTilgang && stegregler.kanRedigereDokumenter}
-                kanLasteOppFiler={harDirekteTilgang && stegregler.kanLasteOppFiler}
+                kanLasteOppFiler={
+                  kanLasteOppFiler(sak, innloggetBruker) && stegregler.kanLasteOppFiler
+                }
                 erSakseier={erEier}
                 migreringsnotatEksempel={migreringsnotatEksempel}
                 visMigreringsnotatForhandsvisning={Boolean(

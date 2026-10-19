@@ -5,7 +5,7 @@ import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { skalBrukeMockdata } from "~/config/env.server";
 import * as backendApi from "~/saker/api.server";
 import { hentStegbaserteSaksregler } from "~/saker/stegregler";
-import { harDirekteSakstilgang } from "~/saker/sakstilgang";
+import { kanEndreSak, kanLasteOppFiler } from "~/saker/sakstilgang";
 import { hentSakstilgangFraMock } from "~/saker/tilgang.server";
 import { parseSakId } from "~/saker/sti-param.server";
 import {
@@ -38,6 +38,14 @@ function feil(status: number, melding: string) {
   return data<MappehandlingSvar>({ ok: false, melding }, { status });
 }
 
+/**
+ * Sletting og flytting av dokumenter krever endretilgang (eier eller delt med).
+ * Resten krever opplastingstilgang, som alle har på en ufordelt sak. Se `sakstilgang.ts`.
+ */
+function krevEndretilgang(handling: z.output<typeof mappehandlingSchema>): boolean {
+  return handling.handling === "slett" || handling.handling === "flytt-dokument";
+}
+
 async function utførMotBackend(
   request: Request,
   sakId: string,
@@ -48,7 +56,10 @@ async function utførMotBackend(
     backendApi.hentKontrollsak(token, sakId),
     hentInnloggetBruker({ request }),
   ]);
-  if (!harDirekteSakstilgang(sak, innlogget)) {
+  const harTilgang = krevEndretilgang(handling)
+    ? kanEndreSak(sak, innlogget)
+    : kanLasteOppFiler(sak, innlogget);
+  if (!harTilgang) {
     throw data("Ingen tilgang til å endre mapper", { status: 403 });
   }
   if (!hentStegbaserteSaksregler(sak.steg).kanLasteOppFiler) {
@@ -94,7 +105,8 @@ async function utførMotMock(
   if (!tilgang) {
     throw data("Sak ikke funnet", { status: 404 });
   }
-  if (!tilgang.kanLasteOppFiler) {
+  const harTilgang = krevEndretilgang(handling) ? tilgang.kanEndreFiler : tilgang.kanLasteOppFiler;
+  if (!harTilgang) {
     throw data("Ingen tilgang til å endre mapper", { status: 403 });
   }
 
