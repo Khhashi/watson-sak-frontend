@@ -5,10 +5,23 @@
  */
 export const kontrollsakYtelseTypeEtiketter: Record<string, string> = {
   DAGPENGER: "Dagpenger",
+  AAP: "Arbeidsavklaringspenger",
+  UFORETRYGD: "Uføretrygd",
+  ALDERSPENSJON: "Alderspensjon",
   SYKEPENGER: "Sykepenger",
-  BARNETRYGD: "Barnetrygd",
-  AAP: "AAP",
   FORELDREPENGER: "Foreldrepenger",
+  OVERGANGSSTONAD: "Overgangsstønad",
+  AFP: "AFP",
+  GRUNN_OG_HJELPESTONAD: "Grunn- og hjelpestønad",
+  BARNETRYGD: "Barnetrygd",
+  KONTANTSTOTTE: "Kontantstøtte",
+  ENGANGSSTONAD: "Engangsstønad",
+  BIDRAGSFORSKUDD: "Bidragsforskudd",
+  PLEIEPENGER: "Pleiepenger",
+  GJENLEVENDE_OMSTILLINGSSTONAD: "Gjenlevende/omstillingsstønad",
+  BARNEPENSJON: "Barnepensjon",
+  TILTAKSPENGER: "Tiltakspenger",
+  UTVIDET_BARNETRYGD: "Utvidet barnetrygd",
   ANDRE: "Andre",
 };
 

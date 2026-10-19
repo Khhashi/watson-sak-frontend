@@ -14,7 +14,9 @@ test.describe("Ufordelte saker", () => {
     await expect(page.getByText("13 ufordelte saker")).toBeVisible();
     await expect(page.getByText(/Eldste sak har ligget i \d+ dager/)).toBeVisible();
     await expect(
-      page.getByText("Gjelder ytelsene Barnetrygd, Dagpenger, Foreldrepenger, Sykepenger og AAP"),
+      page.getByText(
+        "Gjelder ytelsene Arbeidsavklaringspenger, Barnetrygd, Dagpenger, Foreldrepenger og Sykepenger",
+      ),
     ).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Kategori" })).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Misbrukstype" })).toBeVisible();
