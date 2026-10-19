@@ -25,12 +25,13 @@ describe("hentMapperstier", () => {
     expect(await hentMapperstier("token", "1")).toEqual(["Bank", "Bank/Utskrifter"]);
   });
 
-  it("gir tom liste når brukeren mangler tilgang", async () => {
-    mocks.hentMapper.mockRejectedValueOnce(new mocks.BackendFeilException(403, "Ingen tilgang"));
+  // 404 betyr at brukeren mangler tilgang til personen. Backend skjuler da at saken finnes.
+  it.each([403, 404])("gir tom liste når brukeren mangler tilgang (%i)", async (status) => {
+    mocks.hentMapper.mockRejectedValueOnce(new mocks.BackendFeilException(status, "Ingen tilgang"));
     expect(await hentMapperstier("token", "1")).toEqual([]);
   });
 
-  it.each([404, 500])("kaster videre ved %i", async (status) => {
+  it.each([500])("kaster videre ved %i", async (status) => {
     mocks.hentMapper.mockRejectedValueOnce(new mocks.BackendFeilException(status, "Feil"));
     await expect(hentMapperstier("token", "1")).rejects.toThrow("Feil");
   });

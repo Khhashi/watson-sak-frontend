@@ -10,7 +10,7 @@ describe("hentStegbaserteSaksregler", () => {
       kanLasteOppFiler: true,
       kanRedigereDokumenter: false,
       kanLeggeTilHistorikk: false,
-      kanEndreDeltTilgang: false,
+      kanEndreDeltTilgang: true,
     });
   });
 

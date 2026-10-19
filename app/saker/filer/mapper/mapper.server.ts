@@ -13,7 +13,10 @@ export async function hentMapperstier(token: string, sakId: string): Promise<str
     const mapper = await backendApi.hentMapper(token, sakId);
     return mapper.map((mappe) => mappe.sti);
   } catch (feil) {
-    if (feil instanceof backendApi.BackendFeilException && feil.status === 403) {
+    if (
+      feil instanceof backendApi.BackendFeilException &&
+      (feil.status === 403 || feil.status === 404)
+    ) {
       logger.info("Ingen tilgang til mappene på saken", {
         sakId,
         status: feil.status,

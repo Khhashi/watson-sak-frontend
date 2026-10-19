@@ -122,7 +122,8 @@ describe("SakDetaljSide render", () => {
     }
 
     sak.adresseskjermet = true;
-    sak.saksbehandlere.eier = null;
+    // Saken må være fordelt. På en ufordelt sak gir ikke delt-med tilgang.
+    sak.saksbehandlere.eier = { navIdent: "Z111111", navn: "Annen Saksbehandler", enhet: "4812" };
     // Gi innlogget bruker (Z999999) direkte tilgang (delt-med) slik at vi isolerer
     // effekten av manglende persontilgang (sak.tilgang.kanSeHistorikk) fra harDirekteTilgang-sjekken.
     sak.saksbehandlere.deltMed = [
@@ -372,6 +373,12 @@ describe("SakDetaljSide render", () => {
     // "ansvarlig på koblet sak" — en rolle som får fil-tilgang i backend, men som
     // ikke skal kunne se filområdet på sakssiden (se IngenFiltilgangKort).
     koblingSak.kobledeSaker = [Number(testSakId)];
+    // På en ufordelt sak ser alle filområdet, så saken må være fordelt.
+    koblingSak.saksbehandlere.eier = {
+      navIdent: "Z111111",
+      navn: "Annen Saksbehandler",
+      enhet: "4812",
+    };
 
     renderDetaljside(koblingSakId);
 
@@ -383,19 +390,35 @@ describe("SakDetaljSide render", () => {
     expect(screen.queryByRole("heading", { name: "Filer" })).toBeNull();
   }, 15000);
 
-  it("viser filer og historikk for leder uten direkte tilgang", async () => {
-    erLeder = true;
-
+  it("viser filområdet for alle på en ufordelt sak", async () => {
     renderDetaljside("102");
 
     expect(await screen.findByRole("heading", { name: "Filer" })).toBeDefined();
-    expect(screen.getByRole("heading", { name: "Historikk" })).toBeDefined();
     expect(
       screen.queryByText("Du må få delt tilgang til saken for å kunne se dokumenter og vedlegg."),
     ).toBeNull();
+  }, 15000);
+
+  it("skjuler filer og historikk for leder som ikke er saksbehandler på saken", async () => {
+    erLeder = true;
+    const { hentMockState } = await import("~/testing/mock-store/session.server");
+    const { hentAlleSaker } = await import("~/testing/mock-store/alle-saker.server");
+    const sak = hentAlleSaker(hentMockState(testRequest)).find((s) => s.id === 102);
+    if (!sak) {
+      throw new Error("Fant ikke testdata for sak");
+    }
+    sak.saksbehandlere.eier = { navIdent: "Z111111", navn: "Annen Saksbehandler", enhet: "4812" };
+
+    renderDetaljside("102");
+
     expect(
-      screen.queryByText("Du må få delt tilgang til saken for å kunne se historikk."),
-    ).toBeNull();
+      await screen.findByText(
+        "Du må få delt tilgang til saken for å kunne se dokumenter og vedlegg.",
+      ),
+    ).toBeDefined();
+    expect(
+      screen.getByText("Du må få delt tilgang til saken for å kunne se historikk."),
+    ).toBeDefined();
   }, 15000);
 
   it("viser organisasjonsnummer-felt i redigeringsmodus", async () => {

@@ -2,17 +2,22 @@ import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { hentAlleSaker, medInnloggetEier } from "~/saker/mock-alle-saker.server";
 import type { KontrollsakResponse } from "~/saker/types.backend";
 import { finnSakMedReferanse } from "./id";
-import { harDirekteSakstilgang, kanLeseSaksinnhold } from "./sakstilgang";
+import { kanEndreSak, kanLasteOppFiler, kanLeseSaksinnhold, kanSeFilområdet } from "./sakstilgang";
 import { hentStegbaserteSaksregler } from "./stegregler";
 
+/** Regelen for hvert felt står i `sakstilgang.ts`. Stegreglene er lagt på her. */
 export type Sakstilgang = {
   sak: KontrollsakResponse;
-  /** Eier, delt-med eller leder, eller hvem som helst når saken er avsluttet. */
+  /** Kan lese dokumenter, arkiv og historikk. */
   kanSe: boolean;
-  /** Kan redigere dokumenter: eier, delt-med eller leder etter at utredning er startet. */
+  /** Kan se filer og mapper. Alle på en ufordelt sak. */
+  kanSeFiler: boolean;
+  /** Kan redigere dokumenter: eier eller delt med etter at utredning er startet. */
   kanRedigereDokumenter: boolean;
-  /** Kan laste opp filer: eier, delt-med eller leder på en aktiv sak. */
+  /** Kan laste opp, omdøpe og flytte filer og lage mapper. Alle på en ufordelt, aktiv sak. */
   kanLasteOppFiler: boolean;
+  /** Kan slette filer og mapper: eier eller delt med på en aktiv sak. */
+  kanEndreFiler: boolean;
 };
 
 /**
@@ -35,13 +40,15 @@ export async function hentSakstilgangFraMock(
   const innlogget = await hentInnloggetBruker({ request });
   const sak = medInnloggetEier(rawSak, innlogget.navIdent, innlogget.name);
 
-  const harDirekteTilgang = harDirekteSakstilgang(sak, innlogget);
+  const kanEndre = kanEndreSak(sak, innlogget);
   const stegregler = hentStegbaserteSaksregler(sak.steg);
 
   return {
     sak,
     kanSe: kanLeseSaksinnhold(sak, innlogget),
-    kanRedigereDokumenter: harDirekteTilgang && stegregler.kanRedigereDokumenter,
-    kanLasteOppFiler: harDirekteTilgang && stegregler.kanLasteOppFiler,
+    kanSeFiler: kanSeFilområdet(sak, innlogget),
+    kanRedigereDokumenter: kanEndre && stegregler.kanRedigereDokumenter,
+    kanLasteOppFiler: kanLasteOppFiler(sak, innlogget) && stegregler.kanLasteOppFiler,
+    kanEndreFiler: kanEndre && stegregler.kanLasteOppFiler,
   };
 }

@@ -39,7 +39,7 @@ export async function loader({ request, params }: LoaderFunctionArgs) {
   if (!tilgang) {
     throw data("Sak ikke funnet", { status: 404 });
   }
-  if (!tilgang.kanSe) {
+  if (!tilgang.kanSeFiler) {
     throw data("Ingen tilgang til denne saken", { status: 403 });
   }
 

@@ -331,7 +331,7 @@ describe("SaksbehandlereKort", () => {
     expect(screen.queryByRole("button", { name: "Endre enhet" })).toBeNull();
   });
 
-  it("skjuler delt tilgang, men tillater endring av ansvarlig og enhet for Opprettet", async () => {
+  it("viser delt tilgang og endring av ansvarlig og enhet for Opprettet", async () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={true}
@@ -348,8 +348,8 @@ describe("SaksbehandlereKort", () => {
       />,
     );
 
-    expect(screen.queryByRole("button", { name: "Del tilgang" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Fjern deling med Ada Larsen" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Legg til delt tilgang" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Fjern deling med Ada Larsen" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Endre enhet" })).toBeDefined();
   });
