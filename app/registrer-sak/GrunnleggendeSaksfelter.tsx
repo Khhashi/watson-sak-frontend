@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { Kodeverk } from "~/saker/api.server";
 import { merkingEtikett } from "~/saker/kategorier";
 import { parseOrganisasjonsnumre } from "~/utils/string-utils";
+import { oppdaterValgteMerkinger } from "./merking-utils";
 
 type Felt = FieldMetadata<unknown, Record<string, unknown>, string[]>;
 
@@ -149,10 +150,9 @@ export function GrunnleggendeSaksfelter({
             label: merkingEtikett(merke),
           }))}
           onToggleSelected={(option, isSelected) => {
-            setValgteMerkinger((prev) => {
-              if (isSelected) return prev.includes(option) ? prev : [...prev, option];
-              return prev.filter((m) => m !== option);
-            });
+            setValgteMerkinger((prev) =>
+              oppdaterValgteMerkinger(prev, option, isSelected, kodeverk.merker),
+            );
           }}
           error={fields.merking.errors?.[0]}
         />
