@@ -60,6 +60,73 @@ describe("SakDetaljerFelter", () => {
     expect(screen.getByText("10 000", { exact: false })).toBeDefined();
   });
 
+  it("viser anmeldt beløp og politidistrikt etter kilde når saken er hos politiet", () => {
+    render(
+      <SakDetaljerFelter
+        sak={lagKontrollsak({
+          steg: "POLITI",
+          resultat: {
+            strafferettsligVurdering: {
+              type: "ANMELDT",
+              anmeldtBelop: 12500.5,
+              politidistrikt: "Øst",
+            },
+          },
+        })}
+        onVisIdentHistorikk={vi.fn()}
+      />,
+    );
+
+    const kilde = screen.getByText("Kilde", { exact: true });
+    const anmeldtBelop = screen.getByText("Anmeldt beløp", { exact: true });
+    const politidistrikt = screen.getByText("Politidistrikt", { exact: true });
+    expect(
+      kilde.compareDocumentPosition(anmeldtBelop) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      anmeldtBelop.compareDocumentPosition(politidistrikt) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(
+      screen.getByText((tekst) => tekst.replaceAll("\u00a0", " ") === "12 500,5"),
+    ).toBeDefined();
+    expect(screen.getByText("Øst")).toBeDefined();
+  });
+
+  it("viser Ikke oppgitt når anmeldt sak mangler politidistrikt", () => {
+    render(
+      <SakDetaljerFelter
+        sak={lagKontrollsak({
+          steg: "POLITI",
+          resultat: {
+            strafferettsligVurdering: { type: "ANMELDT", anmeldtBelop: 12500 },
+          },
+        })}
+        onVisIdentHistorikk={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("Politidistrikt", { exact: true })).toBeDefined();
+    expect(screen.getByText("Ikke oppgitt")).toBeDefined();
+  });
+
+  it.each([
+    ["STRAFFERETTSLIG_VURDERING", "ANMELDT", 12500],
+    ["POLITI", "ANMELDT", null],
+  ] as const)("viser ikke anmeldelse for steg %s med beløp %s", (steg, type, anmeldtBelop) => {
+    render(
+      <SakDetaljerFelter
+        sak={lagKontrollsak({
+          steg,
+          resultat: { strafferettsligVurdering: { type, anmeldtBelop } },
+        })}
+        onVisIdentHistorikk={vi.fn()}
+      />,
+    );
+
+    expect(screen.queryByText("Anmeldt beløp", { exact: true })).toBeNull();
+    expect(screen.queryByText("Politidistrikt", { exact: true })).toBeNull();
+  });
+
   it("viser bindestrek når saken ikke har ytelser", () => {
     render(
       <SakDetaljerFelter sak={lagKontrollsak({ ytelser: [] })} onVisIdentHistorikk={vi.fn()} />,

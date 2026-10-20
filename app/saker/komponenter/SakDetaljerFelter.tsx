@@ -1,4 +1,5 @@
 import { BodyShort, Detail, HGrid, HStack, Table, Tag, VStack } from "@navikt/ds-react";
+import { hentAnmeldelseForVisning } from "~/saker/anmeldelse";
 import { merkingEtikett } from "~/saker/kategorier";
 import { getKategoriText, getMisbrukstyper, getTags } from "~/saker/selectors";
 import type { KontrollsakResponse } from "~/saker/types.backend";
@@ -36,6 +37,7 @@ export function SakDetaljerFelter({ sak, onVisIdentHistorikk }: SakDetaljerFelte
   const misbrukstyper = getMisbrukstyper(sak);
   const tags = getTags(sak);
   const kildeTekst = getKildeText(sak);
+  const anmeldelse = hentAnmeldelseForVisning(sak);
 
   return (
     <HGrid columns={{ xs: 1, lg: 2 }} gap="space-6">
@@ -160,6 +162,13 @@ export function SakDetaljerFelter({ sak, onVisIdentHistorikk }: SakDetaljerFelte
         )}
 
         <Felt label="Kilde">{kildeTekst}</Felt>
+
+        {anmeldelse && (
+          <>
+            <Felt label="Anmeldt beløp">{formaterBelop(anmeldelse.anmeldtBelop)}</Felt>
+            <Felt label="Politidistrikt">{anmeldelse.politidistrikt ?? "Ikke oppgitt"}</Felt>
+          </>
+        )}
       </VStack>
     </HGrid>
   );

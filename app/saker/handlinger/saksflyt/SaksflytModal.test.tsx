@@ -203,9 +203,20 @@ describe("SaksflytModal", () => {
     expect(screen.getAllByLabelText(/\(kr\)/)).toHaveLength(1);
     klikk("Gå til politiet");
     expect(screen.getByText("Anmeldt beløp må fylles ut")).toBeDefined();
+    expect(screen.getByText("Politidistrikt må fylles ut")).toBeDefined();
     fireEvent.change(screen.getByLabelText("Anmeldt beløp (kr)"), {
       target: { value: "45000" },
     });
+    const politidistrikt = screen.getByLabelText("Politidistrikt");
+    fireEvent.change(politidistrikt, { target: { value: "Øst\u202Epolitidistrikt" } });
+    klikk("Gå til politiet");
+    expect(
+      screen.getByText("Politidistrikt kan ikke inneholde linjeskift eller usynlige tegn"),
+    ).toBeDefined();
+    fireEvent.change(politidistrikt, { target: { value: "🚓".repeat(101) } });
+    klikk("Gå til politiet");
+    expect(screen.getByText("Politidistrikt kan ha opptil 100 tegn")).toBeDefined();
+    fireEvent.change(politidistrikt, { target: { value: "  Øst politidistrikt " } });
     klikk("Gå til politiet");
 
     expect(await screen.findByText("Lagret")).toBeDefined();
@@ -213,6 +224,7 @@ describe("SaksflytModal", () => {
       steg: "POLITI",
       "resultat.strafferettsligVurdering.type": "ANMELDT",
       "resultat.strafferettsligVurdering.anmeldtBelop": "45000",
+      "resultat.strafferettsligVurdering.politidistrikt": "  Øst politidistrikt ",
     });
   });
 

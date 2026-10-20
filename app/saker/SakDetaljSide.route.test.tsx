@@ -672,6 +672,14 @@ describe("SakDetaljSide route action – steg- og statusflyt", () => {
         ...anmeldt,
         resultat: { strafferettsligVurdering: { type: "ANMELDT", anmeldtBelop: 1000 } },
       }).tillatteSteg,
+    ).toEqual([]);
+    expect(
+      hentMockTillatteHandlinger({
+        ...anmeldt,
+        resultat: {
+          strafferettsligVurdering: { type: "ANMELDT", anmeldtBelop: 1000, politidistrikt: "Øst" },
+        },
+      }).tillatteSteg,
     ).toEqual(["POLITI"]);
     expect(hentMockTillatteHandlinger({ ...vurdering, status: "I_BERO" }).tillatteSteg).toEqual([]);
   });

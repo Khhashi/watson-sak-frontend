@@ -18,6 +18,7 @@ const resultatFeltStier = {
   "strafferettsligVurdering.type": ["strafferettsligVurdering", "type"],
   "strafferettsligVurdering.henleggelsesarsak": ["strafferettsligVurdering", "henleggelsesarsak"],
   "strafferettsligVurdering.anmeldtBelop": ["strafferettsligVurdering", "anmeldtBelop"],
+  "strafferettsligVurdering.politidistrikt": ["strafferettsligVurdering", "politidistrikt"],
   "politi.type": ["politi", "type"],
   "politi.henleggelsesarsak": ["politi", "henleggelsesarsak"],
   "politi.begrunnelse": ["politi", "begrunnelse"],

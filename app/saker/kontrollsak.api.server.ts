@@ -360,6 +360,8 @@ export async function redigerKontrollsak(
       belop?: number | null;
       endeligBelop?: number | null;
     }[];
+    anmeldtBelop?: number;
+    politidistrikt?: string;
   },
 ): Promise<void> {
   const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}`), {

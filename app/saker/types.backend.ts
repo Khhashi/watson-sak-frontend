@@ -1,6 +1,9 @@
 import { z } from "zod";
 import { visningsnavn } from "~/auth/visningsnavn";
 
+/** Maks lengde på politidistrikt. Samme grense som i watson-admin-api. */
+export const POLITIDISTRIKT_MAKS_LENGDE = 100;
+
 const kontrollsakStegSchema = z.enum([
   "OPPRETTET",
   "UTREDNING",
@@ -72,6 +75,7 @@ const resultatResponseSchema = z.object({
       type: z.string(),
       henleggelsesarsak: z.string().nullable().optional(),
       anmeldtBelop: z.number().nullable().optional(),
+      politidistrikt: z.string().nullable().optional(),
     })
     .nullable()
     .optional(),
@@ -124,6 +128,7 @@ const lagreResultatRequestSchema = z.object({
       type: z.enum(["ANMELDT", "FEILUTBETALINGSSAK_ORDINAER", "HENLAGT"]),
       henleggelsesarsak: henleggelsesarsakSchema.optional(),
       anmeldtBelop: z.number().nonnegative().optional(),
+      politidistrikt: z.string().trim().min(1).max(POLITIDISTRIKT_MAKS_LENGDE).optional(),
     })
     .optional(),
   politi: z

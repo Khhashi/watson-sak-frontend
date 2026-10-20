@@ -8,6 +8,7 @@ import { hentHistorikk } from "./historikk/mock-data.server";
 import { hentDokumenttreForSak } from "./filer/mock-data.server";
 import { hentFilerForSak, leggTilFil } from "./filer/mock-data-filer.server";
 import { getSaksreferanse } from "~/saker/id";
+import type { KontrollsakResponse } from "~/saker/types.backend";
 import { getBeskrivelse, getKildeText, getPersonIdent, getYtelseTyper } from "~/saker/visning";
 import type { Route } from "./+types/SakDetaljSide.route";
 import { action, loader } from "./SakDetaljSide.server";
@@ -846,6 +847,97 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     expect(historikk[0]?.hendelsesType).toBe("SAKSINFORMASJON_ENDRET");
     expect(historikk[0]?.beskrivelse).toMatch(/^Endret /);
     expect(historikk[0]?.beskrivelse).toContain("ytelser");
+  });
+
+  describe("redigering av anmeldelse", () => {
+    function lagAnmeldtSak(steg: KontrollsakResponse["steg"] = "POLITI") {
+      const kontrollsak = hentFordelingssaker(state())[0];
+      kontrollsak.saksbehandlere.eier = {
+        navIdent: "Z999999",
+        navn: "Test Saksbehandler",
+        enhet: "4812",
+      };
+      kontrollsak.steg = steg;
+      kontrollsak.resultat = {
+        strafferettsligVurdering: {
+          type: "ANMELDT",
+          anmeldtBelop: 5000,
+          politidistrikt: "Øst politidistrikt",
+        },
+      };
+      return kontrollsak;
+    }
+
+    function redigeringsskjema(
+      kontrollsak: KontrollsakResponse,
+      anmeldelse: Record<string, string>,
+    ) {
+      const formData = new FormData();
+      formData.set("handling", "rediger_saksinformasjon");
+      formData.set("kategori", kontrollsak.kategori);
+      formData.set("kilde", kontrollsak.kilde);
+      for (const [navn, verdi] of Object.entries(anmeldelse)) formData.set(navn, verdi);
+      return formData;
+    }
+
+    async function utfør(kontrollsak: KontrollsakResponse, formData: FormData) {
+      const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+      return action({
+        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+          method: "POST",
+          body: formData,
+        }),
+        params: { sakId: kontrollsakRef },
+      } as Route.ActionArgs);
+    }
+
+    it("lagrer trimmet politidistrikt og nytt beløp hos politiet", async () => {
+      const kontrollsak = lagAnmeldtSak();
+      const resultat = await utfør(
+        kontrollsak,
+        redigeringsskjema(kontrollsak, {
+          anmeldtBelop: "7500",
+          politidistrikt: "  Vest politidistrikt ",
+        }),
+      );
+
+      expect(resultat).toMatchObject({ ok: true });
+      expect(kontrollsak.resultat?.strafferettsligVurdering).toMatchObject({
+        type: "ANMELDT",
+        anmeldtBelop: 7500,
+        politidistrikt: "Vest politidistrikt",
+      });
+      expect(hentHistorikk(testRequest, String(kontrollsak.id))[0]?.beskrivelse).toMatch(
+        /anmeldt beløp og politidistrikt\.$/,
+      );
+    });
+
+    it("avviser ugyldig politidistrikt uten å lagre", async () => {
+      const kontrollsak = lagAnmeldtSak();
+      const resultat = await utfør(
+        kontrollsak,
+        redigeringsskjema(kontrollsak, { anmeldtBelop: "7500", politidistrikt: "   " }),
+      );
+
+      expect(resultat).toMatchObject({ ok: false, feil: { politidistrikt: expect.any(Array) } });
+      expect(kontrollsak.resultat?.strafferettsligVurdering?.politidistrikt).toBe(
+        "Øst politidistrikt",
+      );
+      expect(kontrollsak.resultat?.strafferettsligVurdering?.anmeldtBelop).toBe(5000);
+    });
+
+    it("avviser anmeldelsesfelt når saken ikke er hos politiet", async () => {
+      const kontrollsak = lagAnmeldtSak("STRAFFERETTSLIG_VURDERING");
+      const resultat = await utfør(
+        kontrollsak,
+        redigeringsskjema(kontrollsak, { anmeldtBelop: "1", politidistrikt: "Vest" }),
+      );
+
+      expect(resultat).toMatchObject({ ok: false });
+      expect(kontrollsak.resultat?.strafferettsligVurdering?.politidistrikt).toBe(
+        "Øst politidistrikt",
+      );
+    });
   });
 
   it("oppdaterer kilde når sak får oppdatert kilde", async () => {

@@ -12,7 +12,14 @@ import type { TillatteHandlingerResponse } from "~/saker/types.backend";
 import { formaterYtelseType } from "~/saker/visning";
 import { formaterTilIsoDato } from "~/utils/date-utils";
 import { resultatFeltErPaakrevd } from "../../resultat-request";
-import { erBelopsfelt, hentValg, type Trinn, type Verdier, ytelseVerdiNavn } from "../saksflyt";
+import {
+  enlinjeTekstfelt,
+  erBelopsfelt,
+  hentValg,
+  type Trinn,
+  type Verdier,
+  ytelseVerdiNavn,
+} from "../saksflyt";
 import { type Feil, hentSynligeFelter } from "../validering";
 
 type Skjemafelt = TillatteHandlingerResponse["feltskjema"][number];
@@ -78,7 +85,20 @@ function Resultatfelt({
           <Radio value="false">Nei</Radio>
         </RadioGroup>
       );
-    case "tekst":
+    case "tekst": {
+      const enlinje = enlinjeTekstfelt[felt.felt];
+      if (enlinje) {
+        return (
+          <TextField
+            label={etikett}
+            description={enlinje.beskrivelse}
+            value={verdi}
+            error={feil[felt.felt]}
+            autoComplete="off"
+            onChange={(event) => onChange(felt.felt, event.target.value)}
+          />
+        );
+      }
       return (
         <Textarea
           label={etikett}
@@ -89,6 +109,7 @@ function Resultatfelt({
           onChange={(event) => onChange(felt.felt, event.target.value)}
         />
       );
+    }
     case "tall":
       return (
         <TextField

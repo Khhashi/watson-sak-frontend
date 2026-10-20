@@ -47,7 +47,8 @@ export function erGyldigMockStegovergang(
       if (nyttSteg === "POLITI") {
         return (
           sak.resultat?.strafferettsligVurdering?.type === "ANMELDT" &&
-          sak.resultat.strafferettsligVurdering.anmeldtBelop != null
+          sak.resultat.strafferettsligVurdering.anmeldtBelop != null &&
+          Boolean(sak.resultat.strafferettsligVurdering.politidistrikt?.trim())
         );
       }
       return (
@@ -248,6 +249,14 @@ function feltskjemaFor(steg: KontrollsakSteg): TillatteHandlingerResponse["felts
           [],
           "strafferettsligVurdering.type=ANMELDT",
         ),
+        mockFelt(
+          "strafferettsligVurdering.politidistrikt",
+          "Politidistrikt",
+          "tekst",
+          false,
+          [],
+          "strafferettsligVurdering.type=ANMELDT",
+        ),
       ];
     case "POLITI":
       return [
@@ -442,7 +451,11 @@ export function hentMockTillatteHandlinger(sak: KontrollsakResponse): TillatteHa
           return [
             nesteSteg,
             nesteSteg === "POLITI"
-              ? ["strafferettsligVurdering.type", "strafferettsligVurdering.anmeldtBelop"]
+              ? [
+                  "strafferettsligVurdering.type",
+                  "strafferettsligVurdering.anmeldtBelop",
+                  "strafferettsligVurdering.politidistrikt",
+                ]
               : ["strafferettsligVurdering.type"],
           ];
         }
