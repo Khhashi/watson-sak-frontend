@@ -219,8 +219,8 @@ describe("SakFilområde", () => {
 
     expect(screen.queryByText("Opprett dokument")).toBeNull();
     expect(screen.getByText("Last opp fil")).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Handlinger for Rapport" }));
-    expect(screen.queryByRole("menuitem", { name: "Slett" })).toBeNull();
+    // Dokumenter kan verken slettes eller flyttes uten endretilgang, så de har ingen meny.
+    expect(screen.queryByRole("button", { name: "Handlinger for Rapport" })).toBeNull();
   });
 
   it("viser modal med tomt dokument og alle malvalg", async () => {
@@ -376,6 +376,7 @@ describe("SakFilområde", () => {
         mapper: ["Bank"],
         sakId: "ABC-123",
         kanEndreMapper: true,
+        kanFlytteDokumenter: true,
       },
       async (request) => {
         handlinger.push(await request.json());
@@ -440,6 +441,7 @@ describe("SakFilområde", () => {
         mapper: ["Bank"],
         sakId: "ABC-123",
         kanEndreMapper: true,
+        kanFlytteDokumenter: true,
       },
       async () => ({ ok: false, melding: "Kunne ikke flytte elementet" }),
     );
@@ -525,7 +527,7 @@ describe("SakFilområde", () => {
         sakId: "ABC-123",
         steg: "UTREDNING",
         redigerbar: false,
-        erSakseier: false,
+        kanEndreFiler: false,
       });
       expect(
         screen.queryByRole("button", { name: `Handlinger for ${mockFiler[0].filnavn}` }),
@@ -599,6 +601,7 @@ describe("DokumentTre med mapper", () => {
         mapper,
         sakId: "ABC-123",
         kanEndreMapper: true,
+        kanFlytteDokumenter: true,
         fremhevetId: "1",
       },
       async (request) => {
@@ -650,8 +653,22 @@ describe("DokumentTre med mapper", () => {
       mapper,
       sakId: "ABC-123",
       kanEndreMapper: true,
+      kanFlytteDokumenter: true,
     });
 
     expect(screen.getByText("Arkivert notat").closest("li")?.getAttribute("draggable")).toBeNull();
+  });
+
+  it("lar ikke dokumenter flyttes uten endretilgang, selv om mapper kan endres", () => {
+    renderTre({ noder: dokumenter, mapper, sakId: "ABC-123", kanEndreMapper: true });
+
+    const dokumentrader = screen.getAllByRole("link").map((lenke) => lenke.closest("li"));
+    expect(dokumentrader.length).toBeGreaterThan(0);
+    for (const rad of dokumentrader) {
+      expect(rad?.getAttribute("draggable")).toBeNull();
+    }
+    expect(screen.getAllByRole("button", { name: /Handlinger for mappen/ }).length).toBeGreaterThan(
+      0,
+    );
   });
 });

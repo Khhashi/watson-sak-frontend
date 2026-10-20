@@ -214,7 +214,7 @@ export default function SakDetaljSide() {
                 kanLasteOppFiler={
                   kanLasteOppFiler(sak, innloggetBruker) && stegregler.kanLasteOppFiler
                 }
-                erSakseier={erEier}
+                kanEndreFiler={harDirekteTilgang && stegregler.kanLasteOppFiler}
                 migreringsnotatEksempel={migreringsnotatEksempel}
                 visMigreringsnotatForhandsvisning={Boolean(
                   sak.legacyPid &&

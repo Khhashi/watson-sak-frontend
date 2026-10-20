@@ -10,11 +10,15 @@ type Slippmål = string | null;
 export function useDraOgSlipp({
   alleMapper,
   kanEndreMapper,
+  kanFlytteDokumenter,
   mappehandling,
   settÅpen,
 }: {
   alleMapper: string[];
+  /** Mapper og filer kan flyttes. */
   kanEndreMapper: boolean;
+  /** Dokumenter kan flyttes. Krever endretilgang, se `kanEndreSak` i `sakstilgang.ts`. */
+  kanFlytteDokumenter: boolean;
   mappehandling: ReturnType<typeof useMappehandling>;
   settÅpen: (sti: string, åpen: boolean) => void;
 }) {
@@ -68,6 +72,8 @@ export function useDraOgSlipp({
   /** Props som gjør et element flyttbart, og til et slippmål for mappen det ligger i. */
   function draProps(element: FlyttbartElement, mål: Slippmål) {
     if (!kanEndreMapper) return {};
+    // Dokumentet kan ikke dras, men raden er fortsatt slippmål for mappen den ligger i.
+    if (element.type === "dokument" && !kanFlytteDokumenter) return slippProps(mål);
     return {
       // Én mappehandling om gangen, så flyttinger ikke kan fullføres i feil rekkefølge.
       draggable: !mappehandling.pågår,

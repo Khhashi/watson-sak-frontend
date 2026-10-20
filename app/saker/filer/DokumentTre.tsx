@@ -27,14 +27,14 @@ function DokumentHandlinger({
   dokument,
   sakId,
   redigerbar,
-  kanEndreMapper,
+  kanFlytteDokumenter,
   onSlett,
   onFlytt,
 }: {
   dokument: DokumentNode;
   sakId: string;
   redigerbar: boolean;
-  kanEndreMapper: boolean;
+  kanFlytteDokumenter: boolean;
   onSlett: (dokument: DokumentNode) => void;
   onFlytt: (element: FlyttbartElement) => void;
 }) {
@@ -59,7 +59,7 @@ function DokumentHandlinger({
         >
           Last ned som PDF
         </ActionMenu.Item>
-        {kanEndreMapper && !dokument.arkivert && (
+        {kanFlytteDokumenter && !dokument.arkivert && (
           <ActionMenu.Item
             icon={<FolderFileIcon aria-hidden />}
             onSelect={() =>
@@ -96,7 +96,7 @@ function DokumentRad({
   sakId,
   fremhevetId,
   redigerbar,
-  kanEndreMapper,
+  kanFlytteDokumenter,
   kompakt,
   onSlett,
   onFlytt,
@@ -106,7 +106,7 @@ function DokumentRad({
   sakId: string;
   fremhevetId?: string;
   redigerbar: boolean;
-  kanEndreMapper: boolean;
+  kanFlytteDokumenter: boolean;
   kompakt: boolean;
   onSlett: (dokument: DokumentNode) => void;
   onFlytt: (element: FlyttbartElement) => void;
@@ -157,7 +157,7 @@ function DokumentRad({
           dokument={node}
           sakId={sakId}
           redigerbar={redigerbar}
-          kanEndreMapper={kanEndreMapper}
+          kanFlytteDokumenter={kanFlytteDokumenter}
           onSlett={onSlett}
           onFlytt={onFlytt}
         />
@@ -171,6 +171,7 @@ type RadFelles = {
   fremhevetId?: string;
   redigerbar: boolean;
   kanEndreMapper: boolean;
+  kanFlytteDokumenter: boolean;
   kompakt: boolean;
   onSlett: (dokument: DokumentNode) => void;
   onFlytt: (element: FlyttbartElement) => void;
@@ -321,6 +322,7 @@ export function DokumentTre({
   mapper = [],
   sakId,
   kanEndreMapper = false,
+  kanFlytteDokumenter = false,
   redigerbar = false,
   fremhevetId,
   kompakt = false,
@@ -330,7 +332,10 @@ export function DokumentTre({
   /** Mappestiene på saken. Dokumenter uten mappe, eller når listen er tom, vises på rotnivå. */
   mapper?: string[];
   sakId: string;
+  /** Opprette, omdøpe og flytte mapper. Følger `kanLasteOppFiler` i `sakstilgang.ts`. */
   kanEndreMapper?: boolean;
+  /** Flytte dokumenter. Krever endretilgang, se `kanEndreSak` i `sakstilgang.ts`. */
+  kanFlytteDokumenter?: boolean;
   redigerbar?: boolean;
   fremhevetId?: string;
   /** Stabler tittel og metadata under hverandre, for smale flater som sidepanelet. */
@@ -367,6 +372,7 @@ export function DokumentTre({
   const { dras, slippmål, draProps, slippProps, kanSlippe, fjernSlippmål } = useDraOgSlipp({
     alleMapper,
     kanEndreMapper,
+    kanFlytteDokumenter,
     mappehandling,
     settÅpen,
   });
@@ -375,6 +381,7 @@ export function DokumentTre({
     fremhevetId,
     redigerbar,
     kanEndreMapper,
+    kanFlytteDokumenter,
     kompakt,
     onSlett: sletting.start,
     onFlytt: settFlytteElement,

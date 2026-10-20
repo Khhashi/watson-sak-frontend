@@ -87,6 +87,7 @@ function DokumentRedigering({
   sakReferanse,
   kanRedigere,
   kanEndreMapper,
+  kanFlytteDokumenter,
   variabelVerdier,
   erDemo,
   startSidepanel,
@@ -101,6 +102,7 @@ function DokumentRedigering({
   sakReferanse: string;
   kanRedigere: boolean;
   kanEndreMapper?: boolean;
+  kanFlytteDokumenter?: boolean;
   variabelVerdier: LoaderData["variabelVerdier"];
   erDemo: boolean;
   startSidepanel?: SidepanelValg;
@@ -337,6 +339,7 @@ function DokumentRedigering({
               mapper={mapper}
               sakId={sakReferanse}
               kanEndreMapper={kanEndreMapper ?? false}
+              kanFlytteDokumenter={kanFlytteDokumenter ?? false}
               redigerbar={kanRedigere}
               fremhevetId={dokument.id}
               kompakt
@@ -393,6 +396,7 @@ export default function DokumentSide() {
     sakReferanse,
     kanRedigere,
     kanEndreMapper,
+    kanFlytteDokumenter,
     variabelVerdier,
     miljø,
   } = useLoaderData<typeof loader>();
@@ -432,6 +436,7 @@ export default function DokumentSide() {
       sakReferanse={sakReferanse}
       kanRedigere={kanRedigere}
       kanEndreMapper={kanEndreMapper}
+      kanFlytteDokumenter={kanFlytteDokumenter}
       variabelVerdier={variablerTilVisning}
       erDemo={miljø === "demo"}
       startSidepanel={startSidepanel}
