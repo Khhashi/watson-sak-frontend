@@ -1270,6 +1270,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     formData.set("behandlendeEnhet", "4100");
     formData.set("beskrivelse", "Sjekk dokumentasjon");
     formData.set("journalpostId", "jp-1");
+    formData.set("gjelderverdi", "ab0356");
 
     await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
@@ -1893,6 +1894,7 @@ describe("SakDetaljSide rediger arbeidsgivere", () => {
     formData.set("behandlendeEnhet", "4100");
     formData.set("beskrivelse", "Oppgavebeskrivelse");
     formData.set("journalpostId", "jp-123");
+    formData.set("gjelderverdi", "ab0356");
 
     await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {

@@ -637,6 +637,7 @@ export async function mockAction(
       hentTema(formData);
       const oppgavetype = hentValgfriTekst(formData, "oppgavetype") ?? "";
       const journalpostId = hentTekstfelt(formData, "journalpostId", "Journalpost er påkrevd");
+      hentTekstfelt(formData, "gjelderverdi", "Gjelderverdi er påkrevd");
       leggTilBrukerhendelse(sak, "OPPGAVE_OPPRETTET", undefined, {
         tittel: oppgavetype || "Oppgave",
         beskrivelse: `Oppgave opprettet for journalpost ${journalpostId}`,

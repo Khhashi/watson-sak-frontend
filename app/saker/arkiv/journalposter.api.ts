@@ -1,6 +1,5 @@
 import { data, type LoaderFunctionArgs } from "react-router";
-import { getBackendOboToken } from "~/auth/access-token";
-import { erUtloggetFeil } from "~/auth/session-utløpt.server";
+import { erUtloggetFeil, hentTokenEllerKast401 } from "~/auth/session-utløpt.server";
 import { skalBrukeMockdata } from "~/config/env.server";
 import { logger } from "~/logging/logging";
 import { hentSakstilgangFraMock } from "~/saker/tilgang.server";
@@ -15,22 +14,6 @@ function lesStatus(feil: unknown): number | undefined {
   return (
     (feil as { status?: number }).status ?? (feil as { init?: { status?: number } }).init?.status
   );
-}
-
-/**
- * Tokenhjelperen kaster en redirect til innlogging når sesjonen er utløpt. Klienten
- * kaller ruta med `fetch`, og der gir en redirect HTML eller en CORS-feil. Derfor
- * gjør vi den om til 401, som klienten viser som utløpt sesjon.
- */
-async function hentTokenEllerKast401(request: Request) {
-  try {
-    return await getBackendOboToken(request);
-  } catch (feil) {
-    if (feil instanceof Response && feil.status >= 300 && feil.status < 400) {
-      throw data("Sesjonen er utløpt. Logg inn på nytt.", { status: 401 });
-    }
-    throw feil;
-  }
 }
 
 /**

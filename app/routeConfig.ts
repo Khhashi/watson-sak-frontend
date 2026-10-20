@@ -35,6 +35,7 @@ export const RouteConfig = {
     SAK_FIL: "/api/saker/:sakId/filer/:filId",
     SAK_MAPPER: "/api/saker/:sakId/mapper",
     SAK_ARKIV_JOURNALPOSTER: "/api/saker/:sakId/arkiv/journalposter",
+    OPPGAVEKODEVERK: "/api/kodeverk/oppgave/:tema",
     VARSLER_ULESTE: "/api/varsler/uleste",
     MARKER_VARSEL_LEST: "/api/varsler/lest",
     PDF_FORHÅNDSVISNING: "/api/saker/:sakId/dokumenter/:docId/forhandsvisning",

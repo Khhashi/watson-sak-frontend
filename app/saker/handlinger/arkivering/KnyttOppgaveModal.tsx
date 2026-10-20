@@ -12,6 +12,7 @@ import { oppgavefeltSkjema } from "../oppgavefelt";
 import { SuksessVisning } from "../SuksessVisning";
 import { ListeSammendrag, SammendragRad } from "../opprett-formatering";
 import { formaterTemavalg } from "../tema";
+import { useOppgavekodeverk } from "../useOppgavekodeverk";
 import type { ArkivertJournalpost } from "./ArkiverDokumenterModal";
 
 interface KnyttOppgaveModalProps {
@@ -42,7 +43,6 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
       formData.set("handling", "opprett_oppgave");
       formData.set("tema", journalpost.tema);
       formData.set("journalpostId", journalpost.journalpostId);
-      formData.delete("gjelderverdi");
       submitPågår.current = true;
       settFeilmelding(null);
       fetcher.submit(formData, {
@@ -71,6 +71,9 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
     }
   }, [fetcher.data, fetcher.state]);
 
+  const { tilstand: kodeverk, prøvIgjen: hentKodeverkPåNytt } = useOppgavekodeverk(
+    journalpost?.tema,
+  );
   const senderInn = fetcher.state !== "idle";
 
   return (
@@ -134,6 +137,8 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
                   gjelderverdi: fields.gjelderverdi,
                   beskrivelse: fields.beskrivelse,
                 }}
+                kodeverk={kodeverk}
+                onPrøvIgjen={hentKodeverkPåNytt}
               />
               {feilmelding && (
                 <InfoCard size="small" data-color="danger">

@@ -3,6 +3,23 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { KnyttOppgaveModal } from "./KnyttOppgaveModal";
 
 const submitMock = vi.fn();
+const kodeverkTema = vi.hoisted(() => ({ verdi: undefined as string | undefined }));
+
+vi.mock("../useOppgavekodeverk", () => ({
+  useOppgavekodeverk: (tema: string | undefined) => {
+    kodeverkTema.verdi = tema;
+    return {
+      prøvIgjen: vi.fn(),
+      tilstand: {
+        status: "ok",
+        kodeverk: {
+          oppgavetyper: [{ oppgavetype: "VURD_HENV", term: "Vurder henvendelse" }],
+          gjelderverdier: [{ behandlingstema: "ab0356", behandlingstemaTerm: "Dagpenger" }],
+        },
+      },
+    };
+  },
+}));
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
@@ -38,12 +55,13 @@ describe("KnyttOppgaveModal", () => {
     expect(screen.getByText("Kontrollnotat")).toBeDefined();
     expect(screen.getByText("rapport.pdf")).toBeDefined();
     expect(screen.queryByLabelText("Tema")).toBeNull();
+    expect(kodeverkTema.verdi).toBe("KTA");
 
     fireEvent.change(screen.getByLabelText("Oppgavetype"), { target: { value: "VURD_HENV" } });
     fireEvent.change(screen.getByLabelText("Prioritet"), { target: { value: "HOY" } });
     settSkjult("frist", "2026-06-01");
     settSkjult("behandlendeEnhet", "4100");
-    settSkjult("gjelderverdi", "Dagpenger");
+    settSkjult("gjelderverdi", "ab0356");
     fireEvent.change(screen.getByLabelText("Beskrivelse"), { target: { value: "Følg opp" } });
     fireEvent.click(screen.getByRole("button", { name: "Opprett oppgave" }));
     await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
@@ -52,6 +70,6 @@ describe("KnyttOppgaveModal", () => {
     expect(formData.get("handling")).toBe("opprett_oppgave");
     expect(formData.get("tema")).toBe("KTA");
     expect(formData.get("journalpostId")).toBe("jp-1");
-    expect(formData.has("gjelderverdi")).toBe(false);
+    expect(formData.get("gjelderverdi")).toBe("ab0356");
   });
 });

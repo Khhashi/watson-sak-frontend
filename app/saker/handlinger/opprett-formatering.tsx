@@ -6,7 +6,9 @@ const journalposttypeEtiketter: Record<string, string> = {
   NOTAT: "Notat",
 };
 
+// Reserve for historikken, som ikke henter kodeverket fra Gosys.
 const oppgavetypeEtiketter: Record<string, string> = {
+  BEH_SAK: "Behandle sak",
   VUR: "Vurder dokument",
   VURD_HENV: "Vurder henvendelse",
   VUR_KONS_YTE: "Vurder konsekvens for ytelse",
@@ -17,12 +19,6 @@ const prioritetEtiketter: Record<string, string> = {
   NORMAL: "Normal",
   HOY: "Høy",
 };
-
-export const oppgavetypeValg = [
-  { verdi: "VUR", label: oppgavetypeEtiketter.VUR },
-  { verdi: "VURD_HENV", label: oppgavetypeEtiketter.VURD_HENV },
-  { verdi: "VUR_KONS_YTE", label: oppgavetypeEtiketter.VUR_KONS_YTE },
-] as const;
 
 export const prioritetValg = [
   { verdi: "LAV", label: prioritetEtiketter.LAV },

@@ -3,8 +3,29 @@ import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ArkivOversikt } from "~/saker/arkiv/useArkivJournalposter";
 import { OpprettOppgaveModal } from "./OpprettOppgaveModal";
+import type { OppgavekodeverkTilstand } from "./useOppgavekodeverk";
 
 const submitMock = vi.fn();
+
+const kodeverkOk: OppgavekodeverkTilstand = {
+  status: "ok",
+  kodeverk: {
+    oppgavetyper: [{ oppgavetype: "VURD_HENV", term: "Vurder henvendelse" }],
+    gjelderverdier: [{ behandlingstema: "ab0356", behandlingstemaTerm: "Dagpenger" }],
+  },
+};
+const kodeverkMock = vi.hoisted(() => ({
+  tilstand: undefined as unknown as OppgavekodeverkTilstand,
+  prøvIgjen: vi.fn(),
+  tema: undefined as string | undefined,
+}));
+
+vi.mock("./useOppgavekodeverk", () => ({
+  useOppgavekodeverk: (tema: string | undefined) => {
+    kodeverkMock.tema = tema;
+    return kodeverkMock;
+  },
+}));
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
@@ -65,7 +86,7 @@ function fyllUtSkjema() {
   for (const [navn, verdi] of [
     ["frist", "2026-06-01"],
     ["behandlendeEnhet", "4100"],
-    ["gjelderverdi", "Dagpenger"],
+    ["gjelderverdi", "ab0356"],
   ]) {
     fireEvent.change(document.querySelector(`input[name="${navn}"]`) as HTMLInputElement, {
       target: { value: verdi },
@@ -78,6 +99,8 @@ describe("OpprettOppgaveModal", () => {
   beforeEach(() => {
     submitMock.mockClear();
     defaultProps.onClose.mockClear();
+    kodeverkMock.tilstand = kodeverkOk;
+    kodeverkMock.prøvIgjen.mockClear();
   });
 
   it("viser oppgaveskjemaet med alle felter", async () => {
@@ -102,7 +125,7 @@ describe("OpprettOppgaveModal", () => {
     expect(screen.queryByText("Du oppretter nå en oppgave:")).toBeNull();
   });
 
-  it("kaller submit med valgt journalpost og uten gjelderverdi", async () => {
+  it("kaller submit med valgt journalpost og gjelderverdi", async () => {
     await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
 
     fyllUtSkjema();
@@ -111,6 +134,7 @@ describe("OpprettOppgaveModal", () => {
     await waitFor(() => {});
     expect(screen.getByText("Du oppretter nå en oppgave:")).toBeDefined();
     expect(screen.getByText("Kontroll anmeldelse (KTA)")).toBeDefined();
+    expect(screen.getByText("Vurder henvendelse")).toBeDefined();
     expect(screen.getByText("Dagpenger")).toBeDefined();
     expect(screen.getByText("Kontrollnotat")).toBeDefined();
     expect(
@@ -129,8 +153,29 @@ describe("OpprettOppgaveModal", () => {
     expect(formData.get("prioritet")).toBe("HOY");
     expect(formData.get("beskrivelse")).toBe("En beskrivelse");
     expect(formData.get("journalpostId")).toBe("jp-1");
-    expect(formData.has("gjelderverdi")).toBe(false);
+    expect(formData.get("gjelderverdi")).toBe("ab0356");
     expect(options).toEqual(expect.objectContaining({ method: "post" }));
+  });
+
+  it("henter kodeverket for temaet saksbehandleren velger", async () => {
+    kodeverkMock.tilstand = { status: "uten-tema" };
+    await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
+
+    expect(kodeverkMock.tema).toBeUndefined();
+    expect((screen.getByLabelText("Oppgavetype") as HTMLSelectElement).disabled).toBe(true);
+    expect(screen.getAllByText("Velg tema først")).toHaveLength(2);
+
+    fireEvent.input(screen.getByLabelText("Tema"), { target: { value: "KTA" } });
+    await waitFor(() => expect(kodeverkMock.tema).toBe("KTA"));
+  });
+
+  it("lar saksbehandleren prøve igjen når kodeverket ikke kunne hentes", async () => {
+    kodeverkMock.tilstand = { status: "feil" };
+    await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Prøv igjen" }));
+
+    expect(kodeverkMock.prøvIgjen).toHaveBeenCalledTimes(1);
   });
 
   it("henter journalføringene når de ikke er hentet", async () => {

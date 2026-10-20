@@ -24,7 +24,6 @@ import { erGyldigJournalpost, formaterJournalpostdato } from "~/saker/arkiv/visn
 import type { ArkivOversikt } from "~/saker/arkiv/useArkivJournalposter";
 import { getSaksreferanse } from "~/saker/id";
 import { formaterDato } from "~/utils/date-utils";
-import { gjelderverdier } from "./gjelderverdi";
 import { OppgaveSkjema } from "./OppgaveSkjema";
 import { oppgavefeltSkjema } from "./oppgavefelt";
 import {
@@ -33,8 +32,9 @@ import {
   SammendragRad,
 } from "./opprett-formatering";
 import { SuksessVisning } from "./SuksessVisning";
-import { formaterTemavalg, temaSkjema } from "./tema";
+import { erTema, formaterTemavalg, temaSkjema } from "./tema";
 import { TemaVelger } from "./TemaVelger";
+import { useOppgavekodeverk } from "./useOppgavekodeverk";
 
 const opprettOppgaveSkjema = oppgavefeltSkjema.extend({
   tema: temaSkjema,
@@ -82,11 +82,7 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOpp
   function handleBekreft() {
     if (!innsendingFormData) return;
     submitPågår.current = true;
-    const formData = new FormData();
-    innsendingFormData.forEach((verdi, navn) => {
-      if (navn !== "gjelderverdi") formData.append(navn, verdi);
-    });
-    fetcher.submit(formData, {
+    fetcher.submit(innsendingFormData, {
       method: "post",
       action: RouteConfig.SAKER_DETALJ.replace(":sakId", getSaksreferanse(sakId)),
     });
@@ -125,6 +121,11 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOpp
     }
     forrigeÅpen.current = åpen;
   }, [åpen, kanSeArkiv, arkivtilstand.status, hentArkiv]);
+
+  const valgtTema = erTema(fields.tema.value) ? fields.tema.value : undefined;
+  const { tilstand: kodeverk, prøvIgjen: hentKodeverkPåNytt } = useOppgavekodeverk(valgtTema);
+  const oppgavetyper = kodeverk.status === "ok" ? kodeverk.kodeverk.oppgavetyper : [];
+  const gjelderverdier = kodeverk.status === "ok" ? kodeverk.kodeverk.gjelderverdier : [];
 
   const journalposter = arkivtilstand.status === "ok" ? arkivtilstand.journalposter : [];
   const valgtJournalpost = journalposter.find(
@@ -173,6 +174,8 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOpp
                   gjelderverdi: fields.gjelderverdi,
                   beskrivelse: fields.beskrivelse,
                 }}
+                kodeverk={kodeverk}
+                onPrøvIgjen={hentKodeverkPåNytt}
               />
               <hr className="my-2 border-ax-border-neutral-subtle" />
               <JournalpostValg
@@ -194,9 +197,12 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOpp
                   />
                   <SammendragRad
                     label="Type"
-                    verdi={formaterOppgavetype(
-                      innsendingFormData.get("oppgavetype")?.toString() ?? "",
-                    )}
+                    verdi={
+                      oppgavetyper.find(
+                        (type) => type.oppgavetype === innsendingFormData.get("oppgavetype"),
+                      )?.term ??
+                      formaterOppgavetype(innsendingFormData.get("oppgavetype")?.toString() ?? "")
+                    }
                   />
                   <SammendragRad
                     label="Prioritet"
@@ -212,8 +218,8 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOpp
                     label="Gjelderverdi"
                     verdi={
                       gjelderverdier.find(
-                        (valg) => valg.value === innsendingFormData.get("gjelderverdi"),
-                      )?.label ?? ""
+                        (valg) => valg.behandlingstema === innsendingFormData.get("gjelderverdi"),
+                      )?.behandlingstemaTerm ?? ""
                     }
                   />
                   <SammendragRad
