@@ -636,12 +636,10 @@ export async function mockAction(
     case "opprett_oppgave": {
       hentTema(formData);
       const oppgavetype = hentValgfriTekst(formData, "oppgavetype") ?? "";
-      const journalpostId = hentValgfriTekst(formData, "journalpostId");
+      const journalpostId = hentTekstfelt(formData, "journalpostId", "Journalpost er påkrevd");
       leggTilBrukerhendelse(sak, "OPPGAVE_OPPRETTET", undefined, {
         tittel: oppgavetype || "Oppgave",
-        beskrivelse: journalpostId
-          ? `Oppgave opprettet for journalpost ${journalpostId}`
-          : "Oppgave opprettet",
+        beskrivelse: `Oppgave opprettet for journalpost ${journalpostId}`,
       });
       break;
     }
