@@ -79,7 +79,6 @@ describe("SaksinformasjonKort anmeldelsesfelter", () => {
     expect((screen.getByLabelText("Anmeldt beløp (kr)") as HTMLInputElement).value).toBe("12 500");
     const politidistrikt = screen.getByLabelText("Politidistrikt") as HTMLInputElement;
     expect(politidistrikt.value).toBe("Øst politidistrikt");
-    expect(politidistrikt.maxLength).toBe(100);
   });
 
   it.each([

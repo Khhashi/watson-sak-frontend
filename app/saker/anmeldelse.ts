@@ -75,3 +75,15 @@ export function lesAnmeldelseFraSkjema(formData: FormData): LestAnmeldelse {
   const verdier = { anmeldtBelop: tekst("anmeldtBelop"), politidistrikt: tekst("politidistrikt") };
   return { sendt: true, verdier, resultat: redigerAnmeldelseSchema.safeParse(verdier) };
 }
+
+/** Feltnavnene som endres, slik de vises i historikken. Brukes før den lagrede vurderingen overskrives. */
+export function finnEndredeAnmeldelsesfelter(
+  sak: KontrollsakResponse,
+  ny: { anmeldtBelop: number; politidistrikt: string },
+): string[] {
+  const vurdering = sak.resultat?.strafferettsligVurdering;
+  return [
+    ...(vurdering?.anmeldtBelop === ny.anmeldtBelop ? [] : ["anmeldt beløp"]),
+    ...(vurdering?.politidistrikt === ny.politidistrikt ? [] : ["politidistrikt"]),
+  ];
+}

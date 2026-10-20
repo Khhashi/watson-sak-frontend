@@ -94,7 +94,6 @@ function Resultatfelt({
             description={enlinje.beskrivelse}
             value={verdi}
             error={feil[felt.felt]}
-            maxLength={enlinje.maksLengde}
             autoComplete="off"
             onChange={(event) => onChange(felt.felt, event.target.value)}
           />

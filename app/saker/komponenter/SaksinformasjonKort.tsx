@@ -29,7 +29,7 @@ import type { YtelseRadVerdier } from "~/registrer-sak/skjema-helpers";
 import { kanRedigereAnmeldelse } from "~/saker/anmeldelse";
 import { Beløpsfelt } from "~/formaterte-inputfelt/FormaterteInputfelt";
 import { merkingEtikett } from "~/saker/kategorier";
-import { type KontrollsakResponse, POLITIDISTRIKT_MAKS_LENGDE } from "~/saker/types.backend";
+import type { KontrollsakResponse } from "~/saker/types.backend";
 import { formaterIsoTilNorskDato, getPersonIdent } from "~/saker/visning";
 import { formaterOrganisasjonsnummer, parseOrganisasjonsnumre } from "~/utils/string-utils";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
@@ -535,7 +535,6 @@ export function SaksinformasjonKort({
                         description="Skriv inn politidistriktet som saken er anmeldt til."
                         size="small"
                         autoComplete="off"
-                        maxLength={POLITIDISTRIKT_MAKS_LENGDE}
                         value={lokaleVerdier.anmeldelse.politidistrikt}
                         error={førsteFeilForFelt(feil, "politidistrikt")}
                         onChange={(event) => {

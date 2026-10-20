@@ -907,6 +907,9 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
         anmeldtBelop: 7500,
         politidistrikt: "Vest politidistrikt",
       });
+      expect(hentHistorikk(testRequest, String(kontrollsak.id))[0]?.beskrivelse).toMatch(
+        /anmeldt beløp og politidistrikt\.$/,
+      );
     });
 
     it("avviser ugyldig politidistrikt uten å lagre", async () => {

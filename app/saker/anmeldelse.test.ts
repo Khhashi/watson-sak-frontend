@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  finnEndredeAnmeldelsesfelter,
   hentAnmeldelseForVisning,
   kanRedigereAnmeldelse,
   lesAnmeldelseFraSkjema,
@@ -88,6 +89,22 @@ describe("redigerAnmeldelseSchema", () => {
 
   it.each(["", "1,234", "-5", "abc"])("avviser ugyldig beløp %j", (anmeldtBelop) => {
     expect(redigerAnmeldelseSchema.safeParse({ ...gyldig, anmeldtBelop }).success).toBe(false);
+  });
+});
+
+describe("finnEndredeAnmeldelsesfelter", () => {
+  const sak = lagSak("POLITI", { type: "ANMELDT", anmeldtBelop: 5000, politidistrikt: "Øst" });
+
+  it("finner bare feltene som faktisk endres", () => {
+    expect(
+      finnEndredeAnmeldelsesfelter(sak, { anmeldtBelop: 5000, politidistrikt: "Øst" }),
+    ).toEqual([]);
+    expect(
+      finnEndredeAnmeldelsesfelter(sak, { anmeldtBelop: 5000, politidistrikt: "Vest" }),
+    ).toEqual(["politidistrikt"]);
+    expect(
+      finnEndredeAnmeldelsesfelter(sak, { anmeldtBelop: 6000, politidistrikt: "Vest" }),
+    ).toEqual(["anmeldt beløp", "politidistrikt"]);
   });
 });
 

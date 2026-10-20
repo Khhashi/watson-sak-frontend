@@ -2,7 +2,11 @@ import { data } from "react-router";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { redigerSaksinformasjonSchema } from "~/registrer-sak/validering";
 import { bygFeilkartFraIssues, parseYtelseRader } from "~/registrer-sak/skjema-helpers";
-import { kanRedigereAnmeldelse, lesAnmeldelseFraSkjema } from "~/saker/anmeldelse";
+import {
+  finnEndredeAnmeldelsesfelter,
+  kanRedigereAnmeldelse,
+  lesAnmeldelseFraSkjema,
+} from "~/saker/anmeldelse";
 import { hentAlleSaker, medInnloggetEier } from "~/saker/mock-alle-saker.server";
 import { mockSaksbehandlerDetaljer } from "~/saker/mock-saksbehandlere.server";
 import type {
@@ -389,7 +393,12 @@ export async function mockAction(
         belop: ytelse.beløp ?? null,
         endeligBelop: ytelse.endeligBeløp ?? null,
       }));
-      const endredeFelter = finnEndredeSaksinformasjonsfelter(sak, validert, nyeYtelser);
+      const endredeFelter = [
+        ...finnEndredeSaksinformasjonsfelter(sak, validert, nyeYtelser),
+        ...(anmeldelse.sendt && anmeldelse.resultat.success
+          ? finnEndredeAnmeldelsesfelter(sak, anmeldelse.resultat.data)
+          : []),
+      ];
 
       sak.kategori = validert.kategori;
       sak.misbruktype = [...validert.misbruktype];

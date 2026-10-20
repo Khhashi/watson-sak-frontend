@@ -208,12 +208,14 @@ describe("SaksflytModal", () => {
       target: { value: "45000" },
     });
     const politidistrikt = screen.getByLabelText("Politidistrikt");
-    expect(politidistrikt.getAttribute("maxlength")).toBe("100");
     fireEvent.change(politidistrikt, { target: { value: "Øst\u202Epolitidistrikt" } });
     klikk("Gå til politiet");
     expect(
       screen.getByText("Politidistrikt kan ikke inneholde linjeskift eller usynlige tegn"),
     ).toBeDefined();
+    fireEvent.change(politidistrikt, { target: { value: "🚓".repeat(101) } });
+    klikk("Gå til politiet");
+    expect(screen.getByText("Politidistrikt kan ha opptil 100 tegn")).toBeDefined();
     fireEvent.change(politidistrikt, { target: { value: "  Øst politidistrikt " } });
     klikk("Gå til politiet");
 
