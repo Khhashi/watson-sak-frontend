@@ -20,7 +20,7 @@ export function erTema(verdi: unknown): verdi is Tema {
   return temaSkjema.safeParse(verdi).success;
 }
 
-/** Viser temanavn med kode, f.eks. «Kontroll (KTR)». */
-export function formaterTemavalg(tema: string): string {
-  return erTema(tema) ? `${temaEtiketter[tema]} (${tema})` : tema;
+/** Viser temanavnet uten den interne koden, f.eks. «Kontroll» for KTR. */
+export function formaterTema(tema: string): string {
+  return erTema(tema) ? temaEtiketter[tema] : tema;
 }

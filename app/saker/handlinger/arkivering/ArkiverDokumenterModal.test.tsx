@@ -1,4 +1,4 @@
-import { act, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DokumentNode, FilResponse } from "~/saker/filer/typer";
 import { ArkiverDokumenterModal } from "./ArkiverDokumenterModal";
@@ -88,6 +88,17 @@ describe("ArkiverDokumenterModal", () => {
     expect(screen.getAllByText("Velg dokumentbeskrivelse")).toHaveLength(2);
     expect(screen.getByText("Velg minst én fil eller ett dokument")).toBeDefined();
     expect(submitMock).not.toHaveBeenCalled();
+  });
+
+  it("viser temaene uten intern kode", async () => {
+    await renderModal([fil("fil-1", "rapport.pdf")]);
+
+    const tema = within(screen.getByLabelText("Tema"));
+    expect(tema.getAllByRole("option").map((valg) => valg.textContent)).toEqual([
+      "Velg tema",
+      "Kontroll",
+      "Kontroll anmeldelse",
+    ]);
   });
 
   it("flytter fokus til utvalget og fjerner feilen når noe velges", async () => {
