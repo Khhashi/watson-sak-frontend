@@ -20,6 +20,9 @@ interface ArkivValgTreProps {
   error?: string;
 }
 
+// Aksel-checkboksen er et grid med «width: fit-content». Uten min-w-0 vokser lange navn ut av modalen.
+const avkortetEtikett = "max-w-full min-w-0 [&>label]:min-w-0";
+
 /** Mappetre med avkrysning for filer og dokumenter som skal arkiveres i Gosys. */
 export function ArkivValgTre({ tre, name, valgte, onChange, error }: ArkivValgTreProps) {
   const idPrefiks = useId();
@@ -56,30 +59,35 @@ export function ArkivValgTre({ tre, name, valgte, onChange, error }: ArkivValgTr
     const innholdId = `${idPrefiks}-${encodeURIComponent(mappe.sti)}`;
     return (
       <li key={mappe.sti}>
-        <div className="flex items-center gap-1">
-          <Button
-            type="button"
-            variant="tertiary-neutral"
-            size="xsmall"
-            icon={åpen ? <ChevronUpIcon aria-hidden /> : <ChevronDownIcon aria-hidden />}
-            aria-label={`${åpen ? "Skjul" : "Vis"} innhold i ${mappe.navn}`}
-            aria-expanded={åpen}
-            aria-controls={åpen ? innholdId : undefined}
-            onClick={() => veksleÅpen(mappe.sti)}
-          />
-          <FolderIcon aria-hidden fontSize="1.25rem" className="shrink-0" />
+        <div className="flex items-center gap-4">
+          <div className="flex shrink-0 items-center gap-2">
+            <Button
+              type="button"
+              variant="tertiary-neutral"
+              size="xsmall"
+              icon={åpen ? <ChevronUpIcon aria-hidden /> : <ChevronDownIcon aria-hidden />}
+              aria-label={`${åpen ? "Skjul" : "Vis"} innhold i ${mappe.navn}`}
+              aria-expanded={åpen}
+              aria-controls={åpen ? innholdId : undefined}
+              onClick={() => veksleÅpen(mappe.sti)}
+            />
+            <FolderIcon aria-hidden fontSize="1.25rem" />
+          </div>
           <Checkbox
             size="small"
             checked={avkrysning === "valgt"}
             indeterminate={avkrysning === "delvis"}
             disabled={!kanVelgeMappe(mappe, valgte)}
             onChange={() => onChange(veksleMappe(mappe, valgte))}
+            className={avkortetEtikett}
           >
-            {mappe.navn}
+            <span className="block truncate" title={mappe.navn}>
+              {mappe.navn}
+            </span>
           </Checkbox>
         </div>
         {åpen && (
-          <ul id={innholdId} className="pl-12">
+          <ul id={innholdId} className="pl-24">
             {visInnhold(mappe)}
           </ul>
         )}
@@ -96,8 +104,11 @@ export function ArkivValgTre({ tre, name, valgte, onChange, error }: ArkivValgTr
           checked={valgt}
           disabled={!valgt && valgte.length >= MAKS_ANTALL_VALGTE}
           onChange={() => veksleElement(element.nøkkel)}
+          className={avkortetEtikett}
         >
-          {element.navn}
+          <span className="block truncate" title={element.navn}>
+            {element.navn}
+          </span>
         </Checkbox>
       </li>
     );
