@@ -363,14 +363,9 @@ describe("opprettJournalpost", () => {
       vi.stubGlobal("fetch", fetchMock);
 
       const { opprettJournalpost } = await import("./api.server");
-      await opprettJournalpost(
-        "token-123",
-        "42",
-        "KTA",
-        journalposttype,
-        "Testtittel",
-        "Testinnhold",
-      );
+      await opprettJournalpost("token-123", "42", "KTA", journalposttype, "Testtittel", null, [
+        "v-1",
+      ]);
 
       expect(fetchMock).toHaveBeenCalledWith(
         "https://backend.test/api/v1/kontrollsaker/42/journalposter",
@@ -380,8 +375,8 @@ describe("opprettJournalpost", () => {
             journalposttype,
             tema: "KTA",
             tittel: "Testtittel",
-            tekst: "Testinnhold",
-            vedleggIds: [],
+            tekst: null,
+            vedleggIds: ["v-1"],
             dokumentIds: [],
           }),
           headers: expect.objectContaining({ Authorization: "Bearer token-123" }),

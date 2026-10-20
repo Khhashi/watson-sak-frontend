@@ -215,52 +215,25 @@ export async function backendAction(
     }
     case "opprett_journalpost": {
       const tema = hentTema(formData);
-      const journalposttype = hentTekstfelt(
-        formData,
-        "journalposttype",
-        "Journalposttype er påkrevd",
-      );
-      const tittel = hentTekstfelt(formData, "tittel", "Tittel er påkrevd");
-      const innhold = hentTekstfelt(formData, "innhold", "Innhold er påkrevd");
+      const tittel = hentTekstfelt(formData, "tittel", "Dokumentbeskrivelse er påkrevd");
       const vedleggIds = formData.getAll("vedleggId").map(String);
       const dokumentIds = formData.getAll("dokumentId").map(String);
-      const knyttTilOppgave = formData.get("knyttTilOppgave") === "true";
+      if (vedleggIds.length + dokumentIds.length === 0) {
+        throw data("Velg minst én fil eller ett dokument", { status: 400 });
+      }
 
-      const journalpostRespons = await backendApi.opprettJournalpost(
+      const { journalpostId } = await backendApi.opprettJournalpost(
         token,
         sakId,
         tema,
-        journalposttype,
+        "NOTAT",
         tittel.trim(),
-        innhold.trim(),
+        null,
         vedleggIds,
         dokumentIds,
       );
 
-      if (knyttTilOppgave) {
-        const tildeltEnhetsnr = hentTekstfelt(
-          formData,
-          "behandlendeEnhet",
-          "Behandlende enhet er påkrevd",
-        );
-        const prioritet = hentTekstfelt(formData, "prioritet", "Prioritet er påkrevd");
-        const fristDato = hentTekstfelt(formData, "frist", "Frist er påkrevd");
-        const beskrivelse = hentTekstfelt(formData, "beskrivelse", "Beskrivelse er påkrevd");
-        const oppgavetype = hentTekstfelt(formData, "oppgavetype", "Oppgavetype er påkrevd");
-        await backendApi.opprettOppgave(
-          token,
-          sakId,
-          tema,
-          tildeltEnhetsnr,
-          prioritet,
-          fristDato,
-          beskrivelse,
-          oppgavetype,
-          journalpostRespons.journalpostId,
-        );
-      }
-
-      return { ok: true, journalpostId: journalpostRespons.journalpostId };
+      return { ok: true, journalpostId };
     }
     case "opprett_oppgave": {
       const tema = hentTema(formData);
@@ -273,6 +246,7 @@ export async function backendAction(
       const fristDato = hentTekstfelt(formData, "frist", "Frist er påkrevd");
       const beskrivelse = hentTekstfelt(formData, "beskrivelse", "Beskrivelse er påkrevd");
       const oppgavetype = hentTekstfelt(formData, "oppgavetype", "Oppgavetype er påkrevd");
+      const journalpostId = hentValgfriTekst(formData, "journalpostId");
       await backendApi.opprettOppgave(
         token,
         sakId,
@@ -282,6 +256,7 @@ export async function backendAction(
         fristDato,
         beskrivelse,
         oppgavetype,
+        journalpostId ?? undefined,
       );
       return { ok: true };
     }

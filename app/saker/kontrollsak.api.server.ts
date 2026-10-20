@@ -222,7 +222,7 @@ export async function opprettJournalpost(
   tema: Tema,
   journalposttype: string,
   tittel: string,
-  tekst: string,
+  tekst: string | null,
   vedleggIds: string[] = [],
   dokumentIds: string[] = [],
 ): Promise<{ journalpostId: string }> {

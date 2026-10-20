@@ -577,11 +577,16 @@ export async function mockAction(
     }
     case "opprett_journalpost": {
       const tema = hentTema(formData);
-      const journalposttype = hentValgfriTekst(formData, "journalposttype") ?? "NOTAT";
-      const jpTittel = hentValgfriTekst(formData, "tittel") ?? "Journalpost";
+      const journalposttype = "NOTAT";
+      const jpTittel = hentValgfriTekst(formData, "tittel");
+      if (!jpTittel) {
+        throw data("Dokumentbeskrivelse er påkrevd", { status: 400 });
+      }
       const dokumentIds = formData.getAll("dokumentId").map(String);
       const vedleggIdsForArkivering = formData.getAll("vedleggId").map(String);
-      const knyttTilOppgave = formData.get("knyttTilOppgave") === "true";
+      if (dokumentIds.length + vedleggIdsForArkivering.length === 0) {
+        throw data("Velg minst én fil eller ett dokument", { status: 400 });
+      }
       const { navIdent } = innloggetBruker;
       const journalpostId = `demo-${crypto.randomUUID()}`;
 
@@ -625,23 +630,18 @@ export async function mockAction(
         });
       }
 
-      if (knyttTilOppgave) {
-        const oppgavetype = hentValgfriTekst(formData, "oppgavetype") ?? "";
-        leggTilBrukerhendelse(sak, "OPPGAVE_OPPRETTET", undefined, {
-          tittel: oppgavetype || "Oppgave",
-          beskrivelse: "Oppgave opprettet",
-        });
-      }
-
       sak.oppdatert = new Date().toISOString();
       return { ok: true, journalpostId } satisfies ActionResult;
     }
     case "opprett_oppgave": {
       hentTema(formData);
       const oppgavetype = hentValgfriTekst(formData, "oppgavetype") ?? "";
+      const journalpostId = hentValgfriTekst(formData, "journalpostId");
       leggTilBrukerhendelse(sak, "OPPGAVE_OPPRETTET", undefined, {
         tittel: oppgavetype || "Oppgave",
-        beskrivelse: "Oppgave opprettet",
+        beskrivelse: journalpostId
+          ? `Oppgave opprettet for journalpost ${journalpostId}`
+          : "Oppgave opprettet",
       });
       break;
     }
