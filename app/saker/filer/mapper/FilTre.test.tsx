@@ -49,7 +49,7 @@ const mockFilAction = vi.fn(async ({ request }: { request: Request }) => ({
   body: await request.json(),
 }));
 
-type Valgfrie = "mapper" | "dokumenter" | "redigerbar" | "kanEndreMapper";
+type Valgfrie = "mapper" | "dokumenter" | "redigerbar" | "kanEndreMapper" | "kanEndreFiler";
 type TestProps = Omit<Parameters<typeof FilTre>[0], Valgfrie> &
   Partial<Pick<Parameters<typeof FilTre>[0], Valgfrie>>;
 
@@ -63,6 +63,7 @@ async function renderSeksjon({
   dokumenter = [],
   redigerbar = false,
   kanEndreMapper = redigerbar,
+  kanEndreFiler = redigerbar,
   ...props
 }: TestProps) {
   const Stub = createRoutesStub([
@@ -74,6 +75,7 @@ async function renderSeksjon({
           dokumenter={dokumenter}
           redigerbar={redigerbar}
           kanEndreMapper={kanEndreMapper}
+          kanEndreFiler={kanEndreFiler}
           {...props}
         />
       ),
@@ -100,42 +102,52 @@ describe("FilTre", () => {
   });
 
   it("viser tomtilstand når det ikke er noen filer", async () => {
-    await renderSeksjon({ filer: [], sakId: "SAK-1", erSakseier: false });
+    await renderSeksjon({ filer: [], sakId: "SAK-1", kanEndreFiler: false });
     expect(screen.getByText("Ingen dokumenter eller filer ennå")).toBeDefined();
   });
 
   it("viser filnavn for hver fil", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: false });
+    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", kanEndreFiler: false });
     expect(screen.getByText("anmeldelse.pdf")).toBeDefined();
     expect(screen.getByText("screenshot.png")).toBeDefined();
   });
 
   it("viser størrelse og type i metadatalinjen", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: false });
+    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", kanEndreFiler: false });
     expect(screen.getByText(/Opplastet · PDF · 200 KB · Lastet opp/)).toBeDefined();
     expect(screen.getByText(/Opplastet · Bilde · 50 KB · Lastet opp/)).toBeDefined();
   });
 
   it("viser åpne-knapp for hver fil", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: false });
+    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", kanEndreFiler: false });
     expect(screen.getByLabelText("Åpne anmeldelse.pdf")).toBeDefined();
     expect(screen.getByLabelText("Åpne screenshot.png")).toBeDefined();
   });
 
   it("viser ingen meny når brukeren verken er sakseier eller kan endre mapper", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: false });
+    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", kanEndreFiler: false });
     expect(screen.queryByRole("button", { name: "Handlinger for anmeldelse.pdf" })).toBeNull();
   });
 
-  it("viser valg for å gi nytt navn og slette når erSakseier er true", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+  it("viser valg for å gi nytt navn og slette når kanEndreFiler er true", async () => {
+    await renderSeksjon({
+      filer: mockFiler,
+      sakId: "SAK-1",
+      kanEndreMapper: true,
+      kanEndreFiler: true,
+    });
     fireEvent.click(screen.getByRole("button", { name: "Handlinger for anmeldelse.pdf" }));
     expect(await screen.findByRole("menuitem", { name: "Gi nytt navn" })).toBeDefined();
     expect(screen.getByRole("menuitem", { name: "Slett" })).toBeDefined();
   });
 
   it("åpner menyen ved høyreklikk på raden", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+    await renderSeksjon({
+      filer: mockFiler,
+      sakId: "SAK-1",
+      kanEndreMapper: true,
+      kanEndreFiler: true,
+    });
     const rad = screen.getByText("anmeldelse.pdf").closest("li") as HTMLElement;
 
     const standardHindret = !fireEvent.contextMenu(rad);
@@ -149,7 +161,7 @@ describe("FilTre", () => {
       dokumenter: [{ ...mockDokumenter[0], mappe: null }],
       filer: [],
       sakId: "SAK-1",
-      erSakseier: false,
+      kanEndreFiler: false,
       redigerbar: true,
     });
 
@@ -162,7 +174,12 @@ describe("FilTre", () => {
   });
 
   it("åpner modal med navnedelen og låst filendelse", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+    await renderSeksjon({
+      filer: mockFiler,
+      sakId: "SAK-1",
+      kanEndreMapper: true,
+      kanEndreFiler: true,
+    });
 
     await velgIMeny("anmeldelse.pdf", "Gi nytt navn");
 
@@ -176,7 +193,12 @@ describe("FilTre", () => {
   });
 
   it("viser valideringsfeil for ugyldig navn", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+    await renderSeksjon({
+      filer: mockFiler,
+      sakId: "SAK-1",
+      kanEndreMapper: true,
+      kanEndreFiler: true,
+    });
     await velgIMeny("anmeldelse.pdf", "Gi nytt navn");
     await waitFor(() => {
       expect(screen.getByRole("dialog", { name: "Endre navn på vedlegg" })).toBeDefined();
@@ -190,7 +212,12 @@ describe("FilTre", () => {
   });
 
   it("sender gyldig navnedel som JSON og lukker modalen ved suksess", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+    await renderSeksjon({
+      filer: mockFiler,
+      sakId: "SAK-1",
+      kanEndreMapper: true,
+      kanEndreFiler: true,
+    });
     await velgIMeny("anmeldelse.pdf", "Gi nytt navn");
     await waitFor(() => {
       expect(screen.getByRole("dialog", { name: "Endre navn på vedlegg" })).toBeDefined();
@@ -210,7 +237,7 @@ describe("FilTre", () => {
   });
 
   it("viser lastespinner når en opplasting pågår", async () => {
-    await renderSeksjon({ filer: [], sakId: "SAK-1", erSakseier: false, lasterOpp: true });
+    await renderSeksjon({ filer: [], sakId: "SAK-1", kanEndreFiler: false, lasterOpp: true });
     expect(screen.getByText("Laster opp …")).toBeDefined();
   });
 
@@ -218,7 +245,7 @@ describe("FilTre", () => {
     await renderSeksjon({
       filer: [],
       sakId: "SAK-1",
-      erSakseier: false,
+      kanEndreFiler: false,
       feilFraServer: "Filen er for stor",
     });
     expect(screen.getByText("Filen er for stor")).toBeDefined();
@@ -228,12 +255,12 @@ describe("FilTre", () => {
     const filerMedBruk: FilResponse[] = [
       { ...mockFiler[1], bruktIDokumenter: [{ id: "dok-1", tittel: "Saksframlegg" }] },
     ];
-    await renderSeksjon({ filer: filerMedBruk, sakId: "SAK-1", erSakseier: false });
+    await renderSeksjon({ filer: filerMedBruk, sakId: "SAK-1", kanEndreFiler: false });
     expect(screen.getByLabelText("Filen er i bruk i 1 dokument(er)")).toBeDefined();
   });
 
   it("viser ikke 'i bruk'-ikon når filen ikke er i bruk", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: false });
+    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", kanEndreFiler: false });
     expect(screen.queryByText(/er i bruk i/)).toBeNull();
   });
 
@@ -241,7 +268,7 @@ describe("FilTre", () => {
     const filerMedBruk: FilResponse[] = [
       { ...mockFiler[1], bruktIDokumenter: [{ id: "dok-1", tittel: "Saksframlegg" }] },
     ];
-    await renderSeksjon({ filer: filerMedBruk, sakId: "SAK-1", erSakseier: true });
+    await renderSeksjon({ filer: filerMedBruk, sakId: "SAK-1", kanEndreFiler: true });
 
     await velgIMeny("screenshot.png", "Slett");
     await waitFor(() => {});
@@ -252,7 +279,7 @@ describe("FilTre", () => {
   });
 
   it("viser bekreftelsesdialog før en fil slettes", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", kanEndreFiler: true });
 
     await velgIMeny("screenshot.png", "Slett");
     await waitFor(() => {});
@@ -262,7 +289,7 @@ describe("FilTre", () => {
   });
 
   it("lukker bekreftelsesdialogen uten å slette", async () => {
-    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+    await renderSeksjon({ filer: mockFiler, sakId: "SAK-1", kanEndreFiler: true });
 
     await velgIMeny("screenshot.png", "Slett");
     await waitFor(() => {});
@@ -281,7 +308,7 @@ describe("FilTre", () => {
         dokumenter: mockDokumenter,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
+        kanEndreFiler: false,
       });
 
       const bank = screen.getByRole("button", { name: /Bank\s*1 fil/ });
@@ -296,7 +323,7 @@ describe("FilTre", () => {
         dokumenter: mockDokumenter,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
+        kanEndreFiler: false,
       });
 
       fireEvent.click(screen.getByRole("button", { name: /^Bank/ }));
@@ -313,7 +340,7 @@ describe("FilTre", () => {
         mapper: ["Zulu"],
         filer: mockFiler,
         sakId: "SAK-1",
-        erSakseier: false,
+        kanEndreFiler: false,
       });
       const elementer = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
       expect(elementer[0]).toContain("Zulu");
@@ -321,26 +348,73 @@ describe("FilTre", () => {
     });
 
     it("viser ikke mappehandlinger eller flyttevalg når treet ikke er redigerbart", async () => {
-      await renderSeksjon({ mapper, filer: mockFiler, sakId: "SAK-1", erSakseier: true });
+      await renderSeksjon({ mapper, filer: mockFiler, sakId: "SAK-1", kanEndreFiler: true });
       expect(screen.queryByLabelText("Handlinger for mappen Bank")).toBeNull();
       fireEvent.click(screen.getByRole("button", { name: "Handlinger for anmeldelse.pdf" }));
       expect(await screen.findByRole("menuitem", { name: "Slett" })).toBeDefined();
       expect(screen.queryByRole("menuitem", { name: "Flytt til …" })).toBeNull();
     });
 
-    it("lar brukeren endre mapper uten å kunne slette dokumenter", async () => {
-      await renderSeksjon({
+    describe("ufordelt sak (kan laste opp, men ikke endre saken)", () => {
+      const ufordelt = {
         mapper,
         dokumenter: [{ ...mockDokumenter[0], mappe: null }],
-        filer: [],
+        filer: mockFiler,
         sakId: "SAK-1",
-        erSakseier: false,
+        kanEndreFiler: false,
         kanEndreMapper: true,
+      };
+
+      it("har ingen meny for dokumenter, siden de verken kan slettes eller flyttes", async () => {
+        await renderSeksjon(ufordelt);
+        expect(screen.queryByRole("button", { name: "Handlinger for Saksframlegg" })).toBeNull();
       });
-      expect(screen.getByLabelText("Handlinger for mappen Bank")).toBeDefined();
-      fireEvent.click(screen.getByRole("button", { name: "Handlinger for Saksframlegg" }));
-      expect(await screen.findByRole("menuitem", { name: "Flytt til …" })).toBeDefined();
-      expect(screen.queryByRole("menuitem", { name: "Slett" })).toBeNull();
+
+      it("kan omdøpe og flytte mapper, men ikke slette dem", async () => {
+        await renderSeksjon(ufordelt);
+        fireEvent.click(screen.getByRole("button", { name: "Handlinger for mappen Bank" }));
+        expect(await screen.findByRole("menuitem", { name: "Gi nytt navn" })).toBeDefined();
+        expect(screen.getByRole("menuitem", { name: "Flytt til …" })).toBeDefined();
+        expect(screen.queryByRole("menuitem", { name: /Slett mappe/ })).toBeNull();
+      });
+
+      it("kan omdøpe og flytte filer, men ikke slette dem", async () => {
+        await renderSeksjon(ufordelt);
+        fireEvent.click(screen.getByRole("button", { name: "Handlinger for anmeldelse.pdf" }));
+        expect(await screen.findByRole("menuitem", { name: "Gi nytt navn" })).toBeDefined();
+        expect(screen.getByRole("menuitem", { name: "Flytt til …" })).toBeDefined();
+        expect(screen.queryByRole("menuitem", { name: "Slett" })).toBeNull();
+      });
+    });
+
+    describe("delt med på fordelt sak", () => {
+      const deltMed = {
+        mapper,
+        dokumenter: [{ ...mockDokumenter[0], mappe: null }],
+        filer: mockFiler,
+        sakId: "SAK-1",
+        kanEndreMapper: true,
+        kanEndreFiler: true,
+      };
+
+      it("kan flytte dokumenter", async () => {
+        await renderSeksjon(deltMed);
+        fireEvent.click(screen.getByRole("button", { name: "Handlinger for Saksframlegg" }));
+        expect(await screen.findByRole("menuitem", { name: "Flytt til …" })).toBeDefined();
+      });
+
+      it("kan omdøpe og slette filer", async () => {
+        await renderSeksjon(deltMed);
+        fireEvent.click(screen.getByRole("button", { name: "Handlinger for anmeldelse.pdf" }));
+        expect(await screen.findByRole("menuitem", { name: "Gi nytt navn" })).toBeDefined();
+        expect(screen.getByRole("menuitem", { name: "Slett" })).toBeDefined();
+      });
+
+      it("kan slette mapper", async () => {
+        await renderSeksjon(deltMed);
+        fireEvent.click(screen.getByRole("button", { name: "Handlinger for mappen Bank" }));
+        expect(await screen.findByRole("menuitem", { name: /Slett mappe/ })).toBeDefined();
+      });
     });
 
     it("flytter en fil til en mappe via flyttedialogen", async () => {
@@ -348,7 +422,6 @@ describe("FilTre", () => {
         mapper,
         filer: mockFiler,
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
 
@@ -374,7 +447,6 @@ describe("FilTre", () => {
         mapper,
         filer: mockFiler,
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
 
@@ -400,7 +472,6 @@ describe("FilTre", () => {
         dokumenter: mockDokumenter,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
       fireEvent.click(screen.getByRole("button", { name: /^Bank/ }));
@@ -419,7 +490,7 @@ describe("FilTre", () => {
     });
 
     it("kobler mappeknappen til innholdet med en gyldig id, også når navnet har mellomrom", async () => {
-      await renderSeksjon({ mapper, filer: [], sakId: "SAK-1", erSakseier: false });
+      await renderSeksjon({ mapper, filer: [], sakId: "SAK-1", kanEndreFiler: false });
       const knapp = screen.getByRole("button", { name: /^Tom mappe/ });
 
       fireEvent.click(knapp);
@@ -435,7 +506,6 @@ describe("FilTre", () => {
         dokumenter: mockDokumenter,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
       fireEvent.click(screen.getByRole("button", { name: /^Bank/ }));
@@ -462,7 +532,6 @@ describe("FilTre", () => {
         mapper,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
 
@@ -486,7 +555,6 @@ describe("FilTre", () => {
         dokumenter: mockDokumenter,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
 
@@ -513,7 +581,6 @@ describe("FilTre", () => {
         mapper,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
       fireEvent.click(screen.getByRole("button", { name: /^Bank/ }));
@@ -532,7 +599,6 @@ describe("FilTre", () => {
         mapper,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
 
@@ -554,7 +620,6 @@ describe("FilTre", () => {
         mapper,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
         feilFraServer: "Filen er for stor",
       });
@@ -574,7 +639,6 @@ describe("FilTre", () => {
         mapper,
         filer: mockFiler,
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
 
@@ -607,7 +671,6 @@ describe("FilTre", () => {
         mapper,
         filer: [],
         sakId: "SAK-1",
-        erSakseier: false,
         redigerbar: true,
       });
 

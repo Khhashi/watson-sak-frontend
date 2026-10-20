@@ -61,10 +61,16 @@ interface FilTreProps {
   sakId: string;
   /** Om brukeren kan slette dokumenter. */
   redigerbar: boolean;
-  /** Om brukeren kan endre mapper og flytte dokumenter og filer. Følger retten til å laste opp filer. */
+  /**
+   * Om brukeren kan opprette, omdøpe og flytte mapper, og omdøpe og flytte filer.
+   * Følger retten til å laste opp filer, se `kanLasteOppFiler` i `sakstilgang.ts`.
+   */
   kanEndreMapper: boolean;
-  /** Om innlogget bruker er sakseier og kan gi nytt navn til og slette vedlegg. */
-  erSakseier: boolean;
+  /**
+   * Om brukeren kan slette filer og mapper og flytte dokumenter.
+   * Krever endretilgang, se `kanEndreSak` i `sakstilgang.ts`.
+   */
+  kanEndreFiler: boolean;
   /** Om en opplasting pågår (styrt av `SakFilområde`, som eier «Last opp fil»-knappen). */
   lasterOpp?: boolean;
   /** Feilmelding fra en mislykket opplasting (styrt av `SakFilområde`). */
@@ -83,7 +89,7 @@ export function FilTre({
   sakId,
   redigerbar,
   kanEndreMapper,
-  erSakseier,
+  kanEndreFiler,
   lasterOpp = false,
   feilFraServer = null,
 }: FilTreProps) {
@@ -106,6 +112,7 @@ export function FilTre({
   const { dras, slippmål, draProps, slippProps, kanSlippe, fjernSlippmål } = useDraOgSlipp({
     alleMapper,
     kanEndreMapper,
+    kanFlytteDokumenter: kanEndreFiler,
     mappehandling,
     settÅpen,
   });
@@ -209,23 +216,28 @@ export function FilTre({
               >
                 Flytt til …
               </ActionMenu.Item>
-              <ActionMenu.Divider />
-              <ActionMenu.Item
-                variant="danger"
-                icon={<TrashIcon />}
-                disabled={!erTom}
-                onSelect={() => {
-                  const slettet = mappehandling.utfør({ handling: "slett", sti: mappe.sti }, () => {
-                    settStatusmelding(`Mappen «${mappenavn(mappe.sti)}» er slettet`);
-                    flyttFokusEtterSletting(forelder(mappe.sti));
-                  });
-                  if (slettet) {
-                    sporHendelse("mappe slettet");
-                  }
-                }}
-              >
-                {erTom ? "Slett mappe" : "Slett mappe (må være tom)"}
-              </ActionMenu.Item>
+              {kanEndreFiler && <ActionMenu.Divider />}
+              {kanEndreFiler && (
+                <ActionMenu.Item
+                  variant="danger"
+                  icon={<TrashIcon />}
+                  disabled={!erTom}
+                  onSelect={() => {
+                    const slettet = mappehandling.utfør(
+                      { handling: "slett", sti: mappe.sti },
+                      () => {
+                        settStatusmelding(`Mappen «${mappenavn(mappe.sti)}» er slettet`);
+                        flyttFokusEtterSletting(forelder(mappe.sti));
+                      },
+                    );
+                    if (slettet) {
+                      sporHendelse("mappe slettet");
+                    }
+                  }}
+                >
+                  {erTom ? "Slett mappe" : "Slett mappe (må være tom)"}
+                </ActionMenu.Item>
+              )}
             </Elementmeny>
           )}
         </HStack>
@@ -249,7 +261,8 @@ export function FilTre({
   }
 
   function flyttValg(element: FlyttbartElement) {
-    if (!kanEndreMapper) return null;
+    const kanFlytte = element.type === "dokument" ? kanEndreFiler : kanEndreMapper;
+    if (!kanFlytte) return null;
     return (
       <ActionMenu.Item
         icon={<FolderFileIcon />}
@@ -276,7 +289,7 @@ export function FilTre({
       ":docId",
       dokument.id,
     );
-    const harMeny = kanEndreMapper || redigerbar;
+    const harMeny = kanEndreFiler || redigerbar;
     return (
       <FilerRad
         key={`dokument:${dokument.id}`}
@@ -317,7 +330,7 @@ export function FilTre({
 
   function renderFil(fil: FilResponse, mappe: Slippmål) {
     const element = { type: "fil", id: fil.id, navn: fil.filnavn, mappe } as const;
-    const harMeny = kanEndreMapper || erSakseier;
+    const harMeny = kanEndreMapper || kanEndreFiler;
     return (
       <FilerRad
         key={`fil:${fil.id}`}
@@ -344,14 +357,16 @@ export function FilTre({
             {harMeny && (
               <Elementmeny label={`Handlinger for ${fil.filnavn}`} {...menyProps(`fil:${fil.id}`)}>
                 {flyttValg(element)}
-                {erSakseier && (
+                {kanEndreMapper && (
+                  <ActionMenu.Item
+                    icon={<PencilIcon />}
+                    onSelect={() => settModal({ type: "gi-nytt-navn-fil", fil })}
+                  >
+                    Gi nytt navn
+                  </ActionMenu.Item>
+                )}
+                {kanEndreFiler && (
                   <>
-                    <ActionMenu.Item
-                      icon={<PencilIcon />}
-                      onSelect={() => settModal({ type: "gi-nytt-navn-fil", fil })}
-                    >
-                      Gi nytt navn
-                    </ActionMenu.Item>
                     <ActionMenu.Divider />
                     <ActionMenu.Item
                       variant="danger"

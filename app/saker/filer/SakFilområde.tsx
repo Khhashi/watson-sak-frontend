@@ -85,8 +85,11 @@ interface SakFilområdeProps {
   redigerbar?: boolean;
   /** Om brukeren kan laste opp filer og endre mapper. Standard: samme verdi som `redigerbar`. */
   kanLasteOppFiler?: boolean;
-  /** Om innlogget bruker er sakseier og kan slette vedlegg. Standard: `false` */
-  erSakseier?: boolean;
+  /**
+   * Om brukeren kan slette filer og mapper og flytte dokumenter. Krever endretilgang
+   * (eier eller delt med på en fordelt sak), se `kanEndreSak` i `sakstilgang.ts`. Standard: `false`
+   */
+  kanEndreFiler?: boolean;
   /** Bare lokal mock: vis hvor migreringsnotatet skal ligge, uten å lagre innhold. */
   visMigreringsnotatForhandsvisning?: boolean;
   /** Bare lokal mock: syntetisk notat som vises som et dokumentkort under Filer. */
@@ -106,7 +109,7 @@ export function SakFilområde({
   steg,
   redigerbar = true,
   kanLasteOppFiler = redigerbar,
-  erSakseier = false,
+  kanEndreFiler = false,
   visMigreringsnotatForhandsvisning = false,
   migreringsnotatEksempel = null,
 }: SakFilområdeProps) {
@@ -235,7 +238,7 @@ export function SakFilområde({
             sakId={sakId}
             redigerbar={redigerbar}
             kanEndreMapper={kanLasteOppFiler}
-            erSakseier={erSakseier}
+            kanEndreFiler={kanEndreFiler}
             lasterOpp={lasterOpp}
             feilFraServer={feilFraServer}
           />
