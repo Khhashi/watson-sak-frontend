@@ -53,11 +53,11 @@ export function SammendragRad({ label, verdi }: { label: string; verdi: React.Re
   );
 }
 
-export function VedleggSammendrag({ navn }: { navn: string[] }) {
+export function ListeSammendrag({ label, navn }: { label: string; navn: string[] }) {
   return (
     <>
       <BodyShort size="small" textColor="subtle">
-        Vedlegg
+        {label}
       </BodyShort>
       <div className="text-sm">
         {navn.length > 0 ? (

@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { ArkivOversikt } from "~/saker/arkiv/useArkivJournalposter";
 import { OpprettOppgaveModal } from "./OpprettOppgaveModal";
 
 const submitMock = vi.fn();
@@ -28,11 +29,50 @@ async function renderMedRouter(ui: React.ReactNode) {
   return resultat;
 }
 
+const arkiv: ArkivOversikt = {
+  kanSeArkiv: true,
+  hent: vi.fn(),
+  tilstand: {
+    status: "ok",
+    journalposter: [
+      {
+        journalpostId: "jp-1",
+        datoOpprettet: "2026-05-04T10:00:00",
+        journalposttype: "N",
+        journalstatus: "JOURNALFOERT",
+        tittel: "Kontrollnotat",
+        tema: "KTR",
+        temanavn: "Kontroll",
+        avsenderMottaker: null,
+        dokumenter: [],
+      },
+    ],
+  },
+};
+
 const defaultProps = {
   sakId: "00000000-0000-4000-8000-000000000001",
   åpen: true,
   onClose: vi.fn(),
+  arkiv,
 };
+
+function fyllUtSkjema() {
+  fireEvent.change(screen.getByLabelText("Tema"), { target: { value: "KTA" } });
+  fireEvent.change(screen.getByLabelText("Oppgavetype"), { target: { value: "VURD_HENV" } });
+  fireEvent.change(screen.getByLabelText("Prioritet"), { target: { value: "HOY" } });
+  // Frist, behandlende enhet og gjelderverdi bruker useInputControl med skjulte felter
+  for (const [navn, verdi] of [
+    ["frist", "2026-06-01"],
+    ["behandlendeEnhet", "4100"],
+    ["gjelderverdi", "Dagpenger"],
+  ]) {
+    fireEvent.change(document.querySelector(`input[name="${navn}"]`) as HTMLInputElement, {
+      target: { value: verdi },
+    });
+  }
+  fireEvent.change(screen.getByLabelText("Beskrivelse"), { target: { value: "En beskrivelse" } });
+}
 
 describe("OpprettOppgaveModal", () => {
   beforeEach(() => {
@@ -47,75 +87,62 @@ describe("OpprettOppgaveModal", () => {
     expect(screen.getByLabelText("Prioritet")).toBeDefined();
     expect(screen.getByLabelText("Frist")).toBeDefined();
     expect(screen.getByLabelText("Behandlende enhet")).toBeDefined();
+    expect(screen.getByLabelText("Gjelderverdi")).toBeDefined();
     expect(screen.getByLabelText("Beskrivelse")).toBeDefined();
+    expect(screen.getByRole("radio", { name: "Kontrollnotat" })).toBeDefined();
   });
 
-  it("kaller submit med riktig payload", async () => {
+  it("krever at oppgaven knyttes til en journalføring", async () => {
     await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
 
-    expect(
-      (screen.getByRole("radio", { name: "Kontroll (KTR)" }) as HTMLInputElement).checked,
-    ).toBe(true);
-    fireEvent.click(screen.getByRole("radio", { name: "Kontroll anmeldelse (KTA)" }));
-    fireEvent.change(screen.getByLabelText("Oppgavetype"), {
-      target: { value: "VURD_HENV" },
-    });
-    fireEvent.change(screen.getByLabelText("Prioritet"), {
-      target: { value: "HOY" },
-    });
-    // Frist og behandlendeEnhet bruker useInputControl med hidden inputs
-    const fristInput = document.querySelector('input[name="frist"]') as HTMLInputElement;
-    fireEvent.change(fristInput, { target: { value: "2026-06-01" } });
-    const enhetInput = document.querySelector('input[name="behandlendeEnhet"]') as HTMLInputElement;
-    fireEvent.change(enhetInput, { target: { value: "4100" } });
-    fireEvent.change(screen.getByLabelText("Beskrivelse"), {
-      target: { value: "En beskrivelse" },
-    });
+    fyllUtSkjema();
+    fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
 
+    expect(await screen.findByText("Velg journalførte dokumenter")).toBeDefined();
+    expect(screen.queryByText("Du oppretter nå en oppgave:")).toBeNull();
+  });
+
+  it("kaller submit med valgt journalpost og uten gjelderverdi", async () => {
+    await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
+
+    fyllUtSkjema();
+    fireEvent.click(screen.getByRole("radio", { name: "Kontrollnotat" }));
     fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
     await waitFor(() => {});
     expect(screen.getByText("Du oppretter nå en oppgave:")).toBeDefined();
     expect(screen.getByText("Kontroll anmeldelse (KTA)")).toBeDefined();
-    fireEvent.click(screen.getByRole("button", { name: "Opprett" }));
-    await waitFor(() => {});
-
-    expect(submitMock).toHaveBeenCalledTimes(1);
-    const [formData, options] = submitMock.mock.calls[0];
-    expect(formData).toBeInstanceOf(FormData);
-    expect(formData.get("handling")).toBe("opprett_oppgave");
-    expect(formData.get("tema")).toBe("KTA");
-    expect(formData.get("oppgavetype")).toBe("VURD_HENV");
-    expect(formData.get("prioritet")).toBe("HOY");
-    expect(formData.get("beskrivelse")).toBe("En beskrivelse");
-    expect(options).toEqual(expect.objectContaining({ method: "post" }));
-  });
-
-  it("plasserer primærhandlingen før Avbryt i bekreftelsesmodalen", async () => {
-    await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
-
-    fireEvent.change(screen.getByLabelText("Oppgavetype"), {
-      target: { value: "VURD_HENV" },
-    });
-    fireEvent.change(screen.getByLabelText("Prioritet"), {
-      target: { value: "HOY" },
-    });
-    fireEvent.change(document.querySelector('input[name="frist"]') as HTMLInputElement, {
-      target: { value: "2026-06-01" },
-    });
-    fireEvent.change(document.querySelector('input[name="behandlendeEnhet"]') as HTMLInputElement, {
-      target: { value: "4100" },
-    });
-    fireEvent.change(screen.getByLabelText("Beskrivelse"), {
-      target: { value: "En beskrivelse" },
-    });
-    fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
-    await waitFor(() => {});
-
+    expect(screen.getByText("Dagpenger")).toBeDefined();
+    expect(screen.getByText("Kontrollnotat")).toBeDefined();
     expect(
       screen
         .getByRole("button", { name: "Opprett" })
         .compareDocumentPosition(screen.getByRole("button", { name: "Avbryt" })),
     ).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    fireEvent.click(screen.getByRole("button", { name: "Opprett" }));
+    await waitFor(() => {});
+
+    expect(submitMock).toHaveBeenCalledTimes(1);
+    const [formData, options] = submitMock.mock.calls[0];
+    expect(formData.get("handling")).toBe("opprett_oppgave");
+    expect(formData.get("tema")).toBe("KTA");
+    expect(formData.get("oppgavetype")).toBe("VURD_HENV");
+    expect(formData.get("prioritet")).toBe("HOY");
+    expect(formData.get("beskrivelse")).toBe("En beskrivelse");
+    expect(formData.get("journalpostId")).toBe("jp-1");
+    expect(formData.has("gjelderverdi")).toBe(false);
+    expect(options).toEqual(expect.objectContaining({ method: "post" }));
+  });
+
+  it("henter journalføringene når de ikke er hentet", async () => {
+    const hent = vi.fn();
+    await renderMedRouter(
+      <OpprettOppgaveModal
+        {...defaultProps}
+        arkiv={{ kanSeArkiv: true, hent, tilstand: { status: "ikke-hentet" } }}
+      />,
+    );
+
+    expect(hent).toHaveBeenCalledTimes(1);
   });
 
   it("kaller onClose ved avbryt", async () => {

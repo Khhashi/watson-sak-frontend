@@ -28,6 +28,21 @@ const filSeeds: { sakId: string; filer: FilResponse[] }[] = [
       },
     ],
   },
+  {
+    sakId: "201",
+    filer: [
+      {
+        id: "00000000-0000-4000-8000-00000000f201",
+        filnavn: "kontoutskrift-januar.pdf",
+        storrelse: 153600,
+        contentType: "application/pdf",
+        opprettetAv: "Ola Nordmann",
+        opprettet: "2026-03-10T09:00:00Z",
+        bruktIDokumenter: [],
+        mappe: "Dokumentasjon fra banken",
+      },
+    ],
+  },
 ];
 
 function initialiserFilerForSak(state: MockState, sakId: string): FilResponse[] {

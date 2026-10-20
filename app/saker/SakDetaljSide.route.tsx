@@ -232,13 +232,14 @@ export default function SakDetaljSide() {
               sakId={saksreferanse}
               saksreferanse={saksreferanse}
               kanSeArkiv={sak.tilgang?.kanSeArkiv ?? false}
-              renderHandlinger={({ onJournalpostOpprettet }) => (
+              renderHandlinger={({ onJournalpostOpprettet, arkiv }) => (
                 <SakHandlingerKnapper
                   sak={sak}
                   erEier={erEier}
                   filer={filer}
                   dokumenter={dokumenter}
                   onJournalpostOpprettet={onJournalpostOpprettet}
+                  arkiv={arkiv}
                 />
               )}
             />

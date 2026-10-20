@@ -30,7 +30,7 @@ function renderPanel(props: Partial<Parameters<typeof GosysDokumentpanel>[0]> = 
 }
 
 function åpneOversikt() {
-  fireEvent.click(screen.getByRole("button", { name: "Vis dokumentoversikt" }));
+  fireEvent.click(screen.getByRole("button", { name: "Åpne dokumentoversikt" }));
 }
 
 describe("GosysDokumentpanel", () => {
@@ -48,7 +48,7 @@ describe("GosysDokumentpanel", () => {
     expect(
       screen.getByRole("heading", { name: "Dokumentoversikt i Gosys for sak 14" }),
     ).toBeDefined();
-    expect(screen.getByRole("button", { name: "Vis dokumentoversikt" })).toHaveProperty(
+    expect(screen.getByRole("button", { name: "Åpne dokumentoversikt" })).toHaveProperty(
       "ariaExpanded",
       "false",
     );
@@ -74,6 +74,28 @@ describe("GosysDokumentpanel", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lukk dokumentoversikt" }));
     åpneOversikt();
     expect(mockFetch).toHaveBeenCalledTimes(1);
+  });
+
+  it("viser antall journalføringer og hvor mange som er nye de siste 7 dagene", async () => {
+    const nå = new Date();
+    const iDag = new Date(nå.getTime() - nå.getTimezoneOffset() * 60_000)
+      .toISOString()
+      .slice(0, 19);
+    mockFetch.mockReturnValue(
+      svar({
+        status: "ok",
+        journalposter: [
+          { ...journalpost, journalpostId: "jp-ny", datoOpprettet: iDag },
+          { ...journalpost, datoOpprettet: "2020-01-01T10:00:00" },
+        ],
+      }),
+    );
+    renderPanel();
+
+    expect(screen.queryByText(/journalføringer,/)).toBeNull();
+    åpneOversikt();
+
+    expect(await screen.findByText("2 journalføringer, 1 nye siste 7 dager")).toBeDefined();
   });
 
   it("viser dokumentene i en journalpost når raden utvides", async () => {

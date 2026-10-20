@@ -64,3 +64,19 @@ export function formaterAvsenderMottaker(
 ): string {
   return journalpost.avsenderMottaker?.navn ?? "";
 }
+
+/**
+ * Teller journalposter opprettet de siste `dager` dagene, regnet fra `nå`.
+ * Begge tidspunktene er lokal tid uten tidssone, så vi sammenligner dem som UTC.
+ */
+export function antallNyeSisteDager(
+  journalposter: Pick<ArkivJournalpost, "datoOpprettet">[],
+  dager: number,
+  nå: string,
+): number {
+  const grense = Date.parse(`${nå.slice(0, 19)}Z`) - dager * 24 * 60 * 60 * 1000;
+  return journalposter.filter((journalpost) => {
+    const opprettet = Date.parse(`${journalpost.datoOpprettet.slice(0, 19)}Z`);
+    return !Number.isNaN(opprettet) && opprettet >= grense;
+  }).length;
+}

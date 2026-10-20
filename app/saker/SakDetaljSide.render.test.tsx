@@ -353,7 +353,7 @@ describe("SakDetaljSide render", () => {
     expect(
       filer.compareDocumentPosition(overskrift) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Vis dokumentoversikt" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Åpne dokumentoversikt" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Opprett oppgave i Gosys" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Arkiver dokument(er) i Gosys" })).toBeDefined();
   }, 15000);
