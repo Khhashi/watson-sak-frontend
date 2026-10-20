@@ -133,7 +133,7 @@ export function GosysDokumentpanel({
 function formaterAntallJournalføringer(journalposter: ArkivJournalpost[]): string {
   const antall = journalposter.length;
   const nye = antallNyeSisteDager(journalposter, 7, nåSomLokalIso());
-  return `${antall} ${antall === 1 ? "journalføring" : "journalføringer"}, ${nye} nye siste 7 dager`;
+  return `${antall} ${antall === 1 ? "journalføring" : "journalføringer"}, ${nye} ${nye === 1 ? "ny" : "nye"} siste 7 dager`;
 }
 
 /** Lokal tid uten tidssone, samme format som `datoOpprettet` fra SAF. */

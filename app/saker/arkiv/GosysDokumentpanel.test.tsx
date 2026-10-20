@@ -95,7 +95,7 @@ describe("GosysDokumentpanel", () => {
     expect(screen.queryByText(/journalføringer,/)).toBeNull();
     åpneOversikt();
 
-    expect(await screen.findByText("2 journalføringer, 1 nye siste 7 dager")).toBeDefined();
+    expect(await screen.findByText("2 journalføringer, 1 ny siste 7 dager")).toBeDefined();
   });
 
   it("viser dokumentene i en journalpost når raden utvides", async () => {
