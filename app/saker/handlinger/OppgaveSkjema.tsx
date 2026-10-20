@@ -10,6 +10,7 @@ import {
 } from "@navikt/ds-react";
 import { formaterTilIsoDato } from "~/utils/date-utils";
 import { behandlendeEnheter } from "./behandlendeEnheter";
+import { gjelderverdier } from "./gjelderverdi";
 import { oppgavetypeValg, prioritetValg } from "./opprett-formatering";
 
 interface OppgaveSkjemaProps {
@@ -18,6 +19,7 @@ interface OppgaveSkjemaProps {
     prioritet: FieldMetadata<string | undefined>;
     frist: FieldMetadata<string | undefined>;
     behandlendeEnhet: FieldMetadata<string | undefined>;
+    gjelderverdi: FieldMetadata<string | undefined>;
     beskrivelse: FieldMetadata<string | undefined>;
   };
 }
@@ -25,6 +27,7 @@ interface OppgaveSkjemaProps {
 export function OppgaveSkjema({ fields }: OppgaveSkjemaProps) {
   const frist = useInputControl(fields.frist);
   const behandlendeEnhet = useInputControl(fields.behandlendeEnhet);
+  const gjelderverdi = useInputControl(fields.gjelderverdi);
 
   const { datepickerProps, inputProps } = useDatepicker({
     fromDate: new Date(),
@@ -36,6 +39,7 @@ export function OppgaveSkjema({ fields }: OppgaveSkjemaProps) {
   const valgtBehandlendeEnhet = behandlendeEnheter.find(
     (enhet) => enhet.value === behandlendeEnhet.value,
   );
+  const valgtGjelderverdi = gjelderverdier.find((valg) => valg.value === gjelderverdi.value);
 
   return (
     <VStack gap="space-4">
@@ -100,6 +104,22 @@ export function OppgaveSkjema({ fields }: OppgaveSkjemaProps) {
           behandlendeEnhet.change(isSelected ? enhetsnummer : "")
         }
         error={fields.behandlendeEnhet.errors?.[0]}
+      />
+
+      <input
+        name={fields.gjelderverdi.name}
+        defaultValue={fields.gjelderverdi.initialValue}
+        hidden
+        tabIndex={-1}
+        onFocus={() => gjelderverdi.focus()}
+      />
+      <UNSAFE_Combobox
+        label="Gjelderverdi"
+        options={gjelderverdier}
+        placeholder="Velg gjelderverdi"
+        selectedOptions={valgtGjelderverdi ? [valgtGjelderverdi] : []}
+        onToggleSelected={(verdi, isSelected) => gjelderverdi.change(isSelected ? verdi : "")}
+        error={fields.gjelderverdi.errors?.[0]}
       />
 
       <Textarea
