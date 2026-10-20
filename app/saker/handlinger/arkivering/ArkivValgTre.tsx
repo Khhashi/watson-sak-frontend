@@ -13,13 +13,15 @@ import {
 
 interface ArkivValgTreProps {
   tre: ArkivTre;
+  /** Feltnavnet de valgte nøklene sendes inn med. */
+  name: string;
   valgte: readonly string[];
   onChange: (valgte: string[]) => void;
   error?: string;
 }
 
 /** Mappetre med avkrysning for filer og dokumenter som skal arkiveres i Gosys. */
-export function ArkivValgTre({ tre, valgte, onChange, error }: ArkivValgTreProps) {
+export function ArkivValgTre({ tre, name, valgte, onChange, error }: ArkivValgTreProps) {
   const idPrefiks = useId();
   const [åpneMapper, settÅpneMapper] = useState<ReadonlySet<string>>(new Set());
 
@@ -107,6 +109,9 @@ export function ArkivValgTre({ tre, valgte, onChange, error }: ArkivValgTreProps
       error={error}
     >
       <ul>{visInnhold(tre)}</ul>
+      {valgte.map((nøkkel) => (
+        <input key={nøkkel} type="hidden" name={name} value={nøkkel} />
+      ))}
     </Fieldset>
   );
 }

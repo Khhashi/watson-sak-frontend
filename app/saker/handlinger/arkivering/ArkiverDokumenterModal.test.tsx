@@ -4,6 +4,11 @@ import type { DokumentNode, FilResponse } from "~/saker/filer/typer";
 import { ArkiverDokumenterModal } from "./ArkiverDokumenterModal";
 
 const submitMock = vi.fn();
+const sporHendelseMock = vi.fn();
+
+vi.mock("~/analytics/analytics", () => ({
+  sporHendelse: (...args: unknown[]) => sporHendelseMock(...args),
+}));
 const fetcher: { state: string; data: unknown } = { state: "idle", data: undefined };
 
 vi.mock("react-router", async () => {
@@ -60,7 +65,8 @@ async function renderModal(filer: FilResponse[], dokumenter: DokumentNode[] = []
 
 function fyllUtSkjema(dokumentbeskrivelse = "Kontrollnotat") {
   fireEvent.change(screen.getByLabelText("Tema"), { target: { value: "KTA" } });
-  fireEvent.change(screen.getByLabelText("Dokumentbeskrivelse"), {
+  // Nettleseren sender både input og change når et valg endres. Conform lytter på input.
+  fireEvent.input(screen.getByLabelText("Dokumentbeskrivelse"), {
     target: { value: dokumentbeskrivelse },
   });
 }
@@ -84,6 +90,25 @@ describe("ArkiverDokumenterModal", () => {
     expect(submitMock).not.toHaveBeenCalled();
   });
 
+  it("flytter fokus til utvalget og fjerner feilen når noe velges", async () => {
+    await renderModal([fil("fil-1", "rapport.pdf", { mappe: "Bank" })]);
+
+    fyllUtSkjema();
+    fireEvent.click(screen.getByRole("button", { name: "Arkiver" }));
+
+    expect(await screen.findByText("Velg minst én fil eller ett dokument")).toBeDefined();
+    await waitFor(() =>
+      expect(document.activeElement).toBe(screen.getByRole("checkbox", { name: "Bank" })),
+    );
+
+    fireEvent.click(screen.getByRole("checkbox", { name: "Bank" }));
+
+    await waitFor(() =>
+      expect(screen.queryByText("Velg minst én fil eller ett dokument")).toBeNull(),
+    );
+    expect(submitMock).not.toHaveBeenCalled();
+  });
+
   it("sender selvvalgt dokumentbeskrivelse som tittel når «Annet» er valgt", async () => {
     await renderModal([fil("fil-1", "rapport.pdf")], [notat]);
 
@@ -103,6 +128,7 @@ describe("ArkiverDokumenterModal", () => {
     expect(formData.getAll("vedleggId")).toEqual(["fil-1"]);
     expect(formData.getAll("dokumentId")).toEqual(["dok-1"]);
     expect(formData.has("dokumentbeskrivelse")).toBe(false);
+    expect(formData.has("valgt")).toBe(false);
   });
 
   it("velger alt innhold i en mappe når mappen krysses av", async () => {
@@ -138,6 +164,11 @@ describe("ArkiverDokumenterModal", () => {
     expect(onOpprettet).toHaveBeenCalledWith(
       expect.objectContaining({ journalposttype: "NOTAT", journalpostId: "jp-1" }),
     );
+    expect(sporHendelseMock).toHaveBeenCalledWith("journalpost opprettet", {
+      antallFiler: 1,
+      antallDokumenter: 0,
+      dokumentbeskrivelse: "Kontrollnotat",
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Knytt til oppgave" }));
 

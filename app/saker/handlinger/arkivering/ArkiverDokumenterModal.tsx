@@ -1,10 +1,6 @@
 import { getFormProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
-import {
-  ArchiveIcon,
-  CheckmarkCircleFillIcon,
-  ExclamationmarkTriangleIcon,
-} from "@navikt/aksel-icons";
+import { ArchiveIcon, ExclamationmarkTriangleIcon } from "@navikt/aksel-icons";
 import {
   BodyShort,
   Button,
@@ -16,6 +12,7 @@ import {
   VStack,
 } from "@navikt/ds-react";
 import { useEffect, useMemo, useRef, useState } from "react";
+import { flushSync } from "react-dom";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import { sporHendelse } from "~/analytics/analytics";
@@ -24,9 +21,10 @@ import type { OpprettetJournalpost } from "~/saker/arkiv/typer";
 import type { DokumentNode, FilResponse } from "~/saker/filer/typer";
 import { getSaksreferanse } from "~/saker/id";
 import { type Tema, temaSkjema } from "../tema";
+import { SuksessVisning } from "../SuksessVisning";
 import { TemaVelger } from "../TemaVelger";
 import { ArkivValgTre } from "./ArkivValgTre";
-import { alleElementer, byggArkivTre } from "./arkivvalg";
+import { MAKS_ANTALL_VALGTE, alleElementer, byggArkivTre } from "./arkivvalg";
 import { ANNEN_DOKUMENTBESKRIVELSE, dokumentbeskrivelser } from "./dokumentbeskrivelse";
 
 /** Det som er arkivert, slik at en oppgave kan knyttes til journalposten etterpå. */
@@ -44,6 +42,10 @@ const arkiverSkjema = z
       .string({ error: "Velg dokumentbeskrivelse" })
       .min(1, "Velg dokumentbeskrivelse"),
     selvvalgtDokumentbeskrivelse: z.string().optional(),
+    valgt: z
+      .array(z.string())
+      .min(1, "Velg minst én fil eller ett dokument")
+      .max(MAKS_ANTALL_VALGTE, `Du kan velge maks ${MAKS_ANTALL_VALGTE} filer og dokumenter`),
   })
   .superRefine((data, ctx) => {
     if (
@@ -57,8 +59,6 @@ const arkiverSkjema = z
       });
     }
   });
-
-const MANGLER_VALG = "Velg minst én fil eller ett dokument";
 
 interface ArkiverDokumenterModalProps {
   sakId: string;
@@ -83,8 +83,6 @@ export function ArkiverDokumenterModal({
 }: ArkiverDokumenterModalProps) {
   const fetcher = useFetcher();
   const [valgteNøkler, settValgteNøkler] = useState<string[]>([]);
-  const [valgFeil, settValgFeil] = useState<string | undefined>();
-  const [dokumentbeskrivelse, settDokumentbeskrivelse] = useState("");
   const [arkivert, settArkivert] = useState<ArkivertJournalpost | null>(null);
   const [feilmelding, settFeilmelding] = useState<string | null>(null);
   const submitPågår = useRef(false);
@@ -98,27 +96,30 @@ export function ArkiverDokumenterModal({
   const [form, fields] = useForm({
     id: "arkiver-dokumenter",
     constraint: getZodConstraint(arkiverSkjema),
-    onValidate({ formData }) {
-      return parseWithZod(formData, { schema: arkiverSkjema });
+    onValidate({ form: skjema, submitter, formData }) {
+      const submission = parseWithZod(formData, { schema: arkiverSkjema });
+      if (submitter && submission.status === "error") {
+        fokuserUtvalgVedFeil(skjema, submission.error);
+      }
+      return submission;
     },
     shouldValidate: "onBlur",
     shouldRevalidate: "onInput",
-    onSubmit(event, { formData }) {
+    onSubmit(event, { formData, submission }) {
       event.preventDefault();
-      if (valgteNøkler.length === 0) {
-        settValgFeil(MANGLER_VALG);
-        return;
-      }
-      const valgte = elementer.filter((element) => valgteNøkler.includes(element.nøkkel));
+      if (submission?.status !== "success") return;
+      const { tema, dokumentbeskrivelse: valgtBeskrivelse, valgt } = submission.value;
+      const valgte = elementer.filter((element) => valgt.includes(element.nøkkel));
       const beskrivelse =
-        formData.get("dokumentbeskrivelse") === ANNEN_DOKUMENTBESKRIVELSE
-          ? String(formData.get("selvvalgtDokumentbeskrivelse") ?? "").trim()
-          : String(formData.get("dokumentbeskrivelse"));
+        valgtBeskrivelse === ANNEN_DOKUMENTBESKRIVELSE
+          ? (submission.value.selvvalgtDokumentbeskrivelse ?? "").trim()
+          : valgtBeskrivelse;
 
       formData.set("handling", "opprett_journalpost");
       formData.set("tittel", beskrivelse);
       formData.delete("dokumentbeskrivelse");
       formData.delete("selvvalgtDokumentbeskrivelse");
+      formData.delete("valgt");
       for (const element of valgte) {
         formData.append(element.type === "fil" ? "vedleggId" : "dokumentId", element.id);
       }
@@ -126,11 +127,12 @@ export function ArkiverDokumenterModal({
       sporingsdata.current = {
         antallFiler: valgte.filter((element) => element.type === "fil").length,
         antallDokumenter: valgte.filter((element) => element.type === "dokument").length,
-        selvvalgtDokumentbeskrivelse: dokumentbeskrivelse === ANNEN_DOKUMENTBESKRIVELSE,
+        // Fast liste uten personopplysninger. Fritekst for «Annet» sendes ikke.
+        dokumentbeskrivelse: valgtBeskrivelse,
       };
       submitPågår.current = true;
       innsendt.current = {
-        tema: formData.get("tema") as Tema,
+        tema,
         dokumentbeskrivelse: beskrivelse,
         dokumentnavn: valgte.map((element) => element.navn),
       };
@@ -141,18 +143,16 @@ export function ArkiverDokumenterModal({
       });
     },
   });
-  const formProps = getFormProps(form);
 
   function velg(nøkler: string[]) {
-    settValgteNøkler(nøkler);
-    if (nøkler.length > 0) settValgFeil(undefined);
+    // De skjulte feltene må være oppdatert før conform validerer utvalget på nytt.
+    flushSync(() => settValgteNøkler(nøkler));
+    if (fields.valgt.errors) form.validate({ name: fields.valgt.name });
   }
 
   function nullstill() {
     form.reset();
     settValgteNøkler([]);
-    settValgFeil(undefined);
-    settDokumentbeskrivelse("");
     settArkivert(null);
     settFeilmelding(null);
   }
@@ -210,14 +210,7 @@ export function ArkiverDokumenterModal({
       width={steg === "skjema" ? "medium" : "small"}
     >
       {steg === "suksess" && <Modal.Header />}
-      <fetcher.Form
-        method="post"
-        {...formProps}
-        onSubmit={(event) => {
-          if (valgteNøkler.length === 0) settValgFeil(MANGLER_VALG);
-          formProps.onSubmit(event);
-        }}
-      >
+      <fetcher.Form method="post" {...getFormProps(form)}>
         <Modal.Body>
           {steg === "skjema" ? (
             <VStack gap="space-24">
@@ -231,7 +224,6 @@ export function ArkiverDokumenterModal({
                   label="Dokumentbeskrivelse"
                   defaultValue={fields.dokumentbeskrivelse.initialValue ?? ""}
                   error={fields.dokumentbeskrivelse.errors?.[0]}
-                  onChange={(event) => settDokumentbeskrivelse(event.target.value)}
                 >
                   <option value="">Velg dokumentbeskrivelse</option>
                   {dokumentbeskrivelser.map((beskrivelse) => (
@@ -240,7 +232,7 @@ export function ArkiverDokumenterModal({
                     </option>
                   ))}
                 </Select>
-                {dokumentbeskrivelse === ANNEN_DOKUMENTBESKRIVELSE && (
+                {fields.dokumentbeskrivelse.value === ANNEN_DOKUMENTBESKRIVELSE && (
                   <TextField
                     key={fields.selvvalgtDokumentbeskrivelse.key}
                     name={fields.selvvalgtDokumentbeskrivelse.name}
@@ -253,14 +245,20 @@ export function ArkiverDokumenterModal({
               </VStack>
 
               {elementer.length > 0 ? (
-                <ArkivValgTre tre={tre} valgte={valgteNøkler} onChange={velg} error={valgFeil} />
+                <ArkivValgTre
+                  tre={tre}
+                  name={fields.valgt.name}
+                  valgte={valgteNøkler}
+                  onChange={velg}
+                  error={fields.valgt.errors?.[0]}
+                />
               ) : (
                 <VStack gap="space-4">
                   <BodyShort weight="semibold">Filer og dokumenter fra saken</BodyShort>
                   <Detail textColor="subtle">Ingen filer og dokumenter å velge blant.</Detail>
-                  {valgFeil && (
+                  {fields.valgt.errors && (
                     <BodyShort size="small" className="text-ax-text-danger">
-                      {valgFeil}
+                      {fields.valgt.errors[0]}
                     </BodyShort>
                   )}
                 </VStack>
@@ -285,23 +283,14 @@ export function ArkiverDokumenterModal({
               )}
             </VStack>
           ) : (
-            <VStack gap="space-16" align="center" className="py-6 text-center">
-              <CheckmarkCircleFillIcon
-                aria-hidden
-                fontSize="3rem"
-                className="text-ax-bg-success-strong"
-              />
-              <VStack gap="space-4" align="center">
-                <BodyShort weight="semibold">
-                  Dokumentene er arkivert og journalført i Gosys
-                </BodyShort>
-                {arkivert?.journalpostId && (
-                  <BodyShort textColor="subtle">
-                    Du kan knytte en oppgave til de journalførte dokumentene.
-                  </BodyShort>
-                )}
-              </VStack>
-            </VStack>
+            <SuksessVisning
+              tittel="Dokumentene er arkivert og journalført i Gosys"
+              tekst={
+                arkivert?.journalpostId
+                  ? "Du kan knytte en oppgave til de journalførte dokumentene."
+                  : undefined
+              }
+            />
           )}
         </Modal.Body>
         <Modal.Footer>
@@ -330,4 +319,21 @@ export function ArkiverDokumenterModal({
       </fetcher.Form>
     </Modal>
   );
+}
+
+/**
+ * Conform flytter fokus til første ugyldige felt, men utvalget sendes som skjulte felt som ikke kan
+ * få fokus. Er utvalget eneste feil, flyttes fokus til første avkrysningsboks i stedet.
+ */
+function fokuserUtvalgVedFeil(
+  skjema: HTMLFormElement,
+  feil: Record<string, string[] | null> | null | undefined,
+) {
+  const feltMedFeil = Object.entries(feil ?? {})
+    .filter(([, meldinger]) => meldinger?.length)
+    .map(([felt]) => felt);
+  if (feltMedFeil.length === 0 || feltMedFeil.some((felt) => felt !== "valgt")) return;
+  requestAnimationFrame(() => {
+    skjema.querySelector<HTMLInputElement>('input[type="checkbox"]:not(:disabled)')?.focus();
+  });
 }
