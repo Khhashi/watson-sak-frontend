@@ -59,4 +59,11 @@ describe("useOppgavekodeverk", () => {
     expect(result.current.tilstand).toEqual({ status: "laster" });
     await waitFor(() => expect(result.current.tilstand).toEqual({ status: "ok", kodeverk }));
   });
+
+  it("skiller utløpt sesjon fra andre feil", async () => {
+    fetchMock.mockResolvedValueOnce(svar("Sesjonen er utløpt", 401));
+    const { result } = renderHook(() => useOppgavekodeverk("KTR"));
+
+    await waitFor(() => expect(result.current.tilstand).toEqual({ status: "utlogget" }));
+  });
 });

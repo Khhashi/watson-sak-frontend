@@ -178,6 +178,21 @@ describe("OpprettOppgaveModal", () => {
     expect(kodeverkMock.prøvIgjen).toHaveBeenCalledTimes(1);
   });
 
+  it("ber om ny innlasting i stedet for å prøve igjen når sesjonen er utløpt", async () => {
+    kodeverkMock.tilstand = { status: "utlogget" };
+    await renderMedRouter(
+      <OpprettOppgaveModal
+        {...defaultProps}
+        arkiv={{ ...arkiv, tilstand: { status: "feil", årsak: "utlogget" } }}
+      />,
+    );
+
+    expect(
+      screen.getAllByText("Sesjonen din er utløpt. Last inn siden på nytt for å logge inn."),
+    ).toHaveLength(2);
+    expect(screen.queryByRole("button", { name: "Prøv igjen" })).toBeNull();
+  });
+
   it("henter journalføringene når de ikke er hentet", async () => {
     const hent = vi.fn();
     await renderMedRouter(

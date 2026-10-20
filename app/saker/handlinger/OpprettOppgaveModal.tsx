@@ -313,6 +313,8 @@ function JournalpostValg({
       melding = "Du har ikke tilgang til dokumentoversikten i Gosys for denne saken.";
     } else if (tilstand.status === "ikke-hentet" || tilstand.status === "laster") {
       melding = <Loader size="small" title="Henter journalførte dokumenter fra Gosys" />;
+    } else if (tilstand.status === "feil" && tilstand.årsak === "utlogget") {
+      melding = "Sesjonen din er utløpt. Last inn siden på nytt for å logge inn.";
     } else if (tilstand.status === "feil") {
       melding = (
         <VStack gap="space-8" align="start">

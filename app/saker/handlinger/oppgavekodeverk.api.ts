@@ -1,5 +1,6 @@
 import { data, type LoaderFunctionArgs } from "react-router";
-import { erUtloggetFeil, hentTokenEllerKast401 } from "~/auth/session-utløpt.server";
+import { hentTokenEllerKast401 } from "~/auth/bff-token.server";
+import { erUtloggetFeil } from "~/auth/session-utløpt.server";
 import { skalBrukeMockdata } from "~/config/env.server";
 import { logger } from "~/logging/logging";
 import { hentOppgavekodeverk } from "~/saker/api.server";

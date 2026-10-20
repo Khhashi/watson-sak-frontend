@@ -34,6 +34,7 @@ const kodeverkBeskrivelse: Record<Exclude<OppgavekodeverkTilstand["status"], "ok
   "uten-tema": "Velg tema først",
   laster: "Henter valg fra Gosys …",
   feil: "Kunne ikke hente valg fra Gosys",
+  utlogget: "Sesjonen din er utløpt",
 };
 
 export function OppgaveSkjema({ fields, kodeverk, onPrøvIgjen }: OppgaveSkjemaProps) {
@@ -72,6 +73,11 @@ export function OppgaveSkjema({ fields, kodeverk, onPrøvIgjen }: OppgaveSkjemaP
 
   return (
     <VStack gap="space-4">
+      {kodeverk.status === "utlogget" && (
+        <BodyShort size="small">
+          Sesjonen din er utløpt. Last inn siden på nytt for å logge inn.
+        </BodyShort>
+      )}
       {kodeverk.status === "feil" && (
         <VStack gap="space-8" align="start">
           <BodyShort size="small">
