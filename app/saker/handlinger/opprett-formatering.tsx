@@ -66,17 +66,17 @@ export function ListeSammendrag({ label, navn }: { label: string; navn: string[]
       <BodyShort size="small" textColor="subtle">
         {label}
       </BodyShort>
-      <div className="text-sm font-semibold">
-        {navn.length > 0 ? (
-          <ul>
-            {navn.map((filnavn, indeks) => (
-              <li key={`${filnavn}-${indeks}`}>{filnavn}</li>
-            ))}
-          </ul>
-        ) : (
-          "Ingen"
-        )}
-      </div>
+      {navn.length > 0 ? (
+        <BodyShort as="ul" size="small" weight="semibold">
+          {navn.map((filnavn, indeks) => (
+            <li key={`${filnavn}-${indeks}`}>{filnavn}</li>
+          ))}
+        </BodyShort>
+      ) : (
+        <BodyShort size="small" weight="semibold">
+          Ingen
+        </BodyShort>
+      )}
     </>
   );
 }
