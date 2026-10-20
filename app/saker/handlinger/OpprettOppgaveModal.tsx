@@ -20,7 +20,7 @@ import { z } from "zod";
 import { sporHendelse } from "~/analytics/analytics";
 import { RouteConfig } from "~/routeConfig";
 import type { ArkivJournalpost } from "~/saker/arkiv/typer";
-import { formaterJournalpostdato } from "~/saker/arkiv/visning";
+import { erGyldigJournalpost, formaterJournalpostdato } from "~/saker/arkiv/visning";
 import type { ArkivOversikt } from "~/saker/arkiv/useArkivJournalposter";
 import { getSaksreferanse } from "~/saker/id";
 import { formaterDato } from "~/utils/date-utils";
@@ -298,8 +298,10 @@ function JournalpostValg({
 }) {
   const legend = "Knytt til journalførte dokumenter i Gosys";
   const feil = felt.errors?.[0];
+  const journalposter =
+    tilstand.status === "ok" ? tilstand.journalposter.filter(erGyldigJournalpost) : [];
 
-  if (!kanSeArkiv || tilstand.status !== "ok" || tilstand.journalposter.length === 0) {
+  if (!kanSeArkiv || tilstand.status !== "ok" || journalposter.length === 0) {
     let melding: ReactNode;
     if (!kanSeArkiv) {
       melding = "Du har ikke tilgang til dokumentoversikten i Gosys for denne saken.";
@@ -334,7 +336,7 @@ function JournalpostValg({
       error={feil}
       defaultValue={felt.initialValue ?? ""}
     >
-      {tilstand.journalposter.map((journalpost) => (
+      {journalposter.map((journalpost) => (
         <Radio
           key={journalpost.journalpostId}
           value={journalpost.journalpostId}

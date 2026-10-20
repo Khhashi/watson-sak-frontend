@@ -145,6 +145,76 @@ describe("OpprettOppgaveModal", () => {
     expect(hent).toHaveBeenCalledTimes(1);
   });
 
+  it("forklarer at saksbehandleren mangler tilgang til dokumentoversikten", async () => {
+    await renderMedRouter(
+      <OpprettOppgaveModal {...defaultProps} arkiv={{ ...arkiv, kanSeArkiv: false }} />,
+    );
+
+    expect(
+      screen.getByText("Du har ikke tilgang til dokumentoversikten i Gosys for denne saken."),
+    ).toBeDefined();
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
+
+  it("lar saksbehandleren prøve igjen når journalføringene ikke kunne hentes", async () => {
+    const hent = vi.fn();
+    await renderMedRouter(
+      <OpprettOppgaveModal
+        {...defaultProps}
+        arkiv={{ kanSeArkiv: true, hent, tilstand: { status: "feil", årsak: "utilgjengelig" } }}
+      />,
+    );
+
+    expect(screen.getByText("Kunne ikke hente journalførte dokumenter fra Gosys.")).toBeDefined();
+    hent.mockClear();
+    fireEvent.click(screen.getByRole("button", { name: "Prøv igjen" }));
+
+    expect(hent).toHaveBeenCalledTimes(1);
+  });
+
+  it("viser ikke feilregistrerte, utgåtte eller avbrutte journalføringer", async () => {
+    const [gyldig] = arkiv.tilstand.status === "ok" ? arkiv.tilstand.journalposter : [];
+    const ugyldige = ["FEILREGISTRERT", "UTGAAR", "AVBRUTT"].map((journalstatus) => ({
+      ...gyldig,
+      journalpostId: `jp-${journalstatus}`,
+      tittel: `Notat ${journalstatus}`,
+      journalstatus,
+    }));
+    await renderMedRouter(
+      <OpprettOppgaveModal
+        {...defaultProps}
+        arkiv={{ ...arkiv, tilstand: { status: "ok", journalposter: [gyldig, ...ugyldige] } }}
+      />,
+    );
+
+    expect(screen.getAllByRole("radio").map((radio) => radio.getAttribute("value"))).toEqual([
+      "jp-1",
+    ]);
+  });
+
+  it("ber om arkivering først når saken ikke har gyldige journalføringer", async () => {
+    const [gyldig] = arkiv.tilstand.status === "ok" ? arkiv.tilstand.journalposter : [];
+    await renderMedRouter(
+      <OpprettOppgaveModal
+        {...defaultProps}
+        arkiv={{
+          ...arkiv,
+          tilstand: {
+            status: "ok",
+            journalposter: [{ ...gyldig, journalstatus: "FEILREGISTRERT" }],
+          },
+        }}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Saken har ingen journalførte dokumenter i Gosys. Arkiver dokumenter før du oppretter en oppgave.",
+      ),
+    ).toBeDefined();
+    expect(screen.queryByRole("radio")).toBeNull();
+  });
+
   it("kaller onClose ved avbryt", async () => {
     await renderMedRouter(<OpprettOppgaveModal {...defaultProps} />);
 

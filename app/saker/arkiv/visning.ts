@@ -49,6 +49,13 @@ export function beskrivJournalposttype(kode: string | null): string | null {
   return journalposttyper[kode] ?? kode;
 }
 
+const ugyldigeJournalstatuser = new Set(["FEILREGISTRERT", "UTGAAR", "AVBRUTT"]);
+
+/** Journalposter som er feilregistrert, utgått eller avbrutt, skal ikke knyttes til nye oppgaver. */
+export function erGyldigJournalpost(journalpost: Pick<ArkivJournalpost, "journalstatus">): boolean {
+  return !journalpost.journalstatus || !ugyldigeJournalstatuser.has(journalpost.journalstatus);
+}
+
 /** Norsk visningstekst for journalstatus. Ukjente koder returneres uendret. */
 export function formaterJournalstatus(kode: string | null): string {
   if (!kode) return "";
