@@ -4,22 +4,36 @@ import {
   ExclamationmarkTriangleIcon,
   PadlockLockedIcon,
 } from "@navikt/aksel-icons";
-import { BodyShort, Button, Heading, HStack, InfoCard, Loader, VStack } from "@navikt/ds-react";
-import { useEffect, useState, type ReactNode } from "react";
+import {
+  BodyShort,
+  Button,
+  Detail,
+  Heading,
+  HStack,
+  InfoCard,
+  Loader,
+  VStack,
+} from "@navikt/ds-react";
+import { useCallback, useEffect, useState, type ReactNode } from "react";
 import { Kort } from "~/komponenter/Kort";
 import { JournalpostTabell } from "./JournalpostTabell";
 import type { ArkivJournalpost, OpprettetJournalpost } from "./typer";
-import { useArkivJournalposter, type ArkivTilstand } from "./useArkivJournalposter";
-import { tilJournalposttypekode } from "./visning";
+import {
+  useArkivJournalposter,
+  type ArkivOversikt,
+  type ArkivTilstand,
+} from "./useArkivJournalposter";
+import { antallNyeSisteDager, tilJournalposttypekode } from "./visning";
 
 interface GosysDokumentpanelProps {
   sakId: string;
   saksreferanse: string;
   /** Om brukeren har tilgang til å se journalposter i Gosys (`tilgang.kanSeArkiv`). */
   kanSeArkiv: boolean;
-  /** Handlingsknapper som vises ved siden av «Vis dokumentoversikt». */
+  /** Handlingsknapper som vises ved siden av «Åpne dokumentoversikt». */
   renderHandlinger?: (props: {
     onJournalpostOpprettet: (journalpost: OpprettetJournalpost) => void;
+    arkiv: ArkivOversikt;
   }) => ReactNode;
 }
 
@@ -56,6 +70,9 @@ export function GosysDokumentpanel({
     journalpostOpprettet(tilVentendeJournalpost(journalpost));
   }
 
+  const hentOversikt = useCallback(() => void hent(), [hent]);
+  const arkiv: ArkivOversikt = { kanSeArkiv, tilstand, hent: hentOversikt };
+
   const overskriftId = `gosys-dokumentoversikt-${sakId}`;
   const innholdId = `${overskriftId}-innhold`;
 
@@ -68,8 +85,8 @@ export function GosysDokumentpanel({
               Dokumentoversikt i Gosys for sak {saksreferanse}
             </Heading>
             <BodyShort size="small">
-              Journalføringer i Gosys for denne saken. Om du ønsker å se annet i Gosys må du gjøre
-              dette i Gosys.
+              Alle journalføringer i Gosys for sak {saksreferanse}. Om du ønsker å se annet i Gosys
+              må du gjøre dette i Gosys.
             </BodyShort>
           </VStack>
 
@@ -83,10 +100,16 @@ export function GosysDokumentpanel({
               aria-controls={åpen ? innholdId : undefined}
               onClick={veksleOversikt}
             >
-              {åpen ? "Lukk dokumentoversikt" : "Vis dokumentoversikt"}
+              {åpen ? "Lukk dokumentoversikt" : "Åpne dokumentoversikt"}
             </Button>
-            {renderHandlinger?.({ onJournalpostOpprettet })}
+            {renderHandlinger?.({ onJournalpostOpprettet, arkiv })}
           </HStack>
+
+          {kanSeArkiv && tilstand.status === "ok" ? (
+            <Detail textColor="subtle" align="end">
+              {formaterAntallJournalføringer(tilstand.journalposter)}
+            </Detail>
+          ) : null}
 
           {åpen ? (
             <div id={innholdId}>
@@ -105,6 +128,12 @@ export function GosysDokumentpanel({
       </Kort>
     </section>
   );
+}
+
+function formaterAntallJournalføringer(journalposter: ArkivJournalpost[]): string {
+  const antall = journalposter.length;
+  const nye = antallNyeSisteDager(journalposter, 7, nåSomLokalIso());
+  return `${antall} ${antall === 1 ? "journalføring" : "journalføringer"}, ${nye} ${nye === 1 ? "ny" : "nye"} siste 7 dager`;
 }
 
 /** Lokal tid uten tidssone, samme format som `datoOpprettet` fra SAF. */

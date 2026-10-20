@@ -178,7 +178,7 @@ test.describe("Sakdetalj – dokumentoversikt i Gosys", () => {
     await expect(panel.getByRole("button", { name: "Opprett oppgave i Gosys" })).toBeVisible();
     await expect(panel.getByRole("button", { name: "Arkiver dokument(er) i Gosys" })).toBeVisible();
 
-    await panel.getByRole("button", { name: "Vis dokumentoversikt" }).click();
+    await panel.getByRole("button", { name: "Åpne dokumentoversikt" }).click();
     await expect(
       panel.getByRole("cell", { name: "Svarbrev om kontoopplysninger", exact: true }),
     ).toBeVisible();
@@ -202,12 +202,21 @@ test.describe("Sakdetalj – dokumentoversikt i Gosys", () => {
 
     await panel.getByRole("button", { name: "Arkiver dokument(er) i Gosys" }).click();
     const dialog = page.getByRole("dialog");
-    await dialog.getByRole("radio", { name: "Utgående" }).check();
-    await dialog.getByLabel("Tittel").fill("Varsel om kontroll");
-    await dialog.getByLabel("Innhold").fill("Varsel sendt til bruker");
-    await dialog.getByRole("button", { name: "Lagre" }).click();
-    await dialog.getByRole("button", { name: "Opprett" }).click();
-    await dialog.getByRole("button", { name: "Lukk" }).click();
+    await dialog.getByLabel("Tema").selectOption("KTR");
+    await dialog.getByLabel("Dokumentbeskrivelse", { exact: true }).selectOption("Annet");
+    await dialog.getByLabel("Selvvalgt dokumentbeskrivelse").fill("Varsel om kontroll");
+    await dialog
+      .getByRole("group", { name: "Filer og dokumenter fra saken" })
+      .getByRole("checkbox")
+      .first()
+      .check();
+    await dialog.getByRole("button", { name: "Arkiver" }).click();
+    await expect(
+      dialog.getByText(/^Dokument(et|ene) er arkivert og journalført i Gosys$/),
+    ).toBeVisible();
+    await expect(dialog.getByRole("button", { name: "Knytt til oppgave" })).toBeVisible();
+    // Både lukkekrysset i headeren og knappen i footeren heter «Lukk»
+    await dialog.getByRole("button", { name: "Lukk" }).last().click();
 
     const rad = panel.getByRole("row", { name: /Varsel om kontroll/ });
     await expect(rad).toBeVisible();
@@ -226,7 +235,7 @@ test.describe("Sakdetalj – dokumentoversikt i Gosys", () => {
     );
     const panel = page.getByRole("region", { name: "Dokumentoversikt i Gosys for sak 201" });
 
-    await panel.getByRole("button", { name: "Vis dokumentoversikt" }).click();
+    await panel.getByRole("button", { name: "Åpne dokumentoversikt" }).click();
 
     await expect(
       panel.getByText("Kunne ikke hente dokumentoversikten fra Gosys. Prøv igjen."),

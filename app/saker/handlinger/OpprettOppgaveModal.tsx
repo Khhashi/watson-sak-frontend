@@ -1,34 +1,46 @@
-import { getFormProps, useForm } from "@conform-to/react";
+import { type FieldMetadata, getFormProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
+import { ExclamationmarkTriangleIcon, TasklistIcon } from "@navikt/aksel-icons";
 import {
-  CheckmarkCircleFillIcon,
-  ExclamationmarkTriangleIcon,
-  TasklistIcon,
-} from "@navikt/aksel-icons";
-import { BodyShort, Box, Button, HGrid, InfoCard, Modal, VStack } from "@navikt/ds-react";
-import { useEffect, useRef, useState } from "react";
+  BodyShort,
+  Box,
+  Button,
+  Fieldset,
+  HGrid,
+  InfoCard,
+  Loader,
+  Modal,
+  Radio,
+  RadioGroup,
+  VStack,
+} from "@navikt/ds-react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
 import { sporHendelse } from "~/analytics/analytics";
 import { RouteConfig } from "~/routeConfig";
+import type { ArkivJournalpost } from "~/saker/arkiv/typer";
+import { erGyldigJournalpost, formaterJournalpostdato } from "~/saker/arkiv/visning";
+import type { ArkivOversikt } from "~/saker/arkiv/useArkivJournalposter";
 import { getSaksreferanse } from "~/saker/id";
 import { formaterDato } from "~/utils/date-utils";
 import { OppgaveSkjema } from "./OppgaveSkjema";
+import { oppgavefeltSkjema } from "./oppgavefelt";
 import {
   formaterOppgavePrioritet,
   formaterOppgavetype,
   SammendragRad,
 } from "./opprett-formatering";
-import { formaterTemavalg, temaSkjema } from "./tema";
+import { SuksessVisning } from "./SuksessVisning";
+import { erTema, formaterTemavalg, temaSkjema } from "./tema";
 import { TemaVelger } from "./TemaVelger";
+import { useOppgavekodeverk } from "./useOppgavekodeverk";
 
-const opprettOppgaveSkjema = z.object({
+const opprettOppgaveSkjema = oppgavefeltSkjema.extend({
   tema: temaSkjema,
-  oppgavetype: z.string({ error: "Velg oppgavetype" }).min(1, "Velg oppgavetype"),
-  prioritet: z.string({ error: "Velg prioritet" }).min(1, "Velg prioritet"),
-  frist: z.string({ error: "Velg frist" }).min(1, "Velg frist"),
-  behandlendeEnhet: z.string({ error: "Velg behandlende enhet" }).min(1, "Velg behandlende enhet"),
-  beskrivelse: z.string({ error: "Skriv en beskrivelse" }).trim().min(1, "Skriv en beskrivelse"),
+  journalpostId: z
+    .string({ error: "Velg journalførte dokumenter" })
+    .min(1, "Velg journalførte dokumenter"),
 });
 
 type Steg = "skjema" | "bekreft" | "suksess";
@@ -37,9 +49,11 @@ interface OpprettOppgaveModalProps {
   sakId: string;
   åpen: boolean;
   onClose: () => void;
+  /** Journalpostene i Gosys som oppgaven kan knyttes til. */
+  arkiv: ArkivOversikt;
 }
 
-export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveModalProps) {
+export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOppgaveModalProps) {
   const fetcher = useFetcher();
   const submitPågår = useRef(false);
   const forrigeÅpen = useRef(false);
@@ -67,7 +81,6 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
 
   function handleBekreft() {
     if (!innsendingFormData) return;
-    sporHendelse("oppgave opprettet");
     submitPågår.current = true;
     fetcher.submit(innsendingFormData, {
       method: "post",
@@ -93,19 +106,37 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
     onClose();
   }
 
+  const { kanSeArkiv, tilstand: arkivtilstand, hent: hentArkiv } = arkiv;
   useEffect(() => {
     if (åpen && !forrigeÅpen.current) {
       setSteg("skjema");
       setInnsendingFormData(null);
       setFeilmelding(null);
+      if (
+        kanSeArkiv &&
+        (arkivtilstand.status === "ikke-hentet" || arkivtilstand.status === "feil")
+      ) {
+        hentArkiv();
+      }
     }
     forrigeÅpen.current = åpen;
-  }, [åpen]);
+  }, [åpen, kanSeArkiv, arkivtilstand.status, hentArkiv]);
+
+  const valgtTema = erTema(fields.tema.value) ? fields.tema.value : undefined;
+  const { tilstand: kodeverk, prøvIgjen: hentKodeverkPåNytt } = useOppgavekodeverk(valgtTema);
+  const oppgavetyper = kodeverk.status === "ok" ? kodeverk.kodeverk.oppgavetyper : [];
+  const gjelderverdier = kodeverk.status === "ok" ? kodeverk.kodeverk.gjelderverdier : [];
+
+  const journalposter = arkivtilstand.status === "ok" ? arkivtilstand.journalposter : [];
+  const valgtJournalpost = journalposter.find(
+    (journalpost) => journalpost.journalpostId === innsendingFormData?.get("journalpostId"),
+  );
 
   useEffect(() => {
     if (!submitPågår.current || fetcher.state !== "idle") return;
 
     if (fetcher.data && "ok" in fetcher.data && fetcher.data.ok) {
+      sporHendelse("oppgave opprettet", { knyttetTil: "valgt journalpost" });
       setFeilmelding(null);
       setSteg("suksess");
     } else {
@@ -123,9 +154,9 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
       header={
         steg === "suksess"
           ? undefined
-          : { heading: "Opprett oppgave", icon: <TasklistIcon aria-hidden /> }
+          : { heading: "Opprett oppgave i Gosys", icon: <TasklistIcon aria-hidden /> }
       }
-      aria-label={steg === "suksess" ? "Oppgave opprettet" : "Opprett oppgave"}
+      aria-label={steg === "suksess" ? "Oppgave opprettet" : "Opprett oppgave i Gosys"}
       width={steg === "skjema" ? "medium" : "small"}
     >
       {steg === "suksess" && <Modal.Header />}
@@ -140,8 +171,18 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
                   prioritet: fields.prioritet,
                   frist: fields.frist,
                   behandlendeEnhet: fields.behandlendeEnhet,
+                  gjelderverdi: fields.gjelderverdi,
                   beskrivelse: fields.beskrivelse,
                 }}
+                kodeverk={kodeverk}
+                onPrøvIgjen={hentKodeverkPåNytt}
+              />
+              <hr className="my-2 border-ax-border-neutral-subtle" />
+              <JournalpostValg
+                kanSeArkiv={kanSeArkiv}
+                tilstand={arkivtilstand}
+                onPrøvIgjen={hentArkiv}
+                felt={fields.journalpostId}
               />
             </VStack>
           )}
@@ -156,9 +197,12 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
                   />
                   <SammendragRad
                     label="Type"
-                    verdi={formaterOppgavetype(
-                      innsendingFormData.get("oppgavetype")?.toString() ?? "",
-                    )}
+                    verdi={
+                      oppgavetyper.find(
+                        (type) => type.oppgavetype === innsendingFormData.get("oppgavetype"),
+                      )?.term ??
+                      formaterOppgavetype(innsendingFormData.get("oppgavetype")?.toString() ?? "")
+                    }
                   />
                   <SammendragRad
                     label="Prioritet"
@@ -171,8 +215,20 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
                     verdi={formaterDato(innsendingFormData.get("frist")?.toString() ?? "")}
                   />
                   <SammendragRad
+                    label="Gjelderverdi"
+                    verdi={
+                      gjelderverdier.find(
+                        (valg) => valg.behandlingstema === innsendingFormData.get("gjelderverdi"),
+                      )?.behandlingstemaTerm ?? ""
+                    }
+                  />
+                  <SammendragRad
                     label="Beskrivelse"
                     verdi={innsendingFormData.get("beskrivelse")?.toString() ?? ""}
+                  />
+                  <SammendragRad
+                    label="Journalføring"
+                    verdi={valgtJournalpost ? journalposttittel(valgtJournalpost) : ""}
                   />
                 </HGrid>
               </Box>
@@ -186,17 +242,10 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
             </VStack>
           )}
           {steg === "suksess" && (
-            <VStack gap="space-16" align="center" className="py-6 text-center">
-              <CheckmarkCircleFillIcon
-                aria-hidden
-                fontSize="3rem"
-                className="text-ax-bg-success-strong"
-              />
-              <VStack gap="space-4" align="center">
-                <BodyShort weight="semibold">Oppgave opprettet</BodyShort>
-                <BodyShort textColor="subtle">Oppgaven er opprettet og lagret på saken.</BodyShort>
-              </VStack>
-            </VStack>
+            <SuksessVisning
+              tittel="Oppgave opprettet"
+              tekst="Oppgaven er opprettet og lagret på saken."
+            />
           )}
         </Modal.Body>
         <Modal.Footer>
@@ -235,5 +284,75 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose }: OpprettOppgaveMod
         </Modal.Footer>
       </fetcher.Form>
     </Modal>
+  );
+}
+
+function journalposttittel(journalpost: ArkivJournalpost): string {
+  return journalpost.tittel ?? "Uten tittel";
+}
+
+function JournalpostValg({
+  kanSeArkiv,
+  tilstand,
+  onPrøvIgjen,
+  felt,
+}: {
+  kanSeArkiv: boolean;
+  tilstand: ArkivOversikt["tilstand"];
+  onPrøvIgjen: () => void;
+  felt: FieldMetadata<string | undefined>;
+}) {
+  const legend = "Knytt til journalførte dokumenter i Gosys";
+  const feil = felt.errors?.[0];
+  const journalposter =
+    tilstand.status === "ok" ? tilstand.journalposter.filter(erGyldigJournalpost) : [];
+
+  if (!kanSeArkiv || tilstand.status !== "ok" || journalposter.length === 0) {
+    let melding: ReactNode;
+    if (!kanSeArkiv) {
+      melding = "Du har ikke tilgang til dokumentoversikten i Gosys for denne saken.";
+    } else if (tilstand.status === "ikke-hentet" || tilstand.status === "laster") {
+      melding = <Loader size="small" title="Henter journalførte dokumenter fra Gosys" />;
+    } else if (tilstand.status === "feil" && tilstand.årsak === "utlogget") {
+      melding = "Sesjonen din er utløpt. Last inn siden på nytt for å logge inn.";
+    } else if (tilstand.status === "feil") {
+      melding = (
+        <VStack gap="space-8" align="start">
+          <BodyShort size="small">Kunne ikke hente journalførte dokumenter fra Gosys.</BodyShort>
+          <Button type="button" size="small" variant="secondary" onClick={onPrøvIgjen}>
+            Prøv igjen
+          </Button>
+        </VStack>
+      );
+    } else {
+      melding =
+        "Saken har ingen journalførte dokumenter i Gosys. Arkiver dokumenter før du oppretter en oppgave.";
+    }
+    return (
+      <Fieldset legend={legend} error={feil}>
+        <input name={felt.name} type="hidden" value="" />
+        {typeof melding === "string" ? <BodyShort size="small">{melding}</BodyShort> : melding}
+      </Fieldset>
+    );
+  }
+
+  return (
+    <RadioGroup
+      key={felt.key}
+      name={felt.name}
+      legend={legend}
+      error={feil}
+      defaultValue={felt.initialValue ?? ""}
+    >
+      {journalposter.map((journalpost) => (
+        <Radio
+          key={journalpost.journalpostId}
+          value={journalpost.journalpostId}
+          description={`Journalført ${formaterJournalpostdato(journalpost.datoOpprettet)}`}
+        >
+          {journalposttittel(journalpost)}
+        </Radio>
+      ))}
+    </RadioGroup>
   );
 }

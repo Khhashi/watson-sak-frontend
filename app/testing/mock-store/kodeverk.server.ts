@@ -1,4 +1,6 @@
 import type { Kodeverk } from "~/saker/api.server";
+import type { Oppgavekodeverk } from "~/saker/handlinger/oppgavekodeverk";
+import type { Tema } from "~/saker/handlinger/tema";
 
 export const mockKodeverk: Kodeverk = {
   merker: ["LIME", "REGMAN", "A_KRIM"],
@@ -82,4 +84,31 @@ export const mockKodeverk: Kodeverk = {
     { kode: "by295h", beskrivelse: "Analyse" },
     { kode: "tipsmottak", beskrivelse: "Tipsmottak" },
   ],
+};
+
+export const mockOppgavekodeverk: Record<Tema, Oppgavekodeverk> = {
+  KTR: {
+    gjelderverdier: [
+      { behandlingstema: "ab0014", behandlingstemaTerm: "Arbeidsavklaringspenger" },
+      { behandlingstema: "ab0061", behandlingstemaTerm: "Sykepenger" },
+      { behandlingstema: "ab0356", behandlingstemaTerm: "Dagpenger" },
+      { behandlingstema: "ab0453", behandlingstemaTerm: "Prioritert kontroll" },
+      { behandlingstema: "ab0267", behandlingstemaTerm: "Aa-registeret" },
+    ],
+    oppgavetyper: [
+      { oppgavetype: "BEH_SAK", term: "Behandle sak" },
+      { oppgavetype: "VUR", term: "Vurder dokument" },
+      { oppgavetype: "VUR_KONS_YTE", term: "Vurder konsekvens for ytelse" },
+    ],
+  },
+  KTA: {
+    gjelderverdier: [
+      { behandlingstema: "ab0014", behandlingstemaTerm: "Arbeidsavklaringspenger" },
+      { behandlingstema: "ab0356", behandlingstemaTerm: "Dagpenger" },
+    ],
+    oppgavetyper: [
+      { oppgavetype: "BEH_SAK", term: "Behandle sak" },
+      { oppgavetype: "VUR", term: "Vurder dokument" },
+    ],
+  },
 };

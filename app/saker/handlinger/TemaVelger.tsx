@@ -1,26 +1,28 @@
 import type { FieldMetadata } from "@conform-to/react";
-import { Radio, RadioGroup } from "@navikt/ds-react";
-import { STANDARD_TEMA, type Tema, temaValg } from "./tema";
+import { Select } from "@navikt/ds-react";
+import { type Tema, temaValg } from "./tema";
 
 interface TemaVelgerProps {
   felt: FieldMetadata<Tema | undefined>;
 }
 
-/** Radioknapper for valg av tema (KTR eller KTA). Kontroll (KTR) er forhåndsvalgt. */
+/** Nedtrekksliste for valg av tema (KTR eller KTA). Ingen verdi er forhåndsvalgt. */
 export function TemaVelger({ felt }: TemaVelgerProps) {
   return (
-    <RadioGroup
+    <Select
       key={felt.key}
       name={felt.name}
-      legend="Tema"
+      id={felt.id}
+      label="Tema"
       error={felt.errors?.[0]}
-      defaultValue={felt.initialValue ?? STANDARD_TEMA}
+      defaultValue={felt.initialValue ?? ""}
     >
+      <option value="">Velg tema</option>
       {temaValg.map(({ verdi, label }) => (
-        <Radio key={verdi} value={verdi}>
+        <option key={verdi} value={verdi}>
           {`${label} (${verdi})`}
-        </Radio>
+        </option>
       ))}
-    </RadioGroup>
+    </Select>
   );
 }

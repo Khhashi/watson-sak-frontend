@@ -37,6 +37,7 @@ export default [
   route(RouteConfig.API.SAK_FIL, "saker/filer/fil.api.ts"),
   route(RouteConfig.API.SAK_MAPPER, "saker/filer/mapper/mapper.api.ts"),
   route(RouteConfig.API.SAK_ARKIV_JOURNALPOSTER, "saker/arkiv/journalposter.api.ts"),
+  route(RouteConfig.API.OPPGAVEKODEVERK, "saker/handlinger/oppgavekodeverk.api.ts"),
   route(RouteConfig.API.VARSLER_ULESTE, "varsler/uleste.api.ts"),
   route(RouteConfig.API.MARKER_VARSEL_LEST, "varsler/marker-lest.api.ts"),
 

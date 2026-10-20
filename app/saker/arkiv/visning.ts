@@ -49,6 +49,13 @@ export function beskrivJournalposttype(kode: string | null): string | null {
   return journalposttyper[kode] ?? kode;
 }
 
+const ugyldigeJournalstatuser = new Set(["FEILREGISTRERT", "UTGAAR", "AVBRUTT"]);
+
+/** Journalposter som er feilregistrert, utgått eller avbrutt, skal ikke knyttes til nye oppgaver. */
+export function erGyldigJournalpost(journalpost: Pick<ArkivJournalpost, "journalstatus">): boolean {
+  return !journalpost.journalstatus || !ugyldigeJournalstatuser.has(journalpost.journalstatus);
+}
+
 /** Norsk visningstekst for journalstatus. Ukjente koder returneres uendret. */
 export function formaterJournalstatus(kode: string | null): string {
   if (!kode) return "";
@@ -63,4 +70,20 @@ export function formaterAvsenderMottaker(
   journalpost: Pick<ArkivJournalpost, "avsenderMottaker">,
 ): string {
   return journalpost.avsenderMottaker?.navn ?? "";
+}
+
+/**
+ * Teller journalposter opprettet de siste `dager` dagene, regnet fra `nå`.
+ * Begge tidspunktene er lokal tid uten tidssone, så vi sammenligner dem som UTC.
+ */
+export function antallNyeSisteDager(
+  journalposter: Pick<ArkivJournalpost, "datoOpprettet">[],
+  dager: number,
+  nå: string,
+): number {
+  const grense = Date.parse(`${nå.slice(0, 19)}Z`) - dager * 24 * 60 * 60 * 1000;
+  return journalposter.filter((journalpost) => {
+    const opprettet = Date.parse(`${journalpost.datoOpprettet.slice(0, 19)}Z`);
+    return !Number.isNaN(opprettet) && opprettet >= grense;
+  }).length;
 }

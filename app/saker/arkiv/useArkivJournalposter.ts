@@ -9,6 +9,13 @@ export type ArkivTilstand =
   | { status: "ok"; journalposter: ArkivJournalpost[] }
   | { status: "feil"; årsak: "for-mange-forespørsler" | "utilgjengelig" | "utlogget" };
 
+/** Det andre komponenter trenger for å vise og hente journalpostene på saken. */
+export type ArkivOversikt = {
+  kanSeArkiv: boolean;
+  tilstand: ArkivTilstand;
+  hent: () => void;
+};
+
 const resultatSchema = z.discriminatedUnion("status", [
   z.object({ status: z.literal("ok"), journalposter: arkivJournalposterSchema }),
   z.object({

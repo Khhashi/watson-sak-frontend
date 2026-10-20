@@ -6,7 +6,9 @@ const journalposttypeEtiketter: Record<string, string> = {
   NOTAT: "Notat",
 };
 
+// Reserve for historikken, som ikke henter kodeverket fra Gosys.
 const oppgavetypeEtiketter: Record<string, string> = {
+  BEH_SAK: "Behandle sak",
   VUR: "Vurder dokument",
   VURD_HENV: "Vurder henvendelse",
   VUR_KONS_YTE: "Vurder konsekvens for ytelse",
@@ -17,12 +19,6 @@ const prioritetEtiketter: Record<string, string> = {
   NORMAL: "Normal",
   HOY: "Høy",
 };
-
-export const oppgavetypeValg = [
-  { verdi: "VUR", label: oppgavetypeEtiketter.VUR },
-  { verdi: "VURD_HENV", label: oppgavetypeEtiketter.VURD_HENV },
-  { verdi: "VUR_KONS_YTE", label: oppgavetypeEtiketter.VUR_KONS_YTE },
-] as const;
 
 export const prioritetValg = [
   { verdi: "LAV", label: prioritetEtiketter.LAV },
@@ -42,26 +38,37 @@ export function formaterOppgavePrioritet(prioritet: string): string {
   return prioritetEtiketter[prioritet] ?? prioritet;
 }
 
-export function SammendragRad({ label, verdi }: { label: string; verdi: React.ReactNode }) {
+export function SammendragRad({
+  label,
+  verdi,
+  fremhevet = false,
+}: {
+  label: string;
+  verdi: React.ReactNode;
+  /** Viser verdien med halvfet skrift. */
+  fremhevet?: boolean;
+}) {
   return (
     <>
       <BodyShort size="small" textColor="subtle">
         {label}
       </BodyShort>
-      <BodyShort size="small">{verdi}</BodyShort>
+      <BodyShort size="small" weight={fremhevet ? "semibold" : "regular"}>
+        {verdi}
+      </BodyShort>
     </>
   );
 }
 
-export function VedleggSammendrag({ navn }: { navn: string[] }) {
+export function ListeSammendrag({ label, navn }: { label: string; navn: string[] }) {
   return (
     <>
       <BodyShort size="small" textColor="subtle">
-        Vedlegg
+        {label}
       </BodyShort>
-      <div className="text-sm">
+      <div className="text-sm font-semibold">
         {navn.length > 0 ? (
-          <ul className="list-disc pl-4">
+          <ul>
             {navn.map((filnavn, indeks) => (
               <li key={`${filnavn}-${indeks}`}>{filnavn}</li>
             ))}

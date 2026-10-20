@@ -51,6 +51,8 @@ function lagKontrollsak(overrides: Partial<KontrollsakResponse> = {}): Kontrolls
   };
 }
 
+const arkiv = { kanSeArkiv: true, hent: vi.fn(), tilstand: { status: "ikke-hentet" as const } };
+
 function renderMedRouter(ui: React.ReactNode) {
   const router = createMemoryRouter([{ path: "/", element: ui }], {
     initialEntries: ["/"],
@@ -67,6 +69,7 @@ describe("SakHandlingerKnapper", () => {
         sak={lagKontrollsak({ steg: "AVSLUTTET" })}
         filer={[]}
         dokumenter={[]}
+        arkiv={arkiv}
       />,
     );
 
@@ -80,6 +83,7 @@ describe("SakHandlingerKnapper", () => {
         sak={lagKontrollsak({ steg: "UTREDES", status: null })}
         filer={[]}
         dokumenter={[]}
+        arkiv={arkiv}
       />,
     );
 
@@ -98,6 +102,7 @@ describe("SakHandlingerKnapper", () => {
         sak={lagKontrollsak({ steg: "OPPRETTET", status: null })}
         filer={[]}
         dokumenter={[]}
+        arkiv={arkiv}
       />,
     );
 
@@ -113,6 +118,7 @@ describe("SakHandlingerKnapper", () => {
         sak={lagKontrollsak({ steg: "UTREDES", status: "VENTER_PA_INFORMASJON" })}
         filer={[]}
         dokumenter={[]}
+        arkiv={arkiv}
       />,
     );
 
@@ -129,6 +135,7 @@ describe("SakHandlingerKnapper", () => {
         erEier={false}
         filer={[]}
         dokumenter={[]}
+        arkiv={arkiv}
         sak={lagKontrollsak({
           steg: "OPPRETTET",
           saksbehandlere: {
@@ -149,6 +156,7 @@ describe("SakHandlingerKnapper", () => {
         erEier={false}
         filer={[]}
         dokumenter={[]}
+        arkiv={arkiv}
         sak={lagKontrollsak({
           steg: "OPPRETTET",
           status: "I_BERO",

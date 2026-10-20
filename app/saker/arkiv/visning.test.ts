@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  antallNyeSisteDager,
   beskrivJournalposttype,
   formaterAvsenderMottaker,
   formaterJournalpostdato,
@@ -58,5 +59,18 @@ describe("formaterAvsenderMottaker", () => {
       }),
     ).toBe("Arbeidsgiveren");
     expect(formaterAvsenderMottaker({ avsenderMottaker: null })).toBe("");
+  });
+});
+
+describe("antallNyeSisteDager", () => {
+  it("teller journalposter fra og med grensen sju dager tilbake", () => {
+    const journalposter = [
+      { datoOpprettet: "2026-05-10T12:00:00" },
+      { datoOpprettet: "2026-05-03T12:00:00" },
+      { datoOpprettet: "2026-05-03T11:59:59" },
+      { datoOpprettet: "ugyldig" },
+    ];
+
+    expect(antallNyeSisteDager(journalposter, 7, "2026-05-10T12:00:00")).toBe(2);
   });
 });

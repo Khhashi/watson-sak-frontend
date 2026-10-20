@@ -234,7 +234,10 @@ describe("SakDetaljSide action", () => {
       }),
     );
     expect(hentJournalposterForSak(state(), String(kontrollsak.id))).toEqual([
-      expect.objectContaining({ journalposttype: "NOTAT", tittel: "Vurdering av barnas beste" }),
+      expect.objectContaining({
+        journalposttype: "NOTAT",
+        tittel: "Vurdering av barnas beste",
+      }),
     ]);
   });
 
@@ -623,7 +626,10 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     formData.set(`ytelse.${ytelseId}.belop`, "100");
 
     await action({
-      request: new Request(`http://localhost/saker/${sakRef}`, { method: "POST", body: formData }),
+      request: new Request(`http://localhost/saker/${sakRef}`, {
+        method: "POST",
+        body: formData,
+      }),
       params: { sakId: sakRef },
     } as Route.ActionArgs);
 
@@ -916,10 +922,16 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
       const kontrollsak = lagAnmeldtSak();
       const resultat = await utfør(
         kontrollsak,
-        redigeringsskjema(kontrollsak, { anmeldtBelop: "7500", politidistrikt: "   " }),
+        redigeringsskjema(kontrollsak, {
+          anmeldtBelop: "7500",
+          politidistrikt: "   ",
+        }),
       );
 
-      expect(resultat).toMatchObject({ ok: false, feil: { politidistrikt: expect.any(Array) } });
+      expect(resultat).toMatchObject({
+        ok: false,
+        feil: { politidistrikt: expect.any(Array) },
+      });
       expect(kontrollsak.resultat?.strafferettsligVurdering?.politidistrikt).toBe(
         "Øst politidistrikt",
       );
@@ -930,7 +942,10 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
       const kontrollsak = lagAnmeldtSak("STRAFFERETTSLIG_VURDERING");
       const resultat = await utfør(
         kontrollsak,
-        redigeringsskjema(kontrollsak, { anmeldtBelop: "1", politidistrikt: "Vest" }),
+        redigeringsskjema(kontrollsak, {
+          anmeldtBelop: "1",
+          politidistrikt: "Vest",
+        }),
       );
 
       expect(resultat).toMatchObject({ ok: false });
@@ -1055,8 +1070,8 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     expect(kontrollsak.kategori).not.toBe("ARBEID");
   });
 
-  it("opprett_journalpost logger hendelse med journalposttype", async () => {
-    const kontrollsak = hentFordelingssaker(state())[0];
+  it("opprett_journalpost logger hendelse som notat", async () => {
+    const kontrollsak = required(hentAlleSaker(testRequest).find((sak) => sak.id === 102));
     const kontrollsakRef = getSaksreferanse(kontrollsak.id);
     kontrollsak.steg = "UTREDES";
     kontrollsak.saksbehandlere.eier = {
@@ -1068,10 +1083,8 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
     formData.set("tema", "KTR");
-    formData.set("journalposttype", "INNGAAENDE");
-    formData.set("tittel", "Dokumentasjon mottatt");
-    formData.set("innhold", "Vedlagt kopi av arbeidsavtale");
-    formData.set("knyttTilOppgave", "false");
+    formData.set("tittel", "Kontrollnotat");
+    formData.set("dokumentId", "00000000-0000-4000-8000-000000000101");
 
     const resultat = await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
@@ -1081,12 +1094,46 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
       params: { sakId: kontrollsakRef },
     } as Route.ActionArgs);
 
-    expect(resultat).toMatchObject({ ok: true, journalpostId: expect.stringMatching(/^demo-/) });
+    expect(resultat).toMatchObject({
+      ok: true,
+      journalpostId: expect.stringMatching(/^demo-/),
+    });
     const historikk = hentHistorikk(testRequest, String(kontrollsak.id));
-    expect(historikk[0]?.hendelsesType).toBe("JOURNALPOST_OPPRETTET");
-    expect(historikk[0]?.tittel).toBe("INNGAAENDE");
-    expect(historikk[0]?.beskrivelse).toBe("Journalpost opprettet");
-    expect(historikk[0]?.opprettetAvNavn).toBe("Test Saksbehandler");
+    const hendelse = historikk.find((h) => h.hendelsesType === "JOURNALPOST_OPPRETTET");
+    expect(hendelse?.tittel).toBe("NOTAT");
+    expect(hendelse?.beskrivelse).toBe("Journalpost opprettet");
+    expect(hendelse?.opprettetAvNavn).toBe("Test Saksbehandler");
+  });
+
+  it("opprett_journalpost avviser forespørsel uten filer og dokumenter", async () => {
+    const kontrollsak = required(hentAlleSaker(testRequest).find((sak) => sak.id === 102));
+    const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+    kontrollsak.steg = "UTREDES";
+    kontrollsak.saksbehandlere.eier = {
+      navIdent: "Z999999",
+      navn: "Test Saksbehandler",
+      enhet: "4812",
+    };
+
+    const formData = new FormData();
+    formData.set("handling", "opprett_journalpost");
+    formData.set("tema", "KTR");
+    formData.set("tittel", "Kontrollnotat");
+
+    await expect(
+      action({
+        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+          method: "POST",
+          body: formData,
+        }),
+        params: { sakId: kontrollsakRef },
+      } as Route.ActionArgs),
+    ).rejects.toMatchObject({ init: { status: 400 } });
+    expect(
+      hentHistorikk(testRequest, String(kontrollsak.id)).some(
+        (h) => h.hendelsesType === "JOURNALPOST_OPPRETTET",
+      ),
+    ).toBe(false);
   });
 
   it("arkiverer valgte redigerbare dokumenter ved opprettelse av journalpost", async () => {
@@ -1102,9 +1149,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
     formData.set("tema", "KTR");
-    formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert dokument");
-    formData.set("innhold", "Dokumentinnhold");
     formData.set("dokumentId", "00000000-0000-4000-8000-000000000101");
 
     await action({
@@ -1148,9 +1193,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
     formData.set("tema", "KTR");
-    formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert vedlegg");
-    formData.set("innhold", "Innhold");
     formData.set("vedleggId", vedlegg.id);
 
     await action({
@@ -1187,9 +1230,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     const formData = new FormData();
     formData.set("handling", "opprett_journalpost");
     formData.set("tema", "KTR");
-    formData.set("journalposttype", "NOTAT");
     formData.set("tittel", "Arkivert dokument");
-    formData.set("innhold", "Dokumentinnhold");
     formData.set("dokumentId", "00000000-0000-4000-8000-000000000101");
 
     await action({
@@ -1228,6 +1269,8 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     formData.set("frist", "2026-06-01");
     formData.set("behandlendeEnhet", "4100");
     formData.set("beskrivelse", "Sjekk dokumentasjon");
+    formData.set("journalpostId", "jp-1");
+    formData.set("gjelderverdi", "ab0356");
 
     await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
@@ -1240,8 +1283,37 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     const historikk = hentHistorikk(testRequest, String(kontrollsak.id));
     expect(historikk[0]?.hendelsesType).toBe("OPPGAVE_OPPRETTET");
     expect(historikk[0]?.tittel).toBe("VUR");
-    expect(historikk[0]?.beskrivelse).toBe("Oppgave opprettet");
+    expect(historikk[0]?.beskrivelse).toBe("Oppgave opprettet for journalpost jp-1");
     expect(historikk[0]?.opprettetAvNavn).toBe("Test Saksbehandler");
+  });
+
+  it("opprett_oppgave avviser forespørsel uten journalpost med 400", async () => {
+    const kontrollsak = hentFordelingssaker(state())[0];
+    const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+    kontrollsak.steg = "UTREDES";
+    kontrollsak.saksbehandlere.eier = {
+      navIdent: "Z999999",
+      navn: "Test Saksbehandler",
+      enhet: "4812",
+    };
+    const antallHendelserFør = hentHistorikk(testRequest, String(kontrollsak.id)).length;
+
+    const formData = new FormData();
+    formData.set("handling", "opprett_oppgave");
+    formData.set("tema", "KTR");
+    formData.set("oppgavetype", "VUR");
+    formData.set("journalpostId", " ");
+
+    await expect(
+      action({
+        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+          method: "POST",
+          body: formData,
+        }),
+        params: { sakId: kontrollsakRef },
+      } as Route.ActionArgs),
+    ).rejects.toMatchObject({ init: { status: 400 } });
+    expect(hentHistorikk(testRequest, String(kontrollsak.id))).toHaveLength(antallHendelserFør);
   });
 
   it.each(["opprett_oppgave", "opprett_journalpost"])(
@@ -1259,9 +1331,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
       const formData = new FormData();
       formData.set("handling", handling);
       formData.set("tema", "SYK");
-      formData.set("journalposttype", "NOTAT");
       formData.set("tittel", "Tittel");
-      formData.set("innhold", "Innhold");
       formData.set("oppgavetype", "VUR");
 
       await expect(
@@ -1578,7 +1648,11 @@ describe("SakDetaljSide tilgangskontroll", () => {
   it.each(
     ["send_til_annen_enhet", "videresend_seksjon"].flatMap((handling) =>
       [true, false].flatMap((erLeder) =>
-        ["Z999999", "Z111111", null].map((eier) => ({ handling, erLeder, eier })),
+        ["Z999999", "Z111111", null].map((eier) => ({
+          handling,
+          erLeder,
+          eier,
+        })),
       ),
     ),
   )(
@@ -1711,7 +1785,9 @@ describe("SakDetaljSide rediger arbeidsgivere", () => {
       enhet: "4812",
     };
 
-    const formData = lagRedigerFormData({ arbeidsgivere: ["123456789", "987654321"] });
+    const formData = lagRedigerFormData({
+      arbeidsgivere: ["123456789", "987654321"],
+    });
 
     const resultat = await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
@@ -1799,7 +1875,7 @@ describe("SakDetaljSide rediger arbeidsgivere", () => {
     expect(resultat.sak.arbeidsgivere).toEqual([]);
   });
 
-  it("logger to historikk-hendelser når journalpost opprettes med knyttTilOppgave", async () => {
+  it("opprett_oppgave knytter oppgaven til valgt journalpost", async () => {
     const kontrollsak = hentFordelingssaker(state())[0];
     const kontrollsakRef = getSaksreferanse(kontrollsak.id);
     kontrollsak.steg = "UTREDES";
@@ -1810,17 +1886,15 @@ describe("SakDetaljSide rediger arbeidsgivere", () => {
     };
 
     const formData = new FormData();
-    formData.set("handling", "opprett_journalpost");
+    formData.set("handling", "opprett_oppgave");
     formData.set("tema", "KTR");
-    formData.set("journalposttype", "NOTAT");
-    formData.set("tittel", "Kontrollnotat");
-    formData.set("innhold", "Innhold i notatet");
-    formData.set("knyttTilOppgave", "true");
     formData.set("oppgavetype", "VUR");
-    formData.set("prioritet", "NORMAL");
+    formData.set("prioritet", "NORM");
     formData.set("frist", "2026-09-01");
     formData.set("behandlendeEnhet", "4100");
     formData.set("beskrivelse", "Oppgavebeskrivelse");
+    formData.set("journalpostId", "jp-123");
+    formData.set("gjelderverdi", "ab0356");
 
     await action({
       request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
@@ -1831,8 +1905,7 @@ describe("SakDetaljSide rediger arbeidsgivere", () => {
     } as Route.ActionArgs);
 
     const historikk = hentHistorikk(testRequest, String(kontrollsak.id));
-    const hendelsestyper = historikk.map((h) => h.hendelsesType);
-    expect(hendelsestyper).toContain("JOURNALPOST_OPPRETTET");
-    expect(hendelsestyper).toContain("OPPGAVE_OPPRETTET");
+    expect(historikk[0]?.hendelsesType).toBe("OPPGAVE_OPPRETTET");
+    expect(historikk[0]?.beskrivelse).toBe("Oppgave opprettet for journalpost jp-123");
   });
 });

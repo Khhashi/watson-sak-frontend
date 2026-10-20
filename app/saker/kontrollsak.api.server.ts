@@ -15,6 +15,7 @@ import {
   tillatteHandlingerResponseSchema,
 } from "./types.backend";
 import { sakHendelseSchema } from "./historikk/typer";
+import { type Oppgavekodeverk, oppgavekodeverkSchema } from "./handlinger/oppgavekodeverk";
 import type { Tema } from "./handlinger/tema";
 import { sti as byggSti } from "./sti-param.server";
 import {
@@ -222,7 +223,7 @@ export async function opprettJournalpost(
   tema: Tema,
   journalposttype: string,
   tittel: string,
-  tekst: string,
+  tekst: string | null,
   vedleggIds: string[] = [],
   dokumentIds: string[] = [],
 ): Promise<{ journalpostId: string }> {
@@ -255,6 +256,7 @@ export async function opprettOppgave(
   beskrivelse: string,
   oppgavetype: string,
   journalpostId?: string,
+  behandlingstema?: string,
 ): Promise<OppgaveResponse> {
   const respons = await fetch(apiUrl(byggSti`/api/v1/kontrollsaker/${sakId}/oppgave`), {
     method: "POST",
@@ -267,6 +269,7 @@ export async function opprettOppgave(
       beskrivelse,
       oppgavetype,
       ...(journalpostId ? { journalpostId } : {}),
+      ...(behandlingstema ? { behandlingstema } : {}),
     }),
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke opprette oppgave");
@@ -314,6 +317,15 @@ export async function hentKodeverk(token: string): Promise<Kodeverk> {
   });
   if (!respons.ok) await håndterFeil(respons, "Kunne ikke hente kodeverk");
   return parseEllerKastFeil(kodeverkResponseSchema, await respons.json(), "hentKodeverk");
+}
+
+/** Henter gjelderverdier og oppgavetyper for temaet fra Oppgave API via backend. */
+export async function hentOppgavekodeverk(token: string, tema: Tema): Promise<Oppgavekodeverk> {
+  const respons = await fetch(apiUrl(byggSti`/api/v1/kodeverk/oppgave/${tema}`), {
+    headers: authHeaders(token),
+  });
+  if (!respons.ok) await håndterFeil(respons, "Kunne ikke hente kodeverk for oppgave");
+  return parseEllerKastFeil(oppgavekodeverkSchema, await respons.json(), "hentOppgavekodeverk");
 }
 
 export async function overforAnsvarlig(
