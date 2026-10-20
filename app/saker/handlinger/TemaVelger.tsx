@@ -6,7 +6,7 @@ interface TemaVelgerProps {
   felt: FieldMetadata<Tema | undefined>;
 }
 
-/** Nedtrekksliste for valg av tema (KTR eller KTA). Ingen verdi er forhåndsvalgt. */
+/** Nedtrekksliste for valg av tema. Ingen verdi er forhåndsvalgt. */
 export function TemaVelger({ felt }: TemaVelgerProps) {
   return (
     <Select
@@ -20,7 +20,7 @@ export function TemaVelger({ felt }: TemaVelgerProps) {
       <option value="">Velg tema</option>
       {temaValg.map(({ verdi, label }) => (
         <option key={verdi} value={verdi}>
-          {`${label} (${verdi})`}
+          {label}
         </option>
       ))}
     </Select>
