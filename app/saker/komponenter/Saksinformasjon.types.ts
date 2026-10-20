@@ -8,6 +8,8 @@ export type RedigerSaksinformasjonData = {
   merking: string[];
   arbeidsgivere: string[];
   ytelser: YtelseRadVerdier[];
+  /** Finnes bare når anmeldelsen kan redigeres, se `kanRedigereAnmeldelse`. */
+  anmeldelse?: { anmeldtBelop: string; politidistrikt: string };
 };
 
 export type RedigerSaksinformasjonResultat =

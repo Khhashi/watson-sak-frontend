@@ -5,6 +5,7 @@ import { env } from "~/config/env.server";
 import { ferdigstillMigreringskandidat } from "~/migrering/api.server";
 import { redigerSaksinformasjonSchema } from "~/registrer-sak/validering";
 import { bygFeilkartFraIssues, parseYtelseRader } from "~/registrer-sak/skjema-helpers";
+import { lesAnmeldelseFraSkjema } from "~/saker/anmeldelse";
 import * as backendApi from "~/saker/api.server";
 import type { KontrollsakSteg, LagreResultatRequest } from "~/saker/types.backend";
 import { hentTekstfelt, hentValgfriTekst } from "~/utils/form-data";
@@ -332,10 +333,20 @@ export async function backendAction(
       };
 
       const resultat = redigerSaksinformasjonSchema.safeParse(rådata);
-      if (!resultat.success) {
+      const anmeldelse = lesAnmeldelseFraSkjema(formData);
+      const anmeldelseFeil =
+        anmeldelse.sendt && !anmeldelse.resultat.success
+          ? bygFeilkartFraIssues(anmeldelse.resultat.error.issues)
+          : {};
+      if (!resultat.success || Object.keys(anmeldelseFeil).length > 0) {
         return {
           ok: false,
-          feil: normaliserArbeidsgiverFeil(bygFeilkartFraIssues(resultat.error.issues)),
+          feil: {
+            ...(resultat.success
+              ? {}
+              : normaliserArbeidsgiverFeil(bygFeilkartFraIssues(resultat.error.issues))),
+            ...anmeldelseFeil,
+          },
           verdier: {
             kategori: typeof rådata.kategori === "string" ? rådata.kategori : "",
             kilde: typeof rådata.kilde === "string" ? rådata.kilde : "",
@@ -343,6 +354,7 @@ export async function backendAction(
             merking: rådata.merking,
             arbeidsgivere: rådata.arbeidsgivere,
             ytelser: ytelseRader.length > 0 ? ytelseRader : [{}],
+            ...(anmeldelse.sendt ? { anmeldelse: anmeldelse.verdier } : {}),
           },
         } satisfies ActionResult;
       }
@@ -362,6 +374,7 @@ export async function backendAction(
           belop: y.beløp ?? null,
           endeligBelop: y.endeligBeløp ?? null,
         })),
+        ...(anmeldelse.sendt && anmeldelse.resultat.success ? anmeldelse.resultat.data : {}),
       });
       return { ok: true };
     }

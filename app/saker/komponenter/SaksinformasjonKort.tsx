@@ -26,8 +26,10 @@ import {
   YtelseRadFelt,
 } from "~/registrer-sak/YtelseRadFelt";
 import type { YtelseRadVerdier } from "~/registrer-sak/skjema-helpers";
+import { kanRedigereAnmeldelse } from "~/saker/anmeldelse";
+import { Beløpsfelt } from "~/formaterte-inputfelt/FormaterteInputfelt";
 import { merkingEtikett } from "~/saker/kategorier";
-import type { KontrollsakResponse } from "~/saker/types.backend";
+import { type KontrollsakResponse, POLITIDISTRIKT_MAKS_LENGDE } from "~/saker/types.backend";
 import { formaterIsoTilNorskDato, getPersonIdent } from "~/saker/visning";
 import { formaterOrganisasjonsnummer, parseOrganisasjonsnumre } from "~/utils/string-utils";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
@@ -62,6 +64,10 @@ function lagYtelseRaderFraSak(sak: KontrollsakResponse): YtelseRadVerdier[] {
   }));
 }
 
+function formaterAnmeldtBelop(belop: number | null | undefined): string {
+  return belop === null || belop === undefined ? "" : String(belop);
+}
+
 function lagRedigeringsdata(sak: KontrollsakResponse): RedigerSaksinformasjonData {
   return {
     kategori: sak.kategori,
@@ -70,6 +76,16 @@ function lagRedigeringsdata(sak: KontrollsakResponse): RedigerSaksinformasjonDat
     merking: [...sak.merking],
     arbeidsgivere: [...(sak.arbeidsgivere ?? [])],
     ytelser: lagYtelseRaderFraSak(sak),
+    ...(kanRedigereAnmeldelse(sak)
+      ? {
+          anmeldelse: {
+            anmeldtBelop: formaterAnmeldtBelop(
+              sak.resultat?.strafferettsligVurdering?.anmeldtBelop,
+            ),
+            politidistrikt: sak.resultat?.strafferettsligVurdering?.politidistrikt ?? "",
+          },
+        }
+      : {}),
   };
 }
 
@@ -99,7 +115,9 @@ function erLikeRedigeringsdata(a: RedigerSaksinformasjonData, b: RedigerSaksinfo
     erLikeStringArrays(a.arbeidsgivere, b.arbeidsgivere) &&
     erLikeStringArrays(a.misbruktype, b.misbruktype) &&
     erLikeStringArrays(a.merking, b.merking) &&
-    erLikeYtelser(a.ytelser, b.ytelser)
+    erLikeYtelser(a.ytelser, b.ytelser) &&
+    a.anmeldelse?.anmeldtBelop === b.anmeldelse?.anmeldtBelop &&
+    a.anmeldelse?.politidistrikt === b.anmeldelse?.politidistrikt
   );
 }
 
@@ -482,6 +500,59 @@ export function SaksinformasjonKort({
                   </Button>
                 </div>
               </VStack>
+
+              {lokaleVerdier.anmeldelse && (
+                <>
+                  <hr className="my-4 border-ax-border-neutral-subtle" />
+                  <VStack gap="space-8">
+                    <Heading level="2" size="small">
+                      Anmeldelse
+                    </Heading>
+                    <HGrid columns={{ xs: 1, md: 2 }} gap="space-4">
+                      <div className="w-fit">
+                        <Beløpsfelt
+                          id={ankerIdForFelt("anmeldtBelop")}
+                          name="anmeldtBelop"
+                          label="Anmeldt beløp (kr)"
+                          size="small"
+                          value={lokaleVerdier.anmeldelse.anmeldtBelop}
+                          error={førsteFeilForFelt(feil, "anmeldtBelop")}
+                          onChange={(anmeldtBelop) =>
+                            setLokaleVerdier((gjeldende) => ({
+                              ...gjeldende,
+                              anmeldelse: {
+                                politidistrikt: gjeldende.anmeldelse?.politidistrikt ?? "",
+                                anmeldtBelop,
+                              },
+                            }))
+                          }
+                        />
+                      </div>
+                      <TextField
+                        id={ankerIdForFelt("politidistrikt")}
+                        name="politidistrikt"
+                        label="Politidistrikt"
+                        description="Skriv inn politidistriktet som saken er anmeldt til."
+                        size="small"
+                        autoComplete="off"
+                        maxLength={POLITIDISTRIKT_MAKS_LENGDE}
+                        value={lokaleVerdier.anmeldelse.politidistrikt}
+                        error={førsteFeilForFelt(feil, "politidistrikt")}
+                        onChange={(event) => {
+                          const politidistrikt = event.target.value;
+                          setLokaleVerdier((gjeldende) => ({
+                            ...gjeldende,
+                            anmeldelse: {
+                              anmeldtBelop: gjeldende.anmeldelse?.anmeldtBelop ?? "",
+                              politidistrikt,
+                            },
+                          }));
+                        }}
+                      />
+                    </HGrid>
+                  </VStack>
+                </>
+              )}
 
               <HStack justify="end" gap="space-4">
                 <Button size="small" type="button" variant="secondary" onClick={avbrytRedigering}>

@@ -124,7 +124,8 @@ export function harLagretResultatForOvergang(
       if (tilSteg === "POLITI") {
         return (
           resultat?.strafferettsligVurdering?.type === "ANMELDT" &&
-          resultat.strafferettsligVurdering.anmeldtBelop != null
+          resultat.strafferettsligVurdering.anmeldtBelop != null &&
+          Boolean(resultat.strafferettsligVurdering.politidistrikt?.trim())
         );
       }
       if (tilSteg !== "AVSLUTTET") return false;

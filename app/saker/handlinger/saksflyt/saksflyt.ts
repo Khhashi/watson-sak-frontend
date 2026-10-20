@@ -1,4 +1,8 @@
-import type { KontrollsakSteg, TillatteHandlingerResponse } from "~/saker/types.backend";
+import {
+  type KontrollsakSteg,
+  POLITIDISTRIKT_MAKS_LENGDE,
+  type TillatteHandlingerResponse,
+} from "~/saker/types.backend";
 import { resultatFeltErAktivt } from "../resultat-request";
 import { erHenlagtIGjeldendeSteg, hentVisbareSteg } from "../tillatte-steg";
 import { sjekklister } from "./sjekklister";
@@ -62,6 +66,16 @@ export type Sakshandling = {
   /** Resultatverdier handlingen alltid sender, for eksempel `utredning.type=HENLAGT`. */
   faste: Verdier;
   innsending: Innsending;
+};
+
+/** Tekstfelt som vises på én linje, med hjelpetekst og maks lengde. Andre tekstfelt er flerlinjede. */
+export const enlinjeTekstfelt: Readonly<
+  Record<string, { beskrivelse: string; maksLengde: number }>
+> = {
+  "strafferettsligVurdering.politidistrikt": {
+    beskrivelse: "Skriv inn politidistriktet som saken er anmeldt til.",
+    maksLengde: POLITIDISTRIKT_MAKS_LENGDE,
+  },
 };
 
 const bekreftAvslutning: Trinn = { type: "bekreftAvslutning", primær: "Avslutt sak" };
@@ -223,7 +237,10 @@ const handlingstabell: Partial<Record<KontrollsakSteg, readonly Sakshandling[]>>
         {
           type: "skjema",
           tittel: "Registrer beløp som skal anmeldes",
-          felter: ["strafferettsligVurdering.anmeldtBelop"],
+          felter: [
+            "strafferettsligVurdering.anmeldtBelop",
+            "strafferettsligVurdering.politidistrikt",
+          ],
           primær: "Gå til politiet",
         },
       ],

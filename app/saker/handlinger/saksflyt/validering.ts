@@ -9,6 +9,7 @@ import {
 } from "../resultat-request";
 import {
   aktiveVerdier,
+  enlinjeTekstfelt,
   erBelopsfelt,
   finnSkjemafelt,
   type Trinn,
@@ -45,6 +46,17 @@ export function hentSynligeFelter(
 function validerFelt(felt: Skjemafelt, verdi: string, verdier: Verdier): string | undefined {
   if (verdi.trim() === "") {
     return resultatFeltErPaakrevd(felt, verdier) ? `${felt.etikett} må fylles ut` : undefined;
+  }
+  // Enlinjefelt følger samme regler som backend: lengde i tegn (ikke UTF-16-enheter), ingen kontrolltegn.
+  const enlinje = enlinjeTekstfelt[felt.felt];
+  if (enlinje) {
+    const trimmet = verdi.trim();
+    if ([...trimmet].length > enlinje.maksLengde) {
+      return `${felt.etikett} kan ha opptil ${enlinje.maksLengde} tegn`;
+    }
+    if (/[\p{Cc}\p{Cf}\u2028\u2029]/u.test(trimmet)) {
+      return `${felt.etikett} kan ikke inneholde linjeskift eller usynlige tegn`;
+    }
   }
   if (felt.datatype === "belop") {
     try {
