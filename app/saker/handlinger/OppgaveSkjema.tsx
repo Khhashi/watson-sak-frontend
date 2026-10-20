@@ -72,7 +72,7 @@ export function OppgaveSkjema({ fields, kodeverk, onPrøvIgjen }: OppgaveSkjemaP
   }, [ugyldigGjelderverdi, gjelderverdi]);
 
   return (
-    <VStack gap="space-4">
+    <VStack gap="space-12">
       {kodeverk.status === "utlogget" && (
         <BodyShort size="small">
           Sesjonen din er utløpt. Last inn siden på nytt for å logge inn.

@@ -38,13 +38,24 @@ export function formaterOppgavePrioritet(prioritet: string): string {
   return prioritetEtiketter[prioritet] ?? prioritet;
 }
 
-export function SammendragRad({ label, verdi }: { label: string; verdi: React.ReactNode }) {
+export function SammendragRad({
+  label,
+  verdi,
+  fremhevet = false,
+}: {
+  label: string;
+  verdi: React.ReactNode;
+  /** Viser verdien med halvfet skrift. */
+  fremhevet?: boolean;
+}) {
   return (
     <>
       <BodyShort size="small" textColor="subtle">
         {label}
       </BodyShort>
-      <BodyShort size="small">{verdi}</BodyShort>
+      <BodyShort size="small" weight={fremhevet ? "semibold" : "regular"}>
+        {verdi}
+      </BodyShort>
     </>
   );
 }
@@ -55,9 +66,9 @@ export function ListeSammendrag({ label, navn }: { label: string; navn: string[]
       <BodyShort size="small" textColor="subtle">
         {label}
       </BodyShort>
-      <div className="text-sm">
+      <div className="text-sm font-semibold">
         {navn.length > 0 ? (
-          <ul className="list-disc pl-4">
+          <ul>
             {navn.map((filnavn, indeks) => (
               <li key={`${filnavn}-${indeks}`}>{filnavn}</li>
             ))}

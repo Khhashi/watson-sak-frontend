@@ -52,6 +52,9 @@ describe("KnyttOppgaveModal", () => {
       />,
     );
 
+    expect(
+      screen.getByRole("dialog", { name: "Knytt oppgave til de journalførte dokumentene" }),
+    ).toBeDefined();
     expect(screen.getByText("Kontrollnotat")).toBeDefined();
     expect(screen.getByText("rapport.pdf")).toBeDefined();
     expect(screen.queryByLabelText("Tema")).toBeNull();
@@ -71,5 +74,24 @@ describe("KnyttOppgaveModal", () => {
     expect(formData.get("tema")).toBe("KTA");
     expect(formData.get("journalpostId")).toBe("jp-1");
     expect(formData.get("gjelderverdi")).toBe("ab0356");
+  });
+
+  it("bruker entall i tittelen når bare ett dokument er journalført", () => {
+    render(
+      <KnyttOppgaveModal
+        sakId="00000000-0000-4000-8000-000000000001"
+        journalpost={{
+          journalpostId: "jp-1",
+          tema: "KTA",
+          dokumentbeskrivelse: "Kontrollnotat",
+          dokumentnavn: ["rapport.pdf"],
+        }}
+        onClose={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByRole("dialog", { name: "Knytt oppgave til det journalførte dokumentet" }),
+    ).toBeDefined();
   });
 });

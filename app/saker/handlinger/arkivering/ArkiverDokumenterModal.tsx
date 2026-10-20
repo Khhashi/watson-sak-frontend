@@ -26,6 +26,7 @@ import { TemaVelger } from "../TemaVelger";
 import { ArkivValgTre } from "./ArkivValgTre";
 import { MAKS_ANTALL_VALGTE, alleElementer, byggArkivTre } from "./arkivvalg";
 import { ANNEN_DOKUMENTBESKRIVELSE, dokumentbeskrivelser } from "./dokumentbeskrivelse";
+import { journalførteDokumenter } from "./journalforte-dokumenter";
 
 /** Det som er arkivert, slik at en oppgave kan knyttes til journalposten etterpå. */
 export type ArkivertJournalpost = {
@@ -84,6 +85,7 @@ export function ArkiverDokumenterModal({
   const fetcher = useFetcher();
   const [valgteNøkler, settValgteNøkler] = useState<string[]>([]);
   const [arkivert, settArkivert] = useState<ArkivertJournalpost | null>(null);
+  const ettDokument = arkivert?.dokumentnavn.length === 1;
   const [feilmelding, settFeilmelding] = useState<string | null>(null);
   const submitPågår = useRef(false);
   const innsendt = useRef<Omit<ArkivertJournalpost, "journalpostId"> | null>(null);
@@ -284,10 +286,10 @@ export function ArkiverDokumenterModal({
             </VStack>
           ) : (
             <SuksessVisning
-              tittel="Dokumentene er arkivert og journalført i Gosys"
+              tittel={`${ettDokument ? "Dokumentet" : "Dokumentene"} er arkivert og journalført i Gosys`}
               tekst={
                 arkivert?.journalpostId
-                  ? "Du kan knytte en oppgave til de journalførte dokumentene."
+                  ? `Du kan knytte en oppgave til ${journalførteDokumenter(ettDokument)}.`
                   : undefined
               }
             />
@@ -306,7 +308,7 @@ export function ArkiverDokumenterModal({
           ) : (
             <>
               {arkivert?.journalpostId && (
-                <Button type="button" variant="primary" onClick={handleKnyttTilOppgave}>
+                <Button type="button" variant="secondary" onClick={handleKnyttTilOppgave}>
                   Knytt til oppgave
                 </Button>
               )}

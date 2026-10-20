@@ -177,7 +177,10 @@ describe("ArkiverDokumenterModal", () => {
     fetcher.data = { ok: true, journalpostId: "jp-1" };
     act(rerenderModal);
 
-    expect(await screen.findByText("Dokumentene er arkivert og journalført i Gosys")).toBeDefined();
+    expect(await screen.findByText("Dokumentet er arkivert og journalført i Gosys")).toBeDefined();
+    expect(
+      screen.getByText("Du kan knytte en oppgave til det journalførte dokumentet."),
+    ).toBeDefined();
     expect(onOpprettet).toHaveBeenCalledWith(
       expect.objectContaining({ journalposttype: "NOTAT", journalpostId: "jp-1" }),
     );

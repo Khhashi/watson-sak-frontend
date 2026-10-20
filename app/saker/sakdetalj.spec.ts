@@ -211,7 +211,9 @@ test.describe("Sakdetalj – dokumentoversikt i Gosys", () => {
       .first()
       .check();
     await dialog.getByRole("button", { name: "Arkiver" }).click();
-    await expect(dialog.getByText("Dokumentene er arkivert og journalført i Gosys")).toBeVisible();
+    await expect(
+      dialog.getByText(/^Dokument(et|ene) er arkivert og journalført i Gosys$/),
+    ).toBeVisible();
     await expect(dialog.getByRole("button", { name: "Knytt til oppgave" })).toBeVisible();
     // Både lukkekrysset i headeren og knappen i footeren heter «Lukk»
     await dialog.getByRole("button", { name: "Lukk" }).last().click();

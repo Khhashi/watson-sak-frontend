@@ -13,6 +13,7 @@ import { SuksessVisning } from "../SuksessVisning";
 import { ListeSammendrag, SammendragRad } from "../opprett-formatering";
 import { formaterTemavalg } from "../tema";
 import { useOppgavekodeverk } from "../useOppgavekodeverk";
+import { journalførteDokumenter } from "./journalforte-dokumenter";
 import type { ArkivertJournalpost } from "./ArkiverDokumenterModal";
 
 interface KnyttOppgaveModalProps {
@@ -75,6 +76,7 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
     journalpost?.tema,
   );
   const senderInn = fetcher.state !== "idle";
+  const tittel = `Knytt oppgave til ${journalførteDokumenter(journalpost?.dokumentnavn.length === 1)}`;
 
   return (
     <Modal
@@ -85,11 +87,11 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
         opprettet
           ? undefined
           : {
-              heading: "Knytt oppgave til de journalførte dokumentene",
+              heading: tittel,
               icon: <TasklistIcon aria-hidden />,
             }
       }
-      aria-label={opprettet ? "Oppgave opprettet" : "Knytt oppgave til de journalførte dokumentene"}
+      aria-label={opprettet ? "Oppgave opprettet" : tittel}
       width={opprettet ? "small" : "medium"}
     >
       {opprettet && <Modal.Header />}
@@ -98,7 +100,7 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
           {opprettet ? (
             <SuksessVisning
               tittel="Oppgave opprettet"
-              tekst="Oppgaven er opprettet og knyttet til de journalførte dokumentene."
+              tekst={`Oppgaven er opprettet og knyttet til ${journalførteDokumenter(journalpost?.dokumentnavn.length === 1)}.`}
             />
           ) : (
             <VStack gap="space-16">
@@ -109,16 +111,22 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
                   </BodyShort>
                   <Box
                     background="neutral-soft"
-                    padding="space-12"
+                    paddingInline="space-16"
+                    paddingBlock="space-12"
                     borderRadius="8"
                     borderWidth="1"
                     borderColor="neutral-subtle"
                   >
-                    <HGrid columns="auto 1fr" gap="space-4 space-16">
-                      <SammendragRad label="Tema" verdi={formaterTemavalg(journalpost.tema)} />
+                    <HGrid columns="auto 1fr" gap="space-12">
+                      <SammendragRad
+                        label="Tema"
+                        verdi={formaterTemavalg(journalpost.tema)}
+                        fremhevet
+                      />
                       <SammendragRad
                         label="Dokumentbeskrivelse"
                         verdi={journalpost.dokumentbeskrivelse}
+                        fremhevet
                       />
                       <ListeSammendrag
                         label="Filer og dokumenter"
