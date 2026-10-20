@@ -73,7 +73,15 @@ export function useDraOgSlipp({
   function draProps(element: FlyttbartElement, mål: Slippmål) {
     if (!kanEndreMapper) return {};
     // Dokumentet kan ikke dras, men raden er fortsatt slippmål for mappen den ligger i.
-    if (element.type === "dokument" && !kanFlytteDokumenter) return slippProps(mål);
+    if (element.type === "dokument" && !kanFlytteDokumenter) {
+      return {
+        ...slippProps(mål),
+        onDragStart: (event: DragEvent<HTMLElement>) => {
+          event.preventDefault();
+          event.stopPropagation();
+        },
+      };
+    }
     return {
       // Én mappehandling om gangen, så flyttinger ikke kan fullføres i feil rekkefølge.
       draggable: !mappehandling.pågår,
