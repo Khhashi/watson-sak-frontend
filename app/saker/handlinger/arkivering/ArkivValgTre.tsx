@@ -52,7 +52,8 @@ export function ArkivValgTre({ tre, name, valgte, onChange, error }: ArkivValgTr
   function visMappe(mappe: ArkivMappe) {
     const åpen = åpneMapper.has(mappe.sti);
     const avkrysning = mappeAvkrysning(mappe, valgte);
-    const innholdId = `${idPrefiks}-${mappe.sti.replace(/[^\p{L}\p{N}]+/gu, "-")}`;
+    // Hele stien kodes, slik at «Bank/2026» og «Bank 2026» ikke får samme ID.
+    const innholdId = `${idPrefiks}-${encodeURIComponent(mappe.sti)}`;
     return (
       <li key={mappe.sti}>
         <div className="flex items-center gap-1">

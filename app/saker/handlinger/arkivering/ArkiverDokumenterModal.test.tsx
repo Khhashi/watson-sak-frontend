@@ -109,6 +109,23 @@ describe("ArkiverDokumenterModal", () => {
     expect(submitMock).not.toHaveBeenCalled();
   });
 
+  it("gir mapper med lignende navn hver sin innholds-ID", async () => {
+    await renderModal([
+      fil("fil-1", "a.pdf", { mappe: "Bank/2026" }),
+      fil("fil-2", "b.pdf", { mappe: "Bank 2026" }),
+    ]);
+
+    fireEvent.click(screen.getByRole("button", { name: "Vis innhold i Bank" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vis innhold i 2026" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vis innhold i Bank 2026" }));
+
+    const ider = screen
+      .getAllByRole("button", { name: /^Skjul innhold i / })
+      .map((knapp) => knapp.getAttribute("aria-controls"));
+    expect(new Set(ider).size).toBe(3);
+    for (const id of ider) expect(document.getElementById(id ?? "")).not.toBeNull();
+  });
+
   it("sender selvvalgt dokumentbeskrivelse som tittel når «Annet» er valgt", async () => {
     await renderModal([fil("fil-1", "rapport.pdf")], [notat]);
 
