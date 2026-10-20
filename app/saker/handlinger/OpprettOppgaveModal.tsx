@@ -32,7 +32,7 @@ import {
   SammendragRad,
 } from "./opprett-formatering";
 import { SuksessVisning } from "./SuksessVisning";
-import { erTema, formaterTemavalg, temaSkjema } from "./tema";
+import { erTema, formaterTema, temaSkjema } from "./tema";
 import { TemaVelger } from "./TemaVelger";
 import { useOppgavekodeverk } from "./useOppgavekodeverk";
 
@@ -193,7 +193,7 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOpp
                 <HGrid columns="auto 1fr" gap="space-4 space-16">
                   <SammendragRad
                     label="Tema"
-                    verdi={formaterTemavalg(innsendingFormData.get("tema")?.toString() ?? "")}
+                    verdi={formaterTema(innsendingFormData.get("tema")?.toString() ?? "")}
                   />
                   <SammendragRad
                     label="Type"

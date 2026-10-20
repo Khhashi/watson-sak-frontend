@@ -133,7 +133,7 @@ describe("OpprettOppgaveModal", () => {
     fireEvent.click(screen.getByRole("button", { name: "Lagre" }));
     await waitFor(() => {});
     expect(screen.getByText("Du oppretter nå en oppgave:")).toBeDefined();
-    expect(screen.getByText("Kontroll anmeldelse (KTA)")).toBeDefined();
+    expect(screen.getByText("Kontroll anmeldelse")).toBeDefined();
     expect(screen.getByText("Vurder henvendelse")).toBeDefined();
     expect(screen.getByText("Dagpenger")).toBeDefined();
     expect(screen.getByText("Kontrollnotat")).toBeDefined();

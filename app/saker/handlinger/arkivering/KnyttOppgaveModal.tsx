@@ -11,7 +11,7 @@ import { OppgaveSkjema } from "../OppgaveSkjema";
 import { oppgavefeltSkjema } from "../oppgavefelt";
 import { SuksessVisning } from "../SuksessVisning";
 import { ListeSammendrag, SammendragRad } from "../opprett-formatering";
-import { formaterTemavalg } from "../tema";
+import { formaterTema } from "../tema";
 import { useOppgavekodeverk } from "../useOppgavekodeverk";
 import { journalførteDokumenter } from "./journalforte-dokumenter";
 import type { ArkivertJournalpost } from "./ArkiverDokumenterModal";
@@ -120,7 +120,7 @@ export function KnyttOppgaveModal({ sakId, journalpost, onClose }: KnyttOppgaveM
                     <HGrid columns="auto 1fr" gap="space-12">
                       <SammendragRad
                         label="Tema"
-                        verdi={formaterTemavalg(journalpost.tema)}
+                        verdi={formaterTema(journalpost.tema)}
                         fremhevet
                       />
                       <SammendragRad

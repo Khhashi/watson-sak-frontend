@@ -55,6 +55,7 @@ describe("KnyttOppgaveModal", () => {
     expect(
       screen.getByRole("dialog", { name: "Knytt oppgave til de journalførte dokumentene" }),
     ).toBeDefined();
+    expect(screen.getByText("Kontroll anmeldelse")).toBeDefined();
     expect(screen.getByText("Kontrollnotat")).toBeDefined();
     expect(screen.getByText("rapport.pdf")).toBeDefined();
     expect(screen.queryByLabelText("Tema")).toBeNull();
