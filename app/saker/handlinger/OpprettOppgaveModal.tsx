@@ -1,10 +1,6 @@
 import { type FieldMetadata, getFormProps, useForm } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
-import {
-  CheckmarkCircleFillIcon,
-  ExclamationmarkTriangleIcon,
-  TasklistIcon,
-} from "@navikt/aksel-icons";
+import { ExclamationmarkTriangleIcon, TasklistIcon } from "@navikt/aksel-icons";
 import {
   BodyShort,
   Box,
@@ -36,6 +32,7 @@ import {
   formaterOppgavetype,
   SammendragRad,
 } from "./opprett-formatering";
+import { SuksessVisning } from "./SuksessVisning";
 import { formaterTemavalg, temaSkjema } from "./tema";
 import { TemaVelger } from "./TemaVelger";
 
@@ -239,17 +236,10 @@ export function OpprettOppgaveModal({ sakId, åpen, onClose, arkiv }: OpprettOpp
             </VStack>
           )}
           {steg === "suksess" && (
-            <VStack gap="space-16" align="center" className="py-6 text-center">
-              <CheckmarkCircleFillIcon
-                aria-hidden
-                fontSize="3rem"
-                className="text-ax-bg-success-strong"
-              />
-              <VStack gap="space-4" align="center">
-                <BodyShort weight="semibold">Oppgave opprettet</BodyShort>
-                <BodyShort textColor="subtle">Oppgaven er opprettet og lagret på saken.</BodyShort>
-              </VStack>
-            </VStack>
+            <SuksessVisning
+              tittel="Oppgave opprettet"
+              tekst="Oppgaven er opprettet og lagret på saken."
+            />
           )}
         </Modal.Body>
         <Modal.Footer>
