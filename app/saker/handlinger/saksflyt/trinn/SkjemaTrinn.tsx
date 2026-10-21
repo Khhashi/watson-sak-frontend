@@ -54,6 +54,19 @@ function Datofelt({ felt, verdier, feil, onChange }: FeltProps) {
 
 type Enhetsfelt = { felt: Skjemafelt; enhet: string };
 
+const enhetsnavn: Readonly<Record<string, string>> = {
+  mnd: "måneder",
+  dag: "dager",
+  timer: "timer",
+  kr: "kroner",
+};
+
+/** Enheten vises bare visuelt, så skjermlesere får den i feltnavnet hvis etiketten mangler den. */
+function tilgjengeligEtikett(etikett: string, enhet: string): string {
+  const navn = enhetsnavn[enhet] ?? enhet;
+  return etikett.toLowerCase().includes(navn) ? etikett : `${etikett} (${navn})`;
+}
+
 /** Smale felt med enheten til høyre, for eksempel «[ ] mnd [ ] dag» eller «[ ] kr». */
 function Enhetsfelter({
   legend,
@@ -68,7 +81,7 @@ function Enhetsfelter({
       <HStack gap="space-16" align="center">
         {felter.map(({ felt, enhet }) => {
           const felles = {
-            label: felt.etikett,
+            label: tilgjengeligEtikett(felt.etikett, enhet),
             hideLabel: true,
             value: verdier[felt.felt] ?? "",
           };

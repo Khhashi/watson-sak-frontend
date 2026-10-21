@@ -258,8 +258,10 @@ describe("SaksflytModal", () => {
     renderModal({ steg: "POLITI", status: "VENTER_PA_RESULTAT" });
     klikk("Registrer resultat");
     await screen.findByRole("dialog", { name: "Registrer resultat" });
-    expect(screen.getByText("Politiet")).toBeDefined();
-    expect(screen.getByText("Domstolen")).toBeDefined();
+    expect(screen.getByRole("group", { name: "Politiet" })).toBeDefined();
+    expect(screen.getByRole("group", { name: "Domstolen" })).toBeDefined();
+    const radionavn = screen.getAllByRole("radio").map((radio) => radio.getAttribute("name"));
+    expect(new Set(radionavn).size).toBe(1);
     klikk("Neste");
     expect(screen.getByText("Velg resultat")).toBeDefined();
     fireEvent.click(screen.getByRole("radio", { name: "Domfellelse" }));
@@ -283,7 +285,7 @@ describe("SaksflytModal", () => {
     fireEvent.change(screen.getByLabelText("Ubetinget fengsel (dager)"), {
       target: { value: "14" },
     });
-    const domfelt = screen.getByLabelText("Domfelt beløp");
+    const domfelt = screen.getByLabelText("Domfelt beløp (kroner)");
     fireEvent.change(domfelt, { target: { value: "15000" } });
     expect(domfelt).toHaveProperty("value", "15 000");
     fireEvent.click(screen.getByRole("radio", { name: "Liggetid hos Nav" }));
