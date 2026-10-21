@@ -221,7 +221,6 @@ describe("hentSluttresultatDetaljer", () => {
   it("viser ikke detaljer for resultattyper uten tilleggsopplysninger", () => {
     expect(hentSluttresultatDetaljer({ politi: { type: "FRIFINNELSE" } })).toEqual([]);
   });
-
   it.each([
     [
       { utredning: { type: "HENLAGT", henleggelsesarsak: "IKKE_KAPASITET" } },
