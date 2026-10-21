@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { resetMockData } from "~/test/reset-mock-data";
 import { sjekkTilgjengelighet } from "~/test/uu-util";
+import { ventPåHydrering } from "~/test/vent-på-hydrering";
 
 /**
  * Kritisk E2E-flyt for dokumentkommentarer: åpne panelet via dyplenke, lese
@@ -14,6 +15,7 @@ test.describe("Dokumentkommentarer", () => {
     await resetMockData(page);
     // Sak 102 har seedede dokumenter, og dokument 1-1 har seedede kommentarer.
     await page.goto("/saker/102", { waitUntil: "networkidle" });
+    await ventPåHydrering(page);
     await page.getByRole("button", { name: "Tildel meg" }).click();
     await expect(page.getByRole("button", { name: "Endre saksinformasjon" })).toBeVisible();
 
@@ -23,6 +25,7 @@ test.describe("Dokumentkommentarer", () => {
         waitUntil: "networkidle",
       },
     );
+    await ventPåHydrering(page);
     await expect(page.getByRole("heading", { name: "Kommentarer" })).toBeVisible();
   });
 
@@ -37,7 +40,7 @@ test.describe("Dokumentkommentarer", () => {
       page.getByText("Dette avsnittet kan fjernes før vi sender rapporten."),
     ).toHaveCount(0);
 
-    await page.getByLabel("Vis løste (1)").click();
+    await page.getByLabel("Vis løste (1)").check();
     await expect(
       page.getByText("Dette avsnittet kan fjernes før vi sender rapporten."),
     ).toBeVisible();
@@ -56,6 +59,7 @@ test.describe("Dokumentkommentarer", () => {
 
     // Kommentaren overlever en ny innlasting av siden.
     await page.reload({ waitUntil: "networkidle" });
+    await ventPåHydrering(page);
     await expect(page.getByText("Ny kommentar fra e2e-testen")).toBeVisible();
   });
 
@@ -70,7 +74,7 @@ test.describe("Dokumentkommentarer", () => {
     await traad.getByRole("button", { name: "Marker som løst" }).click();
     await expect(page.getByText("Bør vi presisere hva slags dokument dette er?")).toHaveCount(0);
 
-    await page.getByLabel("Vis løste (2)").click();
+    await page.getByLabel("Vis løste (2)").check();
     await expect(page.getByText("Bør vi presisere hva slags dokument dette er?")).toBeVisible();
     await expect(page.getByRole("button", { name: "Gjenåpne" }).first()).toBeVisible();
   });
