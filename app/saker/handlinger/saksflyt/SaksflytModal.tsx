@@ -1,5 +1,5 @@
 import { useEffect, useReducer, useRef } from "react";
-import { BodyShort, Button, ErrorMessage, Modal, VStack } from "@navikt/ds-react";
+import { BodyShort, Button, ErrorMessage, HStack, Modal, VStack } from "@navikt/ds-react";
 import { useFetcher } from "react-router";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
@@ -228,6 +228,37 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
   const primærLagrerUtenAvslutning =
     trinn.type === "skjema" && trinn.lagreUtenAvslutning?.(alleVerdier) === true;
 
+  const erBred = handling.bredde === "medium";
+  const knappebredde = erBred ? undefined : "w-full";
+  const primærKnapp = (
+    <Button
+      type="button"
+      className={knappebredde}
+      variant="primary"
+      loading={erSubmitting}
+      onClick={() =>
+        fortsett(
+          trinn,
+          alleVerdier,
+          primærLagrerUtenAvslutning ? { handling: "lagre_resultat" } : undefined,
+        )
+      }
+    >
+      {primærtekst(trinn, alleVerdier)}
+    </Button>
+  );
+  const sekundærKnapp = sekundær && (
+    <Button
+      type="button"
+      className={knappebredde}
+      variant="secondary"
+      disabled={erSubmitting}
+      onClick={sekundær.lukker ? lukk : () => dispatch({ type: "tilbake" })}
+    >
+      {sekundær.tekst}
+    </Button>
+  );
+
   return (
     <Modal
       ref={modalRef}
@@ -235,7 +266,7 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
       onClose={lukk}
       onBeforeClose={() => !erSubmitting}
       header={{ heading: trinntittel(trinn) }}
-      width={handling.bredde ?? "small"}
+      width={erBred ? "medium" : "small"}
     >
       <Modal.Body>
         <VStack gap="space-16">
@@ -251,34 +282,17 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
         </VStack>
       </Modal.Body>
       <Modal.Footer>
-        <VStack gap="space-8" className="w-full">
-          <Button
-            type="button"
-            className="w-full"
-            variant="primary"
-            loading={erSubmitting}
-            onClick={() =>
-              fortsett(
-                trinn,
-                alleVerdier,
-                primærLagrerUtenAvslutning ? { handling: "lagre_resultat" } : undefined,
-              )
-            }
-          >
-            {primærtekst(trinn, alleVerdier)}
-          </Button>
-          {sekundær && (
-            <Button
-              type="button"
-              className="w-full"
-              variant="secondary"
-              disabled={erSubmitting}
-              onClick={sekundær.lukker ? lukk : () => dispatch({ type: "tilbake" })}
-            >
-              {sekundær.tekst}
-            </Button>
-          )}
-        </VStack>
+        {erBred ? (
+          <HStack justify="space-between" gap="space-8" className="w-full">
+            {sekundærKnapp ?? <span />}
+            {primærKnapp}
+          </HStack>
+        ) : (
+          <VStack gap="space-8" className="w-full">
+            {primærKnapp}
+            {sekundærKnapp}
+          </VStack>
+        )}
       </Modal.Footer>
     </Modal>
   );
