@@ -208,6 +208,34 @@ describe("SaksbehandlereKort", () => {
     expect(screen.queryByRole("button", { name: "Endre status" })).toBeNull();
   });
 
+  it("viser straffedetaljer under taggen for avsluttet sak", async () => {
+    const sak = lagKontrollsak({
+      steg: "AVSLUTTET",
+      status: null,
+      resultat: {
+        politi: {
+          type: "DOMFELLELSE",
+          ubetingetFengselDager: 14,
+          domfeltBelop: 15000,
+        },
+      },
+    });
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={true}
+        sak={sak}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+        tillatteHandlinger={lagTillatteHandlinger(sak)}
+      />,
+    );
+
+    expect(screen.getByText("Avsluttet")).toBeDefined();
+    expect(screen.getByText("Domfellelse")).toBeDefined();
+    expect(screen.getByText("Ubetinget fengsel: 14 dager")).toBeDefined();
+    expect(screen.getByText(/Domfelt beløp: 15\s000 kr/)).toBeDefined();
+  });
+
   it("sender egen handling når Tildel meg brukes", async () => {
     const sak = lagKontrollsak({
       steg: "OPPRETTET",

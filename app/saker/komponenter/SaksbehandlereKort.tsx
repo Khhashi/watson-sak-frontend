@@ -21,7 +21,12 @@ import { SaksflytModal, type SaksflytStart } from "~/saker/handlinger/saksflyt/S
 import { OverforAnsvarligModal } from "~/saker/handlinger/OverforAnsvarligModal";
 import { SendTilAnnenEnhetModal } from "~/saker/handlinger/SendTilAnnenEnhetModal";
 import { TildelSaksbehandlerModal } from "~/saker/handlinger/TildelSaksbehandlerModal";
-import { formaterSteg, hentStatusTag, STEG_FARGE } from "~/saker/visning";
+import {
+  formaterSteg,
+  hentSluttresultatDetaljer,
+  hentStatusTag,
+  STEG_FARGE,
+} from "~/saker/visning";
 import { ResponsivEndreKnapp } from "./ResponsivEndreKnapp";
 
 interface SaksbehandlereKortProps {
@@ -111,6 +116,7 @@ export function SaksbehandlereKort({
     erEier && tillatteHandlinger && hentHandlinger(tillatteHandlinger).length > 0;
   const erAvsluttet = sak.steg === "AVSLUTTET";
   const statusTag = hentStatusTag(sak);
+  const sluttresultatDetaljer = hentSluttresultatDetaljer(sak.resultat);
 
   return (
     <>
@@ -146,11 +152,14 @@ export function SaksbehandlereKort({
               <Detail className="text-ax-text-neutral-subtle" uppercase>
                 Resultat
               </Detail>
-              <div className="min-w-0">
-                <AvkortetTag variant="moderate" data-color={statusTag.farge} size="medium">
-                  {statusTag.tekst}
-                </AvkortetTag>
-              </div>
+              <BodyShort weight="semibold" size="small">
+                {statusTag.tekst}
+              </BodyShort>
+              {sluttresultatDetaljer.map((detalj) => (
+                <BodyShort key={detalj} size="small">
+                  {detalj}
+                </BodyShort>
+              ))}
             </VStack>
           ) : (
             <VStack gap="space-2" className="mb-2">

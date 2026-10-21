@@ -12,6 +12,7 @@ import {
   getStegOgStatusTekst,
   hentSluttresultat,
   getYtelseTyper,
+  hentSluttresultatDetaljer,
   hentStatusFarge,
   hentStatusTag,
 } from "./visning";
@@ -179,6 +180,47 @@ describe("hentSluttresultat", () => {
       expect(hentSluttresultat(resultat)).toBe(forventet);
     },
   );
+});
+
+describe("hentSluttresultatDetaljer", () => {
+  it("formaterer straff og beløp for domfellelse", () => {
+    expect(
+      hentSluttresultatDetaljer({
+        politi: {
+          type: "DOMFELLELSE",
+          domsdato: "2026-06-01",
+          ubetingetFengselMaaneder: 1,
+          ubetingetFengselDager: 2,
+          betingetFengselMaaneder: 3,
+          samfunnsstraffTimer: 40,
+          domfeltBelop: 15000,
+          siviltRettskrav: 4500,
+          tilstaaelsesdom: true,
+        },
+      }),
+    ).toEqual([
+      "Domsdato: 01.06.2026",
+      "Ubetinget fengsel: 1 måned og 2 dager",
+      "Betinget fengsel: 3 måneder",
+      "Samfunnsstraff: 40 timer",
+      "Domfelt beløp: 15 000 kr",
+      "Sivilt rettskrav: 4 500 kr",
+      "Tilståelsesdom",
+    ]);
+  });
+
+  it("viser beløp for bot og forelegg", () => {
+    expect(hentSluttresultatDetaljer({ politi: { type: "BOT", belop: 1000 } })).toEqual([
+      "Beløp: 1 000 kr",
+    ]);
+    expect(hentSluttresultatDetaljer({ politi: { type: "FORELEGG", belop: 2500 } })).toEqual([
+      "Beløp: 2 500 kr",
+    ]);
+  });
+
+  it("viser ikke detaljer for resultattyper uten tilleggsopplysninger", () => {
+    expect(hentSluttresultatDetaljer({ politi: { type: "FRIFINNELSE" } })).toEqual([]);
+  });
 });
 
 describe("hentStatusTag", () => {
