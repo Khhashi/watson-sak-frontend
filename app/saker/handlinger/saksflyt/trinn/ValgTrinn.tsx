@@ -1,8 +1,11 @@
+import { useId } from "react";
 import {
   BodyLong,
+  BodyShort,
   Checkbox,
   CheckboxGroup,
   Detail,
+  Label,
   Radio,
   RadioGroup,
   UNSAFE_Combobox,
@@ -75,6 +78,11 @@ export function EnkeltvalgTrinn({
     ? hentValg(felt, tillatteHandlinger.tillatteResultater, trinn.tillatteVerdier)
     : [];
   const valgt = verdier[trinn.felt] ?? "";
+  if (trinn.grupper) {
+    return (
+      <GrupperteValg trinn={trinn} valg={valg} valgt={valgt} feil={feil} onChange={onChange} />
+    );
+  }
   if (valg.length > MAKS_ANTALL_RADIOKNAPPER) {
     const valgtAlternativ = valg.find((alternativ) => alternativ.verdi === valgt);
     return (
@@ -104,6 +112,63 @@ export function EnkeltvalgTrinn({
         </Radio>
       ))}
     </RadioGroup>
+  );
+}
+
+/**
+ * Radioknapper i grupper med overskrift, for eksempel resultater fra politiet og fra domstolen.
+ * Alle alternativene hører til én radiogruppe, så piltastene går gjennom hele lista.
+ */
+function GrupperteValg({
+  trinn,
+  valg,
+  valgt,
+  feil,
+  onChange,
+}: Pick<TrinnProps<"enkeltvalg">, "trinn" | "feil" | "onChange"> & {
+  valg: ReturnType<typeof hentValg>;
+  valgt: string;
+}) {
+  const id = useId();
+  const grupper = (trinn.grupper ?? [])
+    .map((gruppe) => ({
+      tittel: gruppe.tittel,
+      valg: valg.filter((alternativ) => gruppe.verdier.includes(alternativ.verdi)),
+    }))
+    .filter((gruppe) => gruppe.valg.length > 0);
+  return (
+    <VStack gap="space-16">
+      {trinn.beskrivelse && (
+        <BodyShort size="small" textColor="subtle">
+          {trinn.beskrivelse}
+        </BodyShort>
+      )}
+      <RadioGroup
+        legend={trinn.legend}
+        hideLegend
+        value={valgt}
+        error={feil[trinn.felt]}
+        onChange={(verdi: string) => onChange(trinn.felt, verdi)}
+      >
+        <VStack gap="space-24">
+          {grupper.map((gruppe, indeks) => {
+            const tittelId = `${id}-gruppe-${indeks}`;
+            return (
+              <div key={gruppe.tittel} role="group" aria-labelledby={tittelId}>
+                <Label as="p" id={tittelId}>
+                  {gruppe.tittel}
+                </Label>
+                {gruppe.valg.map((alternativ) => (
+                  <Radio key={alternativ.verdi} value={alternativ.verdi}>
+                    {alternativ.etikett}
+                  </Radio>
+                ))}
+              </div>
+            );
+          })}
+        </VStack>
+      </RadioGroup>
+    </VStack>
   );
 }
 

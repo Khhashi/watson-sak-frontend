@@ -86,28 +86,74 @@ describe("byggLagreResultatRequest", () => {
         verdier: [{ verdi: "DOMFELLELSE", etikett: "Domfellelse" }],
       },
       {
-        felt: "politi.strafferabattProsent",
-        etikett: "Strafferabatt (%)",
-        datatype: "tall",
-        paakrevd: false,
-        verdier: [],
-      },
-      {
         felt: "politi.domsdato",
         etikett: "Domsdato",
         datatype: "dato",
         paakrevd: false,
+        paakrevdNar: "politi.type=DOMFELLELSE",
+        verdier: [],
+      },
+      {
+        felt: "politi.ubetingetFengselDager",
+        etikett: "Ubetinget fengsel (dager)",
+        datatype: "heltall",
+        paakrevd: false,
+        valgfriNar: "politi.type=DOMFELLELSE",
+        verdier: [],
+      },
+      {
+        felt: "politi.domfeltBelop",
+        etikett: "Domfelt beløp",
+        datatype: "belop",
+        paakrevd: false,
+        valgfriNar: "politi.type=DOMFELLELSE",
+        verdier: [],
+      },
+      {
+        felt: "politi.tilstaaelsesdom",
+        etikett: "Tilståelsesdom",
+        datatype: "boolsk",
+        paakrevd: false,
+        paakrevdNar: "politi.type=DOMFELLELSE",
         verdier: [],
       },
     ];
 
-    it("avviser strafferabatt over 100 %", () => {
+    it("sender heltall og lar valgfrie felt stå tomme", () => {
       const data = skjemaData({
         "politi.type": "DOMFELLELSE",
-        "politi.strafferabattProsent": "120",
+        "politi.domsdato": "2026-01-15",
+        "politi.ubetingetFengselDager": "14",
+        "politi.tilstaaelsesdom": "false",
+      });
+      expect(byggLagreResultatRequest(data, domskjema, "POLITI")).toEqual({
+        versjon: 1,
+        steg: "POLITI",
+        politi: {
+          type: "DOMFELLELSE",
+          domsdato: "2026-01-15",
+          ubetingetFengselDager: 14,
+          tilstaaelsesdom: false,
+        },
+      });
+    });
+
+    it("krever påkrevde felt, men ikke valgfrie", () => {
+      const data = skjemaData({ "politi.type": "DOMFELLELSE", "politi.domsdato": "2026-01-15" });
+      expect(() => byggLagreResultatRequest(data, domskjema, "POLITI")).toThrow(
+        "Tilståelsesdom er påkrevd",
+      );
+    });
+
+    it("avviser heltallsfelt som ikke er hele tall", () => {
+      const data = skjemaData({
+        "politi.type": "DOMFELLELSE",
+        "politi.domsdato": "2026-01-15",
+        "politi.ubetingetFengselDager": "1,5",
+        "politi.tilstaaelsesdom": "true",
       });
       expect(() => byggLagreResultatRequest(data, domskjema, "POLITI")).toThrow(
-        "Strafferabatt kan ikke være over 100 %",
+        "Ubetinget fengsel (dager) må være et helt tall",
       );
     });
 

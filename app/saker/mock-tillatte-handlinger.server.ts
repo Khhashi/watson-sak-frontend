@@ -170,6 +170,16 @@ function mockFelt(
   return { felt, etikett, datatype, paakrevd, verdier, paakrevdNar };
 }
 
+const DOMFELLELSE = "politi.type=DOMFELLELSE";
+
+function valgfrittDomfellelsesfelt(
+  felt: string,
+  etikett: string,
+  datatype: TillatteHandlingerResponse["feltskjema"][number]["datatype"] = "heltall",
+): TillatteHandlingerResponse["feltskjema"][number] {
+  return { felt, etikett, datatype, paakrevd: false, verdier: [], valgfriNar: DOMFELLELSE };
+}
+
 function feltskjemaFor(steg: KontrollsakSteg): TillatteHandlingerResponse["feltskjema"] {
   switch (steg) {
     case "UTREDNING":
@@ -262,13 +272,21 @@ function feltskjemaFor(steg: KontrollsakSteg): TillatteHandlingerResponse["felts
       return [
         mockFelt(
           "politi.type",
-          "Resultat fra politiet",
+          "Resultat",
           "enum",
           true,
           (resultatvalg.POLITI ?? []).map((verdi) => ({
             verdi,
             etikett: resultatEtiketter[verdi],
           })),
+        ),
+        mockFelt(
+          "politi.begrunnelse",
+          "Årsak",
+          "tekst",
+          false,
+          [],
+          "politi.type=HENLAGT, PATALEUNNLATELSE eller FRIFINNELSE",
         ),
         mockFelt(
           "paaklaget",
@@ -278,47 +296,29 @@ function feltskjemaFor(steg: KontrollsakSteg): TillatteHandlingerResponse["felts
           [],
           "politi.type=HENLAGT",
         ),
+        mockFelt("politi.belop", "Beløp", "belop", false, [], "politi.type=FORELEGG eller BOT"),
+        mockFelt("politi.domsdato", "Domsdato", "dato", false, [], DOMFELLELSE),
+        valgfrittDomfellelsesfelt("politi.ubetingetFengselMaaneder", "Ubetinget fengsel (måneder)"),
+        valgfrittDomfellelsesfelt("politi.ubetingetFengselDager", "Ubetinget fengsel (dager)"),
+        valgfrittDomfellelsesfelt("politi.betingetFengselMaaneder", "Betinget fengsel (måneder)"),
+        valgfrittDomfellelsesfelt("politi.betingetFengselDager", "Betinget fengsel (dager)"),
+        valgfrittDomfellelsesfelt("politi.samfunnsstraffTimer", "Samfunnsstraff"),
+        valgfrittDomfellelsesfelt("politi.domfeltBelop", "Domfelt beløp", "belop"),
+        valgfrittDomfellelsesfelt("politi.siviltRettskrav", "Sivilt rettskrav", "belop"),
+        mockFelt("politi.tilstaaelsesdom", "Tilståelsesdom", "boolsk", false, [], DOMFELLELSE),
         mockFelt(
-          "politi.begrunnelse",
-          "Begrunnelse",
-          "tekst",
+          "politi.strafferabattLiggetid",
+          "Strafferabatt (EMK art. 6)?",
+          "enum",
           false,
-          [],
-          "politi.type=HENLAGT eller FRIFINNELSE",
+          [
+            { verdi: "INGEN", etikett: "Ingen strafferabatt" },
+            { verdi: "NAV", etikett: "Liggetid hos Nav" },
+            { verdi: "POLITIET", etikett: "Liggetid hos politiet" },
+            { verdi: "BEGGE", etikett: "Liggetid hos begge" },
+          ],
+          DOMFELLELSE,
         ),
-        mockFelt(
-          "politi.detaljer",
-          "Tilleggsopplysninger",
-          "tekst",
-          false,
-          [],
-          "politi.type=FORELEGG, BOT eller PATALEUNNLATELSE",
-        ),
-        mockFelt(
-          "politi.belopTilbakekrevd",
-          "Beløp tilbakekrevd",
-          "belop",
-          false,
-          [],
-          "politi.type=DOMFELLELSE",
-        ),
-        mockFelt(
-          "politi.strafferabatt",
-          "Ga retten strafferabatt?",
-          "boolsk",
-          false,
-          [],
-          "politi.type=DOMFELLELSE",
-        ),
-        mockFelt(
-          "politi.strafferabattProsent",
-          "Strafferabatt (%)",
-          "tall",
-          false,
-          [],
-          "politi.strafferabatt=true",
-        ),
-        mockFelt("politi.domsdato", "Domsdato", "dato", false, [], "politi.type=DOMFELLELSE"),
       ];
     default:
       return [];

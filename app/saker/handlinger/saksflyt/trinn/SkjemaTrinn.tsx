@@ -1,7 +1,12 @@
 import {
+  BodyShort,
   DatePicker,
+  Fieldset,
+  Heading,
+  HStack,
   Radio,
   RadioGroup,
+  Stack,
   Textarea,
   TextField,
   useDatepicker,
@@ -13,8 +18,10 @@ import { formaterYtelseType } from "~/saker/visning";
 import { formaterTilIsoDato } from "~/utils/date-utils";
 import { resultatFeltErPaakrevd } from "../../resultat-request";
 import {
-  enlinjeTekstfelt,
   erBelopsfelt,
+  feltgrupper,
+  feltvisning,
+  finnSkjemafelt,
   hentValg,
   type Trinn,
   type Verdier,
@@ -45,6 +52,65 @@ function Datofelt({ felt, verdier, feil, onChange }: FeltProps) {
   );
 }
 
+type Enhetsfelt = { felt: Skjemafelt; enhet: string };
+
+const enhetsnavn: Readonly<Record<string, string>> = {
+  mnd: "måneder",
+  dag: "dager",
+  timer: "timer",
+  kr: "kroner",
+};
+
+/** Enheten vises bare visuelt, så skjermlesere får den i feltnavnet hvis etiketten mangler den. */
+function tilgjengeligEtikett(etikett: string, enhet: string): string {
+  const navn = enhetsnavn[enhet] ?? enhet;
+  return etikett.toLowerCase().includes(navn) ? etikett : `${etikett} (${navn})`;
+}
+
+/** Smale felt med enheten til høyre, for eksempel «[ ] mnd [ ] dag» eller «[ ] kr». */
+function Enhetsfelter({
+  legend,
+  felter,
+  verdier,
+  feil,
+  onChange,
+}: Omit<FeltProps, "felt"> & { legend: string; felter: readonly Enhetsfelt[] }) {
+  const feilmelding = felter.map(({ felt }) => feil[felt.felt]).find(Boolean);
+  return (
+    <Fieldset legend={legend} error={feilmelding}>
+      <HStack gap="space-16" align="center">
+        {felter.map(({ felt, enhet }) => {
+          const felles = {
+            label: tilgjengeligEtikett(felt.etikett, enhet),
+            hideLabel: true,
+            value: verdier[felt.felt] ?? "",
+          };
+          return (
+            <HStack key={felt.felt} gap="space-8" align="center" wrap={false}>
+              {felt.datatype === "belop" ? (
+                <Beløpsfelt
+                  {...felles}
+                  htmlSize={10}
+                  onChange={(nyVerdi) => onChange(felt.felt, nyVerdi)}
+                />
+              ) : (
+                <TextField
+                  {...felles}
+                  htmlSize={enhet === "timer" ? 6 : 4}
+                  inputMode="numeric"
+                  autoComplete="off"
+                  onChange={(event) => onChange(felt.felt, event.target.value)}
+                />
+              )}
+              <BodyShort aria-hidden>{enhet}</BodyShort>
+            </HStack>
+          );
+        })}
+      </HStack>
+    </Fieldset>
+  );
+}
+
 function Resultatfelt({
   felt,
   verdier,
@@ -56,12 +122,26 @@ function Resultatfelt({
   const verdi = verdier[felt.felt] ?? "";
   const valgfri = !resultatFeltErPaakrevd(felt, verdier);
   const etikett = valgfri ? `${felt.etikett} (valgfritt)` : felt.etikett;
+  const visning = feltvisning[felt.felt] ?? {};
+
+  if (visning.enhet) {
+    return (
+      <Enhetsfelter
+        legend={etikett}
+        felter={[{ felt, enhet: visning.enhet }]}
+        verdier={verdier}
+        feil={feil}
+        onChange={onChange}
+      />
+    );
+  }
 
   switch (felt.datatype) {
     case "enum":
       return (
         <RadioGroup
           legend={etikett}
+          description={visning.beskrivelse}
           value={verdi}
           error={feil[felt.felt]}
           onChange={(nyVerdi: string) => onChange(felt.felt, nyVerdi)}
@@ -77,21 +157,23 @@ function Resultatfelt({
       return (
         <RadioGroup
           legend={etikett}
+          description={visning.beskrivelse}
           value={verdi}
           error={feil[felt.felt]}
           onChange={(nyVerdi: string) => onChange(felt.felt, nyVerdi)}
         >
-          <Radio value="true">Ja</Radio>
-          <Radio value="false">Nei</Radio>
+          <Stack gap="space-0 space-24" direction={{ xs: "column", sm: "row" }} wrap={false}>
+            <Radio value="true">Ja</Radio>
+            <Radio value="false">Nei</Radio>
+          </Stack>
         </RadioGroup>
       );
     case "tekst": {
-      const enlinje = enlinjeTekstfelt[felt.felt];
-      if (enlinje) {
+      if (visning.maksLengde !== undefined) {
         return (
           <TextField
             label={etikett}
-            description={enlinje.beskrivelse}
+            description={visning.beskrivelse}
             value={verdi}
             error={feil[felt.felt]}
             autoComplete="off"
@@ -102,6 +184,7 @@ function Resultatfelt({
       return (
         <Textarea
           label={etikett}
+          description={visning.beskrivelse}
           value={verdi}
           error={feil[felt.felt]}
           minRows={2}
@@ -111,12 +194,14 @@ function Resultatfelt({
       );
     }
     case "tall":
+    case "heltall":
       return (
         <TextField
           label={etikett}
           value={verdi}
           error={feil[felt.felt]}
-          inputMode="decimal"
+          description={visning.beskrivelse}
+          inputMode={felt.datatype === "heltall" ? "numeric" : "decimal"}
           onChange={(event) => onChange(felt.felt, event.target.value)}
         />
       );
@@ -181,33 +266,71 @@ export function SkjemaTrinn({
   onChange: (navn: string, verdi: string) => void;
   tillatteHandlinger: TillatteHandlingerResponse;
 }) {
-  const felter = hentSynligeFelter(trinn, verdier, tillatteHandlinger.feltskjema);
+  const { feltskjema } = tillatteHandlinger;
+  const felter = hentSynligeFelter(trinn, verdier, feltskjema);
+  const synlige = new Map(felter.map((felt) => [felt.felt, felt]));
+  const gruppert = new Set(Object.values(feltgrupper).flatMap((gruppe) => gruppe.felter));
+  const undertittel = trinn.undertittelFelt
+    ? finnSkjemafelt(feltskjema, trinn.undertittelFelt)?.verdier.find(
+        (valg) => valg.verdi === verdier[trinn.undertittelFelt ?? ""],
+      )?.etikett
+    : undefined;
+
+  function visFelt(felt: Skjemafelt) {
+    const gruppe = feltgrupper[felt.felt];
+    if (gruppe) {
+      const medlemmer = gruppe.felter.flatMap((navn) => {
+        const medlem = synlige.get(navn);
+        return medlem ? [{ felt: medlem, enhet: feltvisning[navn]?.enhet ?? "" }] : [];
+      });
+      const valgfri = medlemmer.every(({ felt }) => !resultatFeltErPaakrevd(felt, verdier));
+      return (
+        <Enhetsfelter
+          key={felt.felt}
+          legend={valgfri ? `${gruppe.legend} (valgfritt)` : gruppe.legend}
+          felter={medlemmer}
+          verdier={verdier}
+          feil={feil}
+          onChange={onChange}
+        />
+      );
+    }
+    if (gruppert.has(felt.felt)) return null;
+    if (erBelopsfelt(felt.felt)) {
+      return (
+        <Belopsfelter
+          key={felt.felt}
+          felt={felt}
+          belopEtikett={trinn.belopEtikett ?? felt.etikett}
+          valgfritt={trinn.belopValgfritt === true}
+          verdier={verdier}
+          feil={feil}
+          onChange={onChange}
+          ytelser={tillatteHandlinger.tilstand.ytelser}
+        />
+      );
+    }
+    return (
+      <Resultatfelt
+        key={felt.felt}
+        felt={felt}
+        verdier={verdier}
+        feil={feil}
+        onChange={onChange}
+        tillatteVerdier={trinn.tillatteVerdier?.[felt.felt]}
+        tillatteResultater={tillatteHandlinger.tillatteResultater}
+      />
+    );
+  }
+
   return (
     <VStack gap="space-20">
-      {felter.map((felt) =>
-        erBelopsfelt(felt.felt) ? (
-          <Belopsfelter
-            key={felt.felt}
-            felt={felt}
-            belopEtikett={trinn.belopEtikett ?? felt.etikett}
-            valgfritt={trinn.belopValgfritt === true}
-            verdier={verdier}
-            feil={feil}
-            onChange={onChange}
-            ytelser={tillatteHandlinger.tilstand.ytelser}
-          />
-        ) : (
-          <Resultatfelt
-            key={felt.felt}
-            felt={felt}
-            verdier={verdier}
-            feil={feil}
-            onChange={onChange}
-            tillatteVerdier={trinn.tillatteVerdier?.[felt.felt]}
-            tillatteResultater={tillatteHandlinger.tillatteResultater}
-          />
-        ),
+      {undertittel && (
+        <Heading size="small" level="2">
+          {undertittel}
+        </Heading>
       )}
+      {felter.map(visFelt)}
     </VStack>
   );
 }
