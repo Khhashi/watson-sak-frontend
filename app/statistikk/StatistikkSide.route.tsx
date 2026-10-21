@@ -3,7 +3,6 @@ import {
   DatePicker,
   Heading,
   HStack,
-  Label,
   Loader,
   Select,
   Skeleton,
@@ -159,8 +158,10 @@ function Periodevelger({
   tilInputProps,
 }: PeriodevelgerProps) {
   return (
-    <VStack gap="space-8" align="start">
-      <Label size="medium">Periode</Label>
+    <VStack gap="space-8" align="start" className="mt-2">
+      <Heading level="2" size="small">
+        Periode
+      </Heading>
       <ToggleGroup
         className="w-full max-w-[450px]"
         value={visEgendefinert ? "custom" : (searchParams.get("periode") ?? "month")}
