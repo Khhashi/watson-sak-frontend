@@ -1,10 +1,11 @@
+import { useId } from "react";
 import {
   BodyLong,
   BodyShort,
   Checkbox,
   CheckboxGroup,
   Detail,
-  Fieldset,
+  Label,
   Radio,
   RadioGroup,
   UNSAFE_Combobox,
@@ -116,7 +117,7 @@ export function EnkeltvalgTrinn({
 
 /**
  * Radioknapper i grupper med overskrift, for eksempel resultater fra politiet og fra domstolen.
- * Hver gruppe er en egen radiogruppe, men alle setter det samme feltet.
+ * Alle alternativene hører til én radiogruppe, så piltastene går gjennom hele lista.
  */
 function GrupperteValg({
   trinn,
@@ -128,6 +129,7 @@ function GrupperteValg({
   valg: ReturnType<typeof hentValg>;
   valgt: string;
 }) {
+  const id = useId();
   const grupper = (trinn.grupper ?? [])
     .map((gruppe) => ({
       tittel: gruppe.tittel,
@@ -141,24 +143,31 @@ function GrupperteValg({
           {trinn.beskrivelse}
         </BodyShort>
       )}
-      <Fieldset legend={trinn.legend} hideLegend error={feil[trinn.felt]}>
+      <RadioGroup
+        legend={trinn.legend}
+        hideLegend
+        value={valgt}
+        error={feil[trinn.felt]}
+        onChange={(verdi: string) => onChange(trinn.felt, verdi)}
+      >
         <VStack gap="space-24">
-          {grupper.map((gruppe) => (
-            <RadioGroup
-              key={gruppe.tittel}
-              legend={gruppe.tittel}
-              value={gruppe.valg.some((alternativ) => alternativ.verdi === valgt) ? valgt : ""}
-              onChange={(verdi: string) => onChange(trinn.felt, verdi)}
-            >
-              {gruppe.valg.map((alternativ) => (
-                <Radio key={alternativ.verdi} value={alternativ.verdi}>
-                  {alternativ.etikett}
-                </Radio>
-              ))}
-            </RadioGroup>
-          ))}
+          {grupper.map((gruppe, indeks) => {
+            const tittelId = `${id}-gruppe-${indeks}`;
+            return (
+              <div key={gruppe.tittel} role="group" aria-labelledby={tittelId}>
+                <Label as="p" id={tittelId}>
+                  {gruppe.tittel}
+                </Label>
+                {gruppe.valg.map((alternativ) => (
+                  <Radio key={alternativ.verdi} value={alternativ.verdi}>
+                    {alternativ.etikett}
+                  </Radio>
+                ))}
+              </div>
+            );
+          })}
         </VStack>
-      </Fieldset>
+      </RadioGroup>
     </VStack>
   );
 }
