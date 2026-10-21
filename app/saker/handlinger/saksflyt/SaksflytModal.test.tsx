@@ -196,7 +196,7 @@ describe("SaksflytModal", () => {
     });
   });
 
-  it("registrerer beløp som skal anmeldes før saken går til politiet", async () => {
+  it("velger politidistrikt fra en nedtrekksliste før saken går til politiet", async () => {
     renderModal({ steg: "STRAFFERETTSLIG_VURDERING" });
     klikk("Gå til politiet");
     await screen.findByRole("dialog", { name: "Registrer beløp som skal anmeldes" });
@@ -207,16 +207,27 @@ describe("SaksflytModal", () => {
     fireEvent.change(screen.getByLabelText("Anmeldt beløp (kr)"), {
       target: { value: "45000" },
     });
-    const politidistrikt = screen.getByLabelText("Politidistrikt");
-    fireEvent.change(politidistrikt, { target: { value: "Øst\u202Epolitidistrikt" } });
-    klikk("Gå til politiet");
+    const politidistrikt = screen.getByRole("combobox", { name: "Politidistrikt" });
     expect(
-      screen.getByText("Politidistrikt kan ikke inneholde linjeskift eller usynlige tegn"),
-    ).toBeDefined();
-    fireEvent.change(politidistrikt, { target: { value: "🚓".repeat(101) } });
-    klikk("Gå til politiet");
-    expect(screen.getByText("Politidistrikt kan ha opptil 100 tegn")).toBeDefined();
-    fireEvent.change(politidistrikt, { target: { value: "  Øst politidistrikt " } });
+      Array.from((politidistrikt as HTMLSelectElement).options).map((valg) => valg.value),
+    ).toEqual([
+      "",
+      "Agder politidistrikt",
+      "Finnmark politidistrikt",
+      "Innlandet politidistrikt",
+      "Kripos",
+      "Møre og Romsdal politidistrikt",
+      "Nordland politidistrikt",
+      "Oslo politidistrikt",
+      "Sør-Vest politidistrikt",
+      "Sør-Øst politidistrikt",
+      "Troms politidistrikt",
+      "Trøndelag politidistrikt",
+      "Vest politidistrikt",
+      "Økokrim",
+      "Øst politidistrikt",
+    ]);
+    fireEvent.change(politidistrikt, { target: { value: "Øst politidistrikt" } });
     klikk("Gå til politiet");
 
     expect(await screen.findByText("Lagret")).toBeDefined();
@@ -224,7 +235,7 @@ describe("SaksflytModal", () => {
       steg: "POLITI",
       "resultat.strafferettsligVurdering.type": "ANMELDT",
       "resultat.strafferettsligVurdering.anmeldtBelop": "45000",
-      "resultat.strafferettsligVurdering.politidistrikt": "  Øst politidistrikt ",
+      "resultat.strafferettsligVurdering.politidistrikt": "Øst politidistrikt",
     });
   });
 
