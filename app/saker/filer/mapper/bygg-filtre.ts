@@ -104,3 +104,8 @@ export function byggFilTre(
 export function flatMappeliste(tre: FilTreNode[]): MappeTreNode[] {
   return tre.flatMap((node) => (node.type === "mappe" ? [node, ...flatMappeliste(node.barn)] : []));
 }
+
+/** Antall dokumenter og filer i treet, inkludert alle undermapper. */
+export function antallFilerITre(tre: FilTreNode[]): number {
+  return tre.reduce((sum, node) => sum + (node.type === "mappe" ? node.antallFiler : 1), 0);
+}

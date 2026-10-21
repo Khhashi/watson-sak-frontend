@@ -1,4 +1,4 @@
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { createRoutesStub } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { DokumentNode, FilResponse } from "../typer";
@@ -335,14 +335,21 @@ describe("FilTre", () => {
       expect(screen.queryByRole("link", { name: "Saksframlegg" })).toBeNull();
     });
 
-    it("viser mapper før filer på rotnivå", async () => {
+    it("legger alt i en rotmappe med saksnummeret, med mapper før filer", async () => {
       await renderSeksjon({
         mapper: ["Zulu"],
         filer: mockFiler,
         sakId: "SAK-1",
         kanEndreFiler: false,
       });
-      const elementer = screen.getAllByRole("listitem").map((li) => li.textContent ?? "");
+      const tre = screen.getByRole("list", { name: "Dokumenter og filer" });
+      expect(within(tre).getAllByRole("listitem")[0]).toBe(
+        screen.getByRole("button", { name: /^SAK-1/, expanded: true }).closest("li"),
+      );
+      const rotmappe = screen.getByRole("list", { name: "SAK-1" });
+      const elementer = within(rotmappe)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent ?? "");
       expect(elementer[0]).toContain("Zulu");
       expect(elementer[1]).toContain("anmeldelse.pdf");
     });
@@ -429,7 +436,14 @@ describe("FilTre", () => {
       await waitFor(() => {
         expect(screen.getByRole("dialog", { name: "Flytt «anmeldelse.pdf»" })).toBeDefined();
       });
-      fireEvent.change(screen.getByRole("combobox", { name: "Flytt til" }), {
+      const flyttTil = screen.getByRole("combobox", { name: "Flytt til" });
+      expect(
+        within(flyttTil)
+          .getAllByRole("option")
+          .map((option) => option.textContent),
+      ).toContain("SAK-1 / Bank / Kontoutskrifter");
+      expect(within(flyttTil).getByRole("option", { name: "SAK-1" })).toHaveProperty("value", "");
+      fireEvent.change(flyttTil, {
         target: { value: "Bank/Kontoutskrifter" },
       });
       fireEvent.click(screen.getByRole("button", { name: "Flytt" }));
@@ -594,7 +608,7 @@ describe("FilTre", () => {
       expect(screen.getByText("Mappen «Kontoutskrifter» er slettet")).toBeDefined();
     });
 
-    it("flytter fokus til listen når en mappe på rotnivå er slettet", async () => {
+    it("flytter fokus til rotmappen når en mappe rett under den er slettet", async () => {
       await renderSeksjon({
         mapper,
         filer: [],
@@ -606,9 +620,7 @@ describe("FilTre", () => {
       fireEvent.click(await screen.findByRole("menuitem", { name: "Slett mappe" }));
 
       await waitFor(() => {
-        expect(document.activeElement).toBe(
-          screen.getByRole("list", { name: "Dokumenter og filer" }),
-        );
+        expect(document.activeElement).toBe(screen.getByRole("button", { name: /^SAK-1/ }));
       });
     });
 
