@@ -22,16 +22,19 @@ const resultatFeltStier = {
   "politi.type": ["politi", "type"],
   "politi.henleggelsesarsak": ["politi", "henleggelsesarsak"],
   "politi.begrunnelse": ["politi", "begrunnelse"],
-  "politi.detaljer": ["politi", "detaljer"],
-  "politi.belopTilbakekrevd": ["politi", "belopTilbakekrevd"],
-  "politi.strafferabatt": ["politi", "strafferabatt"],
-  "politi.strafferabattProsent": ["politi", "strafferabattProsent"],
+  "politi.belop": ["politi", "belop"],
   "politi.domsdato": ["politi", "domsdato"],
+  "politi.ubetingetFengselMaaneder": ["politi", "ubetingetFengselMaaneder"],
+  "politi.ubetingetFengselDager": ["politi", "ubetingetFengselDager"],
+  "politi.betingetFengselMaaneder": ["politi", "betingetFengselMaaneder"],
+  "politi.betingetFengselDager": ["politi", "betingetFengselDager"],
+  "politi.samfunnsstraffTimer": ["politi", "samfunnsstraffTimer"],
+  "politi.domfeltBelop": ["politi", "domfeltBelop"],
+  "politi.siviltRettskrav": ["politi", "siviltRettskrav"],
+  "politi.tilstaaelsesdom": ["politi", "tilstaaelsesdom"],
+  "politi.strafferabattLiggetid": ["politi", "strafferabattLiggetid"],
   paaklaget: ["paaklaget"],
 } as const;
-
-/** Valgfrie tekstfelt. Alle andre felt er påkrevd når vilkåret i `paakrevdNar` er oppfylt. */
-const valgfrieFelt = new Set(["politi.detaljer"]);
 
 type Resultatfelt = keyof typeof resultatFeltStier;
 
@@ -51,15 +54,16 @@ function erResultatfelt(felt: string): felt is Resultatfelt {
 }
 
 /**
- * Tolker `paakrevdNar` fra backend, for eksempel `politi.type=FORELEGG, BOT eller PATALEUNNLATELSE`
- * eller `politi.strafferabatt=true`. Et felt uten vilkår er alltid aktivt.
+ * Tolker vilkåret i `paakrevdNar` eller `valgfriNar` fra backend, for eksempel
+ * `politi.type=FORELEGG eller BOT`. Et felt uten vilkår er alltid aktivt.
  */
 function erAktivt(
   felt: TillatteHandlingerResponse["feltskjema"][number],
   verdier: Map<string, string>,
 ): boolean {
-  if (!felt.paakrevdNar) return true;
-  const match = /^([A-Za-z.]+)=([A-Za-z_, ]+)$/.exec(felt.paakrevdNar);
+  const vilkaar = felt.paakrevdNar ?? felt.valgfriNar;
+  if (!vilkaar) return true;
+  const match = /^([A-Za-z.]+)=([A-Za-z_, ]+)$/.exec(vilkaar);
   if (!match || !erResultatfelt(match[1])) return false;
 
   const valg = match[2].split(/\s+eller\s+|,\s*/).filter(Boolean);
@@ -71,8 +75,7 @@ function erPaakrevd(
   verdier: Map<string, string>,
 ): boolean {
   if (felt.paakrevd) return true;
-  if (!felt.paakrevdNar || valgfrieFelt.has(felt.felt)) return false;
-  return erAktivt(felt, verdier);
+  return Boolean(felt.paakrevdNar) && erAktivt(felt, verdier);
 }
 
 export function resultatFeltErAktivt(
@@ -109,11 +112,10 @@ function konverterVerdi(
     return verdi.trim() || undefined;
   }
   if (felt.datatype === "tall" || felt.datatype === "belop") {
-    const tall = lesBelop(verdi, felt.etikett);
-    if (felt.felt === "politi.strafferabattProsent" && tall > 100) {
-      throw new Error(strafferabattOver100);
-    }
-    return tall;
+    return lesBelop(verdi, felt.etikett);
+  }
+  if (felt.datatype === "heltall") {
+    return lesHeltall(verdi, felt.etikett);
   }
   if (felt.datatype === "dato") {
     if (!erGyldigIsoDato(verdi)) throw new Error(`${felt.etikett} må være en gyldig dato`);
@@ -122,8 +124,6 @@ function konverterVerdi(
   }
   return undefined;
 }
-
-export const strafferabattOver100 = "Strafferabatt kan ikke være over 100 %";
 
 /** Dagens dato i norsk tid, på formen YYYY-MM-DD. */
 export function dagensDatoIOslo(): string {
@@ -205,6 +205,19 @@ export function lesBelop(verdi: string, felt: string): number {
   const belop = Number(normalisert);
   if (!Number.isFinite(belop)) throw new Error(`${felt} må være et gyldig beløp`);
   return belop;
+}
+
+/** Største verdi backend tar imot i heltallsfelt (Kotlin `Int`). */
+const MAKS_HELTALL = 2_147_483_647;
+
+/** Leser et ikke-negativt heltall, for eksempel antall dager eller timer. */
+export function lesHeltall(verdi: string, felt: string): number {
+  const normalisert = verdi.replace(/[\s\u00a0\u202f]/g, "");
+  const tall = Number(normalisert);
+  if (!/^\d+$/.test(normalisert) || tall > MAKS_HELTALL) {
+    throw new Error(`${felt} må være et helt tall`);
+  }
+  return tall;
 }
 
 export function byggLagreResultatRequest(

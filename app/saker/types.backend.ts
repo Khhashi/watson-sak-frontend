@@ -53,6 +53,8 @@ const endeligUtfallResponseSchema = z.object({
   henleggelsesarsak: z.string().nullable().optional(),
 });
 
+const strafferabattLiggetidSchema = z.enum(["INGEN", "NAV", "POLITIET", "BEGGE"]);
+
 const resultatResponseSchema = z.object({
   utredning: z
     .object({
@@ -84,11 +86,22 @@ const resultatResponseSchema = z.object({
       type: z.string(),
       henleggelsesarsak: z.string().nullable().optional(),
       begrunnelse: z.string().nullable().optional(),
+      belop: z.number().nullable().optional(),
+      domsdato: z.string().nullable().optional(),
+      ubetingetFengselMaaneder: z.number().nullable().optional(),
+      ubetingetFengselDager: z.number().nullable().optional(),
+      betingetFengselMaaneder: z.number().nullable().optional(),
+      betingetFengselDager: z.number().nullable().optional(),
+      samfunnsstraffTimer: z.number().nullable().optional(),
+      domfeltBelop: z.number().nullable().optional(),
+      siviltRettskrav: z.number().nullable().optional(),
+      tilstaaelsesdom: z.boolean().nullable().optional(),
+      strafferabattLiggetid: strafferabattLiggetidSchema.nullable().optional(),
+      /** Eldre registreringer. Nye resultater bruker feltene over. */
       detaljer: z.string().nullable().optional(),
       belopTilbakekrevd: z.number().nullable().optional(),
       strafferabatt: z.boolean().nullable().optional(),
       strafferabattProsent: z.number().nullable().optional(),
-      domsdato: z.string().nullable().optional(),
     })
     .nullable()
     .optional(),
@@ -143,11 +156,17 @@ const lagreResultatRequestSchema = z.object({
       ]),
       henleggelsesarsak: henleggelsesarsakSchema.optional(),
       begrunnelse: z.string().optional(),
-      detaljer: z.string().optional(),
-      belopTilbakekrevd: z.number().nonnegative().optional(),
-      strafferabatt: z.boolean().optional(),
-      strafferabattProsent: z.number().min(0).max(100).optional(),
+      belop: z.number().nonnegative().optional(),
       domsdato: z.string().optional(),
+      ubetingetFengselMaaneder: z.number().int().nonnegative().optional(),
+      ubetingetFengselDager: z.number().int().nonnegative().optional(),
+      betingetFengselMaaneder: z.number().int().nonnegative().optional(),
+      betingetFengselDager: z.number().int().nonnegative().optional(),
+      samfunnsstraffTimer: z.number().int().nonnegative().optional(),
+      domfeltBelop: z.number().nonnegative().optional(),
+      siviltRettskrav: z.number().nonnegative().optional(),
+      tilstaaelsesdom: z.boolean().optional(),
+      strafferabattLiggetid: strafferabattLiggetidSchema.optional(),
     })
     .optional(),
   ytelser: z
@@ -208,9 +227,12 @@ export const tillatteHandlingerResponseSchema = z.object({
     z.object({
       felt: z.string(),
       etikett: z.string(),
-      datatype: z.enum(["enum", "tekst", "boolsk", "tall", "dato", "belop"]),
+      datatype: z.enum(["enum", "tekst", "boolsk", "tall", "heltall", "dato", "belop"]),
       paakrevd: z.boolean(),
+      /** Vilkår for når feltet gjelder og er påkrevd, for eksempel `politi.type=DOMFELLELSE`. */
       paakrevdNar: z.string().nullable().optional(),
+      /** Vilkår for når feltet gjelder, men kan stå tomt. */
+      valgfriNar: z.string().nullable().optional(),
       verdier: z.array(z.object({ verdi: z.string(), etikett: z.string() })).default([]),
     }),
   ),
