@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import { resetMockData } from "~/test/reset-mock-data";
 import { sjekkTilgjengelighet } from "~/test/uu-util";
+import { ventPåHydrering } from "~/test/vent-på-hydrering";
 
 test.describe("Sakdetalj", () => {
   test.describe.configure({ mode: "serial" });
@@ -9,6 +10,7 @@ test.describe("Sakdetalj", () => {
   test.beforeEach(async ({ page }) => {
     await resetMockData(page);
     await page.goto("/saker/101", { waitUntil: "networkidle" });
+    await ventPåHydrering(page);
     await expect(page.getByRole("heading", { name: /^Sak 101/ })).toBeVisible();
     // Tildel saken til innlogget bruker for å aktivere redigeringsknapper
     await page.getByRole("button", { name: "Tildel meg" }).click();
@@ -51,8 +53,11 @@ test.describe("Sakdetalj", () => {
     await page.getByLabel("Kilde (må fylles ut)").selectOption("PUBLIKUM");
 
     const ytelseCombobox = page.getByLabel("Ytelse").first();
-    await ytelseCombobox.click();
-    await page.getByRole("option", { name: "Dagpenger" }).click();
+    await ytelseCombobox.fill("Dagpenger");
+    await expect(page.getByRole("option", { name: "Dagpenger", exact: true })).toBeVisible();
+    // Valgt ytelse står først også ved filtrering. Det nye treffet står sist.
+    await ytelseCombobox.press("End");
+    await ytelseCombobox.press("Enter");
     await ytelseCombobox.press("Escape");
 
     await page.getByLabel("Fra", { exact: true }).fill("01.02.2026");
@@ -68,7 +73,7 @@ test.describe("Sakdetalj", () => {
     await expect(page.getByText("Publikum", { exact: true })).toBeVisible();
     await expect(page.getByText("Dagpenger", { exact: true })).toBeVisible();
     await expect(page.getByText("01.02.2026 – 28.02.2026")).toBeVisible();
-    await expect(page.getByText("12345678901").first()).toBeVisible();
+    await expect(page.getByText("123456 78901", { exact: true }).first()).toBeVisible();
   });
 
   test("kan avbryte redigering uten å lagre endringer", async ({ page }) => {
@@ -168,6 +173,7 @@ test.describe("Sakdetalj – dokumentoversikt i Gosys", () => {
   test.beforeEach(async ({ page }) => {
     await resetMockData(page);
     await page.goto("/saker/201", { waitUntil: "networkidle" });
+    await ventPåHydrering(page);
     await expect(page.getByRole("heading", { name: /^Sak 201/ })).toBeVisible();
   });
 

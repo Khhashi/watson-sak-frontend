@@ -1,4 +1,5 @@
 import { FaroErrorBoundary } from "@grafana/faro-react";
+import { useEffect, useState } from "react";
 import { Links, Meta, Scripts, ScrollRestoration } from "react-router";
 import { AnalyticsTags } from "~/analytics/analytics";
 import { MiljøProvider } from "~/layout/MiljøtilpassetTittel";
@@ -23,8 +24,13 @@ export function HtmlRamme({
   miljø = "prod",
 }: HtmlRammeProps) {
   const nonce = useNonce();
+  const [hydrert, settHydrert] = useState(false);
+  useEffect(() => {
+    settHydrert(true);
+  }, []);
+
   return (
-    <html lang="nb-no">
+    <html lang="nb-no" data-hydrert={hydrert}>
       <head>
         <meta charSet="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
