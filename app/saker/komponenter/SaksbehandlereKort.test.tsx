@@ -236,6 +236,36 @@ describe("SaksbehandlereKort", () => {
     expect(screen.getByText(/Domfelt beløp: 15\s000 kr/)).toBeDefined();
   });
 
+  it("viser henleggelsesårsak og tilbakekrevd beløp under avsluttet", async () => {
+    const sak = lagKontrollsak({
+      steg: "AVSLUTTET",
+      status: null,
+      resultat: {
+        forvaltning: {
+          type: "SAKEN_SKAL_VURDERES_FOR_ANMELDELSE",
+          tilbakekrevdBelop: 12500,
+        },
+        politi: {
+          type: "HENLAGT",
+          henleggelsesarsak: "FORELDET",
+        },
+      },
+    });
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={true}
+        sak={sak}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+        tillatteHandlinger={lagTillatteHandlinger(sak)}
+      />,
+    );
+
+    expect(screen.getByText("Henlagt")).toBeDefined();
+    expect(screen.getByText("Årsak: Foreldet")).toBeDefined();
+    expect(screen.getByText(/Tilbakekrevd beløp: 12\s500 kr/)).toBeDefined();
+  });
+
   it("sender egen handling når Tildel meg brukes", async () => {
     const sak = lagKontrollsak({
       steg: "OPPRETTET",

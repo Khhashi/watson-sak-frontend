@@ -71,6 +71,41 @@ export const resultatEtiketter: Record<ResultatType, string> = {
   DOMFELLELSE: "Domfellelse",
 };
 
+export const henleggelsesarsakEtiketter = {
+  FORELDET: "Foreldet",
+  IKKE_KAPASITET: "Ikke kapasitet",
+  IKKE_TILSTREKKELIG_BEVISGRUNNLAG: "Ikke tilstrekkelig dokumentasjon",
+  IKKE_TILSTREKKELIG_SKYLD: "Ikke tilstrekkelig skyld",
+  SAK_PABEGYNT_ELLER_OVERTATT_AV_ANDRE: "Sak påbegynt eller overtatt av andre",
+  IKKE_PRIORITERT: "Ikke prioritert",
+  NAY_MANGLER_I_SAKSBEHANDLINGEN: "NAY: Mangler i saksbehandlingen",
+  NFP_MANGLER_I_SAKSBEHANDLINGEN: "NFP: Mangler i saksbehandlingen",
+  NAY_MANGLER_VED_BEREGNINGSSKJEMA: "NAY: Mangler ved beregningsskjema",
+  NFP_MANGLER_VED_BEREGNINGSSKJEMA: "NFP: Mangler ved beregningsskjema",
+  NAY_MANGELFULL_DOKUMENTASJON: "NAY: Mangelfull dokumentasjon",
+  NFP_MANGELFULL_DOKUMENTASJON: "NFP: Mangelfull dokumentasjon",
+  NAY_MANGLENDE_DOKUMENTER: "NAY: Manglende dokumenter",
+  NFP_MANGLENDE_DOKUMENTER: "NFP: Manglende dokumenter",
+  NAY_LANG_LIGGETID_HOS_NAV: "NAY: Lang liggetid hos Nav",
+  NFP_LANG_LIGGETID_HOS_NAV: "NFP: Lang liggetid hos Nav",
+  NAY_GAMMEL_SAK: "NAY: Gammel sak",
+  NFP_GAMMEL_SAK: "NFP: Gammel sak",
+  NAV_KONTOR_BRUKER_FEILINFORMERT: "Nav-kontor: Bruker feilinformert",
+  NAV_KONTOR_MANGLENDE_INFORMASJON: "Nav-kontor: Manglende informasjon",
+  TUNGTVEIENDE_GRUNNER: "Tungtveiende grunner",
+  UNDER_BELOPSGRENSEN: "Under beløpsgrensen",
+  UNDER_KLAGEBEHANDLING: "Under klagebehandling",
+  MANGLER_SUBJEKTIV_SKYLD: "Mangler subjektiv skyld",
+  INGEN_UTREDNING: "Ingen utredning",
+  BEVISETS_STILLING: "Bevisets stilling",
+  BELOP_UNDER_PATALEGRENSE: "Beløp under påtalegrense",
+  INTET_STRAFFBART_FORHOLD: "Intet straffbart forhold",
+  FEILREGISTRERT_DUBLETT: "Feilregistrert / dublett",
+  IKKE_GRUNNLAG_FOR_TILBAKEKREVING: "Ikke grunnlag for tilbakekreving",
+  BELOP_UNDER_BELOPSGRENSE: "Beløp under beløpsgrense",
+  FEILUTBETALING: "Feilutbetaling",
+} as const;
+
 function formaterResultattype(type: string): string {
   return resultatEtiketter[type as ResultatType] ?? type;
 }
@@ -103,43 +138,89 @@ function formaterFengselsstraff(
   return deler.length > 0 ? deler.join(" og ") : null;
 }
 
-export function hentSluttresultatDetaljer(resultat: KontrollsakResponse["resultat"]): string[] {
-  const dom = resultat?.politi;
-  if (!dom) return [];
+function hentHenleggelsesarsak(resultat: KontrollsakResponse["resultat"]): string | null {
+  if (!resultat) return null;
+  if (resultat.politi?.type) {
+    return resultat.politi.type === "HENLAGT"
+      ? (resultat.politi.henleggelsesarsak ?? resultat.politi.begrunnelse ?? null)
+      : null;
+  }
+  const strafferettsligVurdering = resultat.strafferettsligVurdering;
+  if (strafferettsligVurdering?.type && strafferettsligVurdering.type !== "ANMELDT") {
+    return strafferettsligVurdering.type === "HENLAGT"
+      ? (strafferettsligVurdering.henleggelsesarsak ?? null)
+      : null;
+  }
+  const endeligUtfall = resultat.forvaltning?.endeligUtfall ?? resultat.endeligUtfall;
+  if (endeligUtfall?.type) {
+    return endeligUtfall.type === "HENLAGT" ? (endeligUtfall.henleggelsesarsak ?? null) : null;
+  }
+  return resultat.utredning?.type === "HENLAGT"
+    ? (resultat.utredning.henleggelsesarsak ?? null)
+    : null;
+}
 
+function formaterHenleggelsesarsak(arsak: string): string {
+  return Object.hasOwn(henleggelsesarsakEtiketter, arsak)
+    ? henleggelsesarsakEtiketter[arsak as keyof typeof henleggelsesarsakEtiketter]
+    : arsak;
+}
+
+export function hentSluttresultatDetaljer(
+  resultat: KontrollsakResponse["resultat"],
+  ytelser: KontrollsakResponse["ytelser"] = [],
+): string[] {
+  const dom = resultat?.politi;
   const detaljer: string[] = [];
-  if ((dom.type === "BOT" || dom.type === "FORELEGG") && dom.belop != null) {
+  if (dom && (dom.type === "BOT" || dom.type === "FORELEGG") && dom.belop != null) {
     detaljer.push(`Beløp: ${formaterBelop(dom.belop)} kr`);
   }
-  if (dom.type !== "DOMFELLELSE") return detaljer;
 
-  if (dom.domsdato) {
+  if (dom?.type === "DOMFELLELSE" && dom.domsdato) {
     detaljer.push(`Domsdato: ${formaterIsoTilNorskDato(dom.domsdato)}`);
   }
 
-  const ubetingetFengsel = formaterFengselsstraff(
-    dom.ubetingetFengselMaaneder,
-    dom.ubetingetFengselDager,
-  );
-  if (ubetingetFengsel) detaljer.push(`Ubetinget fengsel: ${ubetingetFengsel}`);
+  if (dom?.type === "DOMFELLELSE") {
+    const ubetingetFengsel = formaterFengselsstraff(
+      dom.ubetingetFengselMaaneder,
+      dom.ubetingetFengselDager,
+    );
+    if (ubetingetFengsel) detaljer.push(`Ubetinget fengsel: ${ubetingetFengsel}`);
 
-  const betingetFengsel = formaterFengselsstraff(
-    dom.betingetFengselMaaneder,
-    dom.betingetFengselDager,
-  );
-  if (betingetFengsel) detaljer.push(`Betinget fengsel: ${betingetFengsel}`);
+    const betingetFengsel = formaterFengselsstraff(
+      dom.betingetFengselMaaneder,
+      dom.betingetFengselDager,
+    );
+    if (betingetFengsel) detaljer.push(`Betinget fengsel: ${betingetFengsel}`);
 
-  if (dom.samfunnsstraffTimer != null) {
-    detaljer.push(`Samfunnsstraff: ${dom.samfunnsstraffTimer} timer`);
+    if (dom.samfunnsstraffTimer != null) {
+      detaljer.push(`Samfunnsstraff: ${dom.samfunnsstraffTimer} timer`);
+    }
+    if (dom.domfeltBelop != null) {
+      detaljer.push(`Domfelt beløp: ${formaterBelop(dom.domfeltBelop)} kr`);
+    }
+    if (dom.siviltRettskrav != null) {
+      detaljer.push(`Sivilt rettskrav: ${formaterBelop(dom.siviltRettskrav)} kr`);
+    }
+    if (dom.tilstaaelsesdom) detaljer.push("Tilståelsesdom");
+    if (dom.detaljer?.trim()) detaljer.push(dom.detaljer.trim());
   }
-  if (dom.domfeltBelop != null) {
-    detaljer.push(`Domfelt beløp: ${formaterBelop(dom.domfeltBelop)} kr`);
+
+  const henleggelsesarsak = hentHenleggelsesarsak(resultat);
+  if (henleggelsesarsak) {
+    detaljer.push(`Årsak: ${formaterHenleggelsesarsak(henleggelsesarsak)}`);
   }
-  if (dom.siviltRettskrav != null) {
-    detaljer.push(`Sivilt rettskrav: ${formaterBelop(dom.siviltRettskrav)} kr`);
+
+  const ytelsesSum =
+    resultat?.forvaltning &&
+    ytelser.length > 0 &&
+    ytelser.every((ytelse) => ytelse.endeligBelop != null)
+      ? ytelser.reduce((sum, ytelse) => sum + (ytelse.endeligBelop ?? 0), 0)
+      : null;
+  const tilbakekrevdBelop = resultat?.forvaltning?.tilbakekrevdBelop ?? ytelsesSum;
+  if (tilbakekrevdBelop != null) {
+    detaljer.push(`Tilbakekrevd beløp: ${formaterBelop(tilbakekrevdBelop)} kr`);
   }
-  if (dom.tilstaaelsesdom) detaljer.push("Tilståelsesdom");
-  if (dom.detaljer?.trim()) detaljer.push(dom.detaljer.trim());
 
   return detaljer;
 }

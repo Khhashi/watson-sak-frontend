@@ -116,7 +116,7 @@ export function SaksbehandlereKort({
     erEier && tillatteHandlinger && hentHandlinger(tillatteHandlinger).length > 0;
   const erAvsluttet = sak.steg === "AVSLUTTET";
   const statusTag = hentStatusTag(sak);
-  const sluttresultatDetaljer = hentSluttresultatDetaljer(sak.resultat);
+  const sluttresultatDetaljer = hentSluttresultatDetaljer(sak.resultat, sak.ytelser);
 
   return (
     <>

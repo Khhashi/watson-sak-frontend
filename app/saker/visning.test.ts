@@ -221,6 +221,98 @@ describe("hentSluttresultatDetaljer", () => {
   it("viser ikke detaljer for resultattyper uten tilleggsopplysninger", () => {
     expect(hentSluttresultatDetaljer({ politi: { type: "FRIFINNELSE" } })).toEqual([]);
   });
+
+  it.each([
+    [
+      { utredning: { type: "HENLAGT", henleggelsesarsak: "IKKE_KAPASITET" } },
+      ["Årsak: Ikke kapasitet"],
+    ],
+    [
+      {
+        forvaltning: {
+          type: "SAKEN_SKAL_IKKE_VURDERES_FOR_ANMELDELSE",
+          endeligUtfall: { type: "HENLAGT", henleggelsesarsak: "FORELDET" },
+        },
+      },
+      ["Årsak: Foreldet"],
+    ],
+    [
+      { politi: { type: "HENLAGT", henleggelsesarsak: "Bevisets stilling" } },
+      ["Årsak: Bevisets stilling"],
+    ],
+  ] as [NonNullable<KontrollsakResponse["resultat"]>, string[]][])(
+    "viser årsaken til henleggelsen",
+    (resultat, forventet) => {
+      expect(hentSluttresultatDetaljer(resultat)).toEqual(forventet);
+    },
+  );
+
+  it("viser registrert tilbakekrevd beløp", () => {
+    expect(
+      hentSluttresultatDetaljer({
+        forvaltning: {
+          type: "SAKEN_SKAL_VURDERES_FOR_ANMELDELSE",
+          tilbakekrevdBelop: 12500,
+        },
+      }),
+    ).toEqual(["Tilbakekrevd beløp: 12 500 kr"]);
+  });
+
+  it("summerer endelige ytelsesbeløp når totalbeløpet ikke er registrert", () => {
+    const ytelser = [
+      {
+        id: "93b6bb01-2178-42ea-95f5-849dd31bb135",
+        type: "Dagpenger",
+        periodeFra: null,
+        periodeTil: null,
+        belop: 10000,
+        endeligBelop: 7500,
+      },
+      {
+        id: "33c11cdd-8402-4932-92ac-1ad03ab55383",
+        type: "Sykepenger",
+        periodeFra: null,
+        periodeTil: null,
+        belop: 5000,
+        endeligBelop: 2500,
+      },
+    ];
+
+    expect(
+      hentSluttresultatDetaljer(
+        {
+          forvaltning: {
+            type: "SAKEN_SKAL_IKKE_VURDERES_FOR_ANMELDELSE",
+            endeligUtfall: { type: "FEILUTBETALINGSSAK_ORDINAER" },
+          },
+        },
+        ytelser,
+      ),
+    ).toEqual(["Tilbakekrevd beløp: 10 000 kr"]);
+  });
+
+  it("unngår å vise en ufullstendig sum av ytelsesbeløp", () => {
+    expect(
+      hentSluttresultatDetaljer({ forvaltning: { type: "SAKEN_SKAL_VURDERES_FOR_ANMELDELSE" } }, [
+        {
+          id: "93b6bb01-2178-42ea-95f5-849dd31bb135",
+          type: "Dagpenger",
+          periodeFra: null,
+          periodeTil: null,
+          belop: 10000,
+          endeligBelop: 7500,
+        },
+        {
+          id: "33c11cdd-8402-4932-92ac-1ad03ab55383",
+          type: "Sykepenger",
+          periodeFra: null,
+          periodeTil: null,
+          belop: 5000,
+          endeligBelop: null,
+        },
+      ]),
+    ).toEqual([]);
+  });
 });
 
 describe("hentStatusTag", () => {

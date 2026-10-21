@@ -10,7 +10,7 @@ import {
   erPolitiresultatKomplett,
   kanAvsluttesFraForvaltning,
 } from "./handlinger/tillatte-steg";
-import { resultatEtiketter } from "./visning";
+import { henleggelsesarsakEtiketter, resultatEtiketter } from "./visning";
 
 export function erGyldigMockStegovergang(
   sak: KontrollsakResponse,
@@ -83,40 +83,6 @@ const resultatvalg: Partial<Record<KontrollsakSteg, ResultatType[]>> = {
   STRAFFERETTSLIG_VURDERING: ["ANMELDT", "FEILUTBETALINGSSAK_ORDINAER", "HENLAGT"],
   POLITI: ["HENLAGT", "FORELEGG", "BOT", "PATALEUNNLATELSE", "FRIFINNELSE", "DOMFELLELSE"],
 };
-
-const henleggelsesarsakEtiketter = {
-  BEVISETS_STILLING: "Bevisets stilling",
-  BELOP_UNDER_PATALEGRENSE: "Beløp under påtalegrense",
-  INTET_STRAFFBART_FORHOLD: "Intet straffbart forhold",
-  FEILREGISTRERT_DUBLETT: "Feilregistrert / dublett",
-  IKKE_GRUNNLAG_FOR_TILBAKEKREVING: "Ikke grunnlag for tilbakekreving",
-  BELOP_UNDER_BELOPSGRENSE: "Beløp under beløpsgrense",
-  FEILUTBETALING: "Feilutbetaling",
-  FORELDET: "Foreldet",
-  IKKE_KAPASITET: "Ikke kapasitet",
-  IKKE_PRIORITERT: "Ikke prioritert",
-  IKKE_TILSTREKKELIG_BEVISGRUNNLAG: "Ikke tilstrekkelig dokumentasjon",
-  IKKE_TILSTREKKELIG_SKYLD: "Ikke tilstrekkelig skyld",
-  SAK_PABEGYNT_ELLER_OVERTATT_AV_ANDRE: "Sak påbegynt eller overtatt av andre",
-  NAY_MANGLER_I_SAKSBEHANDLINGEN: "NAY: Mangler i saksbehandlingen",
-  NFP_MANGLER_I_SAKSBEHANDLINGEN: "NFP: Mangler i saksbehandlingen",
-  NAY_MANGLER_VED_BEREGNINGSSKJEMA: "NAY: Mangler ved beregningsskjema",
-  NFP_MANGLER_VED_BEREGNINGSSKJEMA: "NFP: Mangler ved beregningsskjema",
-  NAY_MANGELFULL_DOKUMENTASJON: "NAY: Mangelfull dokumentasjon",
-  NFP_MANGELFULL_DOKUMENTASJON: "NFP: Mangelfull dokumentasjon",
-  NAY_MANGLENDE_DOKUMENTER: "NAY: Manglende dokumenter",
-  NFP_MANGLENDE_DOKUMENTER: "NFP: Manglende dokumenter",
-  NAY_LANG_LIGGETID_HOS_NAV: "NAY: Lang liggetid hos Nav",
-  NFP_LANG_LIGGETID_HOS_NAV: "NFP: Lang liggetid hos Nav",
-  NAY_GAMMEL_SAK: "NAY: Gammel sak",
-  NFP_GAMMEL_SAK: "NFP: Gammel sak",
-  NAV_KONTOR_BRUKER_FEILINFORMERT: "Nav-kontor: Bruker feilinformert",
-  NAV_KONTOR_MANGLENDE_INFORMASJON: "Nav-kontor: Manglende informasjon",
-  TUNGTVEIENDE_GRUNNER: "Tungtveiende grunner",
-  UNDER_BELOPSGRENSEN: "Under beløpsgrensen",
-  UNDER_KLAGEBEHANDLING: "Under klagebehandling",
-  MANGLER_SUBJEKTIV_SKYLD: "Mangler subjektiv skyld",
-} as const;
 
 type Henleggelsesarsak = keyof typeof henleggelsesarsakEtiketter;
 
