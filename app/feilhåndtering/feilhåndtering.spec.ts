@@ -1,5 +1,6 @@
 import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
+import { ventPåHydrering } from "~/test/vent-på-hydrering";
 
 test.describe("Feilhåndtering – 404", () => {
   test("viser 404-side for ukjent rute", async ({ page }) => {
@@ -10,6 +11,7 @@ test.describe("Feilhåndtering – 404", () => {
 
   test("kan navigere tilbake til forsiden", async ({ page }) => {
     await page.goto("/denne-siden-finnes-ikke", { waitUntil: "networkidle" });
+    await ventPåHydrering(page);
 
     await page.getByRole("link", { name: "Gå til forsiden" }).click();
     await expect(page).toHaveURL("/");
