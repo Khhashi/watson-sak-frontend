@@ -1,8 +1,4 @@
-import {
-  type KontrollsakSteg,
-  POLITIDISTRIKT_MAKS_LENGDE,
-  type TillatteHandlingerResponse,
-} from "~/saker/types.backend";
+import { type KontrollsakSteg, type TillatteHandlingerResponse } from "~/saker/types.backend";
 import { resultatFeltErAktivt } from "../resultat-request";
 import { erHenlagtIGjeldendeSteg, hentVisbareSteg } from "../tillatte-steg";
 import { sjekklister } from "./sjekklister";
@@ -79,6 +75,8 @@ export type Sakshandling = {
 export type Feltvisning = {
   /** Hjelpetekst under ledeteksten. */
   beskrivelse?: string;
+  /** Låste valg vises som en nedtrekksliste. */
+  valg?: readonly string[];
   /** Tekstfeltet vises på én linje og har maks lengde. Andre tekstfelt er flerlinjede. */
   maksLengde?: number;
   /** Feltet vises smalt med enheten til høyre, for eksempel «kr» eller «timer». */
@@ -88,8 +86,23 @@ export type Feltvisning = {
 /** Hvordan enkeltfelt vises, utover det feltskjemaet fra backend sier. */
 export const feltvisning: Readonly<Record<string, Feltvisning>> = {
   "strafferettsligVurdering.politidistrikt": {
-    beskrivelse: "Skriv inn politidistriktet som saken er anmeldt til.",
-    maksLengde: POLITIDISTRIKT_MAKS_LENGDE,
+    beskrivelse: "Velg politidistriktet saken anmeldes til.",
+    valg: [
+      "Agder politidistrikt",
+      "Finnmark politidistrikt",
+      "Innlandet politidistrikt",
+      "Kripos",
+      "Møre og Romsdal politidistrikt",
+      "Nordland politidistrikt",
+      "Oslo politidistrikt",
+      "Sør-Vest politidistrikt",
+      "Sør-Øst politidistrikt",
+      "Troms politidistrikt",
+      "Trøndelag politidistrikt",
+      "Vest politidistrikt",
+      "Økokrim",
+      "Øst politidistrikt",
+    ],
   },
   "politi.begrunnelse": { maksLengde: 200 },
   "politi.ubetingetFengselMaaneder": { enhet: "mnd" },

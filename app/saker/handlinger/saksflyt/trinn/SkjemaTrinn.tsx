@@ -6,6 +6,7 @@ import {
   HStack,
   Radio,
   RadioGroup,
+  Select,
   Stack,
   Textarea,
   TextField,
@@ -133,6 +134,25 @@ function Resultatfelt({
         feil={feil}
         onChange={onChange}
       />
+    );
+  }
+
+  if (visning.valg) {
+    return (
+      <Select
+        label={etikett}
+        description={visning.beskrivelse}
+        value={verdi}
+        error={feil[felt.felt]}
+        onChange={(event) => onChange(felt.felt, event.target.value)}
+      >
+        <option value="">Velg politidistrikt</option>
+        {visning.valg.map((valg) => (
+          <option key={valg} value={valg}>
+            {valg}
+          </option>
+        ))}
+      </Select>
     );
   }
 
