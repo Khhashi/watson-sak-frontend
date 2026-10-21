@@ -96,7 +96,7 @@ describe("SakerPåSammePerson", () => {
     expect(container.firstChild).toBeNull();
   });
 
-  it("viser seksjonsoverskrift og kompakt rad for annen sak", async () => {
+  it("viser saksoppsummering og handlinger i kompakt visning", async () => {
     await renderMedRouter(
       <SakerPåSammePerson
         saker={[lagKontrollsak("203")]}
@@ -106,7 +106,103 @@ describe("SakerPåSammePerson", () => {
     );
 
     expect(screen.getByRole("heading", { name: "Saker på samme person" })).toBeDefined();
-    expect(screen.getByText("12345678901", { exact: false })).toBeDefined();
+    expect(screen.getByText((_, element) => element?.textContent === "Saksid: 203")).toBeDefined();
+    expect(screen.getByText((_, element) => element?.textContent === "Enhet: Øst")).toBeDefined();
+    expect(
+      screen.getByText((_, element) => element?.textContent === "Saksbehandler: Lise Raus"),
+    ).toBeDefined();
+    expect(screen.getByText("Utredning")).toBeDefined();
+    expect(screen.getByRole("button", { name: "Vis detaljer for sak 203" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Gå til sak" })).toBeDefined();
+  });
+
+  it("viser sammendrag for flere saker", async () => {
+    await renderMedRouter(
+      <SakerPåSammePerson
+        saker={[lagKontrollsak("203"), lagKontrollsak("204", { status: "VENTER_PA_VEDTAK" })]}
+        gjeldendeSak={lagKontrollsak("105")}
+        innloggetNavIdent="Z999999"
+      />,
+    );
+
+    expect(screen.getByText((_, element) => element?.textContent === "Saksid: 203")).toBeDefined();
+    expect(screen.getByText((_, element) => element?.textContent === "Saksid: 204")).toBeDefined();
+    expect(screen.getByText("Venter på vedtak")).toBeDefined();
+  });
+
+  it("viser saksfeltene i utvidet visning", async () => {
+    await renderMedRouter(
+      <SakerPåSammePerson
+        saker={[
+          lagKontrollsak("203", {
+            ytelser: [
+              {
+                type: "Foreldrepenger",
+                periodeFra: "2022-01-01",
+                periodeTil: "2025-01-01",
+                belop: 50000,
+                endeligBelop: null,
+              },
+              {
+                type: "Dagpenger",
+                periodeFra: "2023-03-01",
+                periodeTil: "2024-06-30",
+                belop: null,
+                endeligBelop: null,
+              },
+            ],
+          }),
+        ]}
+        gjeldendeSak={lagKontrollsak("105")}
+        innloggetNavIdent="Z999999"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer for sak 203" }));
+
+    expect(screen.getByText("Kategori")).toBeDefined();
+    expect(screen.getByText("Periode")).toBeDefined();
+    expect(screen.getByText("01.01.2022 – 01.01.2025")).toBeDefined();
+    expect(screen.getByText("01.03.2023 – 30.06.2024")).toBeDefined();
+    expect(screen.queryByText("01.2022–01.2025")).toBeNull();
+    expect(screen.getByText("Ca beløp")).toBeDefined();
+    expect(screen.getByText(/50\s000/)).toBeDefined();
+    expect(screen.getByText("Ytelse")).toBeDefined();
+    expect(screen.getByText("Kilde")).toBeDefined();
+    expect(screen.getByText("Personnummer")).toBeDefined();
+  });
+
+  it("beholder øvrige saksopplysninger i utvidet visning", async () => {
+    await renderMedRouter(
+      <SakerPåSammePerson
+        saker={[
+          lagKontrollsak("203", {
+            legacyPid: "PID-123",
+            arbeidsgivere: ["123456789"],
+            ytelser: [
+              {
+                type: "Foreldrepenger",
+                periodeFra: "2022-01-01",
+                periodeTil: "2025-01-01",
+                belop: 50000,
+                endeligBelop: 40000,
+              },
+            ],
+          }),
+        ]}
+        gjeldendeSak={lagKontrollsak("105")}
+        innloggetNavIdent="Z999999"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer for sak 203" }));
+
+    expect(screen.getByText("PID")).toBeDefined();
+    expect(screen.getByText("PID-123")).toBeDefined();
+    expect(screen.getByText("Organisasjonsnummer")).toBeDefined();
+    expect(screen.getByText("123 456 789")).toBeDefined();
+    expect(screen.getByText("Endelig beløp")).toBeDefined();
+    expect(screen.getByText(/40\s000/)).toBeDefined();
   });
 
   it("åpner koblingsmodalen fra en ekspandert sak", async () => {
@@ -118,7 +214,7 @@ describe("SakerPåSammePerson", () => {
       />,
     );
 
-    const ekspanderKnapp = screen.getByRole("button", { name: "Vis detaljer" });
+    const ekspanderKnapp = screen.getByRole("button", { name: "Vis detaljer for sak 203" });
     fireEvent.click(ekspanderKnapp);
     await waitFor(() => {});
 
@@ -126,7 +222,7 @@ describe("SakerPåSammePerson", () => {
     await waitFor(() => {});
 
     expect(screen.getByRole("heading", { name: "Koble til sak" })).toBeDefined();
-    expect(screen.getByRole("button", { name: "Skjul" })).toBeDefined();
+    expect(screen.getByRole("button", { name: "Skjul detaljer for sak 203" })).toBeDefined();
   });
 
   it("lenker til den utvidede saken", async () => {
@@ -138,7 +234,7 @@ describe("SakerPåSammePerson", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer for sak 203" }));
     await waitFor(() => {});
 
     expect(screen.getByRole("button", { name: "Gå til sak" }).getAttribute("href")).toBe(
@@ -161,7 +257,7 @@ describe("SakerPåSammePerson", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer for sak 203" }));
     await waitFor(() => {});
     fireEvent.click(screen.getByRole("button", { name: "Vis identifikatorhistorikk" }));
     await waitFor(() => {});
@@ -179,7 +275,7 @@ describe("SakerPåSammePerson", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer for sak 203" }));
     await waitFor(() => {});
     fireEvent.click(screen.getByRole("button", { name: "Koble til sak" }));
     await waitFor(() => {});
@@ -198,7 +294,7 @@ describe("SakerPåSammePerson", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer for sak 203" }));
     await waitFor(() => {});
     fireEvent.click(screen.getByRole("button", { name: "Fjern kobling" }));
     await waitFor(() => {});
@@ -231,7 +327,7 @@ describe("SakerPåSammePerson", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer" }));
+    fireEvent.click(screen.getByRole("button", { name: "Vis detaljer for sak 203" }));
     await waitFor(() => {});
 
     expect(screen.queryByRole("button", { name: "Koble til sak" })).toBeNull();
