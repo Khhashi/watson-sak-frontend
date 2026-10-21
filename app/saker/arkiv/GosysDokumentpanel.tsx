@@ -94,7 +94,7 @@ export function GosysDokumentpanel({
             <Button
               type="button"
               variant="tertiary"
-              size="small"
+              size="xsmall"
               icon={åpen ? <ChevronUpIcon aria-hidden /> : <ChevronDownIcon aria-hidden />}
               aria-expanded={åpen}
               aria-controls={åpen ? innholdId : undefined}

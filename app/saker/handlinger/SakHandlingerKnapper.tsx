@@ -71,7 +71,7 @@ export function SakHandlingerKnapper({
                 key={handling}
                 type="button"
                 variant={visning.variant}
-                size="small"
+                size="xsmall"
                 icon={visning.ikon}
                 onClick={() => setÅpenModal(handling)}
               >
