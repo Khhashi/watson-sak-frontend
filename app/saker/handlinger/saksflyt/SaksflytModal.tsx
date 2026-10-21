@@ -235,7 +235,7 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
       onClose={lukk}
       onBeforeClose={() => !erSubmitting}
       header={{ heading: trinntittel(trinn) }}
-      width="small"
+      width={handling.bredde ?? "small"}
     >
       <Modal.Body>
         <VStack gap="space-16">

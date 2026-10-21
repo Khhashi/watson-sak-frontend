@@ -68,6 +68,8 @@ export type Sakshandling = {
   seksjon: "steg" | "resultat";
   etikett: string;
   erPrimær?: boolean;
+  /** Bredden på modalen gjennom hele handlingen. Standard er `small`. */
+  bredde?: "small" | "medium";
   trinn: readonly Trinn[];
   /** Resultatverdier handlingen alltid sender, for eksempel `utredning.type=HENLAGT`. */
   faste: Verdier;
@@ -283,6 +285,7 @@ const handlingstabell: Partial<Record<KontrollsakSteg, readonly Sakshandling[]>>
       seksjon: "steg",
       etikett: "Registrer resultat",
       erPrimær: true,
+      bredde: "medium",
       faste: {},
       trinn: [
         {
