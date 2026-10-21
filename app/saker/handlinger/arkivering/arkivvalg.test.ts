@@ -58,6 +58,19 @@ describe("byggArkivTre", () => {
 
     expect(tre).toEqual({ undermapper: [], elementer: [] });
   });
+
+  it("tar med Word-filer, siden backend gjør dem om til PDF", () => {
+    const tre = byggArkivTre(
+      [
+        fil("f1", "notat.docx", {
+          contentType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        }),
+      ],
+      [],
+    );
+
+    expect(tre.elementer.map((e) => e.nøkkel)).toEqual(["fil:f1"]);
+  });
 });
 
 describe("mappevalg", () => {

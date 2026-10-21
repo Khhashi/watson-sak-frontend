@@ -28,6 +28,8 @@ export type FilResponse = {
   arkivertJournalpostId?: string | null;
   /** Satt hvis filen er en PDF generert fra et dokument ved arkivering — id til kildedokumentet. */
   arkivertFraDokumentId?: string | null;
+  /** Satt hvis filen er en PDF generert fra en opplastet Word-fil ved arkivering — id til kildefilen. */
+  arkivertFraFilId?: string | null;
   /** Mappestien filen ligger i, f.eks. «Bank/Kontoutskrifter». Null/undefined betyr rotnivå. */
   mappe?: string | null;
 };

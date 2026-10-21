@@ -128,6 +128,7 @@ export function koblingsFeilmelding(feil: unknown): string {
 
 export type ActionResult =
   | { ok: true; sak?: Route.ComponentProps["loaderData"]["sak"]; journalpostId?: string }
+  | { ok: false; feil: string }
   | RedigerSaksinformasjonResultat;
 
 // --- Hjelpefunksjoner ---
