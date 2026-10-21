@@ -71,12 +71,15 @@ function MappeskjemaModal({
 
 function MappevelgerSelect({
   label,
+  sakId,
   mapper,
   verdi,
   onEndre,
   error,
 }: {
   label: string;
+  /** Rotmappen vises med saksnummeret som navn. */
+  sakId: string;
   mapper: string[];
   verdi: string;
   onEndre: (verdi: string) => void;
@@ -84,10 +87,10 @@ function MappevelgerSelect({
 }) {
   return (
     <Select label={label} value={verdi} onChange={(e) => onEndre(e.target.value)} error={error}>
-      <option value={ROTNIVÅ}>Rotnivå</option>
+      <option value={ROTNIVÅ}>{sakId}</option>
       {mapper.map((sti) => (
         <option key={sti} value={sti}>
-          {sti.replaceAll("/", " / ")}
+          {`${sakId} / ${sti.replaceAll("/", " / ")}`}
         </option>
       ))}
     </Select>
@@ -156,6 +159,7 @@ export function OpprettMappeModal({ sakId, mapper, onClose }: OpprettMappeModalP
       />
       <MappevelgerSelect
         label="Plassering"
+        sakId={sakId}
         mapper={mapper}
         verdi={plassering}
         onEndre={settPlassering}
@@ -272,6 +276,7 @@ export function FlyttTilMappeModal({ sakId, element, mapper, onClose }: FlyttTil
     >
       <MappevelgerSelect
         label="Flytt til"
+        sakId={sakId}
         mapper={gyldigeMapper}
         verdi={mål}
         onEndre={settMål}

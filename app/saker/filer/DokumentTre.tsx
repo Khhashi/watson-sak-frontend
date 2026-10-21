@@ -16,7 +16,7 @@ import { formaterDato } from "~/utils/date-utils";
 import { DokumentIkon } from "./dokument-ikon";
 import { SlettDokumentModal } from "./dokument/SlettDokumentModal";
 import { useDokumentSletting } from "./dokument/useDokumentSletting";
-import { byggFilTre, flatMappeliste, type FilTreNode } from "./mapper/bygg-filtre";
+import { antallFilerITre, byggFilTre, flatMappeliste, type FilTreNode } from "./mapper/bygg-filtre";
 import { FlyttTilMappeModal, type FlyttbartElement } from "./mapper/MappeModaler";
 import { erLikEllerUnder } from "./mapper/mappesti";
 import { useDraOgSlipp } from "./mapper/useDraOgSlipp";
@@ -315,7 +315,7 @@ function TreNoder({
 /**
  * Dokumentlisten i sidepanelet på dokumentsiden. Når `mapper` er satt, vises dokumentene i
  * mappestrukturen fra Filer-området. Mappen med dokumentet som er åpent, er utvidet fra start.
- * Arkiverte dokumenter ligger nederst på rotnivå.
+ * Arkiverte dokumenter ligger nederst i rotmappen.
  */
 export function DokumentTre({
   noder,
@@ -359,6 +359,7 @@ export function DokumentTre({
       new Set(alleMapper.filter((sti) => !!fremhevetMappe && erLikEllerUnder(fremhevetMappe, sti))),
   );
   const [flytteElement, settFlytteElement] = useState<FlyttbartElement | null>(null);
+  const [rotÅpen, settRotÅpen] = useState(true);
   const settÅpen = useCallback((sti: string, åpen: boolean) => {
     settÅpneMapper((forrige) => {
       if (forrige.has(sti) === åpen) return forrige;
@@ -394,38 +395,70 @@ export function DokumentTre({
           {mappehandling.feil}
         </Alert>
       )}
-      <ul
-        className={`flex flex-col rounded-sm ${slippmål === null ? "outline-2 outline-offset-2 outline-ax-border-accent" : ""}`}
-        aria-label="Dokumenter"
-        {...slippProps(null)}
-        onDragLeave={(event) => {
-          if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fjernSlippmål();
-        }}
-      >
-        <TreNoder
-          noder={tre}
-          felles={felles}
-          åpneMapper={åpneMapper}
-          settÅpen={settÅpen}
-          draProps={draProps}
-          slippmål={slippmål}
-        />
-        {arkiverte.map((node) => (
-          <DokumentRad key={node.id} node={node} {...felles} />
-        ))}
-        {dras && kanSlippe(dras, null) && (
-          <li
-            className={`mt-2 rounded-sm border border-dashed px-3 py-2 ${
-              slippmål === null
-                ? "border-ax-border-accent bg-ax-bg-accent-soft"
-                : "border-ax-border-neutral-subtle"
-            }`}
+      {/* Alt på saken ligger i én rotmappe med saksnummeret som navn, se `FilTre`. */}
+      <ul className="flex flex-col" aria-label="Dokumenter">
+        <li
+          className={
+            slippmål === null
+              ? "rounded-sm bg-ax-bg-accent-soft outline-2 outline-ax-border-accent"
+              : ""
+          }
+          {...slippProps(null)}
+          onDragLeave={(event) => {
+            if (!event.currentTarget.contains(event.relatedTarget as Node | null)) fjernSlippmål();
+          }}
+        >
+          <button
+            type="button"
+            aria-expanded={rotÅpen}
+            onClick={() => settRotÅpen(!rotÅpen)}
+            className="flex w-full min-w-0 items-center gap-2 rounded-md px-2 py-1.5 text-left text-ax-text-default hover:bg-ax-bg-neutral-moderate-hover"
           >
-            <Detail className="text-ax-text-neutral-subtle">
-              Slipp her for å flytte til rotnivå
+            {rotÅpen ? (
+              <ChevronDownIcon aria-hidden className="shrink-0 text-ax-icon-neutral" />
+            ) : (
+              <ChevronRightIcon aria-hidden className="shrink-0 text-ax-icon-neutral" />
+            )}
+            <FolderIcon aria-hidden className="shrink-0 text-ax-icon-neutral" />
+            <BodyShort size="small" weight="semibold" className="truncate flex-1">
+              {sakId}
+            </BodyShort>
+            <Detail className="shrink-0 text-ax-text-neutral-subtle">
+              {antallFilerITre(tre) + arkiverte.length}
             </Detail>
-          </li>
-        )}
+          </button>
+          {rotÅpen && (
+            <ul
+              aria-label={sakId}
+              className="ml-4 flex flex-col border-l border-ax-border-neutral-subtle pl-2"
+            >
+              <TreNoder
+                noder={tre}
+                felles={felles}
+                åpneMapper={åpneMapper}
+                settÅpen={settÅpen}
+                draProps={draProps}
+                slippmål={slippmål}
+              />
+              {arkiverte.map((node) => (
+                <DokumentRad key={node.id} node={node} {...felles} />
+              ))}
+              {dras && kanSlippe(dras, null) && (
+                <li
+                  className={`mt-2 rounded-sm border border-dashed px-3 py-2 ${
+                    slippmål === null
+                      ? "border-ax-border-accent bg-ax-bg-accent-soft"
+                      : "border-ax-border-neutral-subtle"
+                  }`}
+                >
+                  <Detail className="text-ax-text-neutral-subtle">
+                    Slipp her for å flytte til {sakId}
+                  </Detail>
+                </li>
+              )}
+            </ul>
+          )}
+        </li>
       </ul>
 
       <SlettDokumentModal
