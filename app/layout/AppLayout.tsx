@@ -2,6 +2,7 @@ import { PageBlock } from "@navikt/ds-react/Page";
 import { Outlet, useMatches } from "react-router";
 import type { LoaderFunctionArgs, ShouldRevalidateFunctionArgs } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
+import { erUtloggetFeil } from "~/auth/session-utløpt.server";
 import { skalBrukeMockdata } from "~/config/env.server";
 import { logger } from "~/logging/logging";
 import { hentUlesteVarsler as hentUlesteVarslerFraApi } from "~/varsler/api.server";
@@ -24,13 +25,14 @@ export function shouldRevalidate({
 }
 
 export async function loader({ request }: LoaderFunctionArgs) {
+  if (skalBrukeMockdata) {
+    return { varsler: hentUlesteVarslerFraMock(request) };
+  }
+  const token = await getBackendOboToken(request);
   try {
-    if (skalBrukeMockdata) {
-      return { varsler: hentUlesteVarslerFraMock(request) };
-    }
-    const token = await getBackendOboToken(request);
     return { varsler: await hentUlesteVarslerFraApi(token) };
   } catch (err) {
+    if (erUtloggetFeil(err)) throw err;
     logger.warn("Klarte ikke hente varsler, faller tilbake til tom liste", {
       feil: String(err),
     });
