@@ -93,6 +93,57 @@ export function hentSluttresultat(resultat: KontrollsakResponse["resultat"]): st
   return null;
 }
 
+function formaterFengselsstraff(
+  måneder: number | null | undefined,
+  dager: number | null | undefined,
+): string | null {
+  const deler: string[] = [];
+  if (måneder && måneder > 0) deler.push(`${måneder} ${måneder === 1 ? "måned" : "måneder"}`);
+  if (dager && dager > 0) deler.push(`${dager} ${dager === 1 ? "dag" : "dager"}`);
+  return deler.length > 0 ? deler.join(" og ") : null;
+}
+
+export function hentSluttresultatDetaljer(resultat: KontrollsakResponse["resultat"]): string[] {
+  const dom = resultat?.politi;
+  if (!dom) return [];
+
+  const detaljer: string[] = [];
+  if ((dom.type === "BOT" || dom.type === "FORELEGG") && dom.belop != null) {
+    detaljer.push(`Beløp: ${formaterBelop(dom.belop)} kr`);
+  }
+  if (dom.type !== "DOMFELLELSE") return detaljer;
+
+  if (dom.domsdato) {
+    detaljer.push(`Domsdato: ${formaterIsoTilNorskDato(dom.domsdato)}`);
+  }
+
+  const ubetingetFengsel = formaterFengselsstraff(
+    dom.ubetingetFengselMaaneder,
+    dom.ubetingetFengselDager,
+  );
+  if (ubetingetFengsel) detaljer.push(`Ubetinget fengsel: ${ubetingetFengsel}`);
+
+  const betingetFengsel = formaterFengselsstraff(
+    dom.betingetFengselMaaneder,
+    dom.betingetFengselDager,
+  );
+  if (betingetFengsel) detaljer.push(`Betinget fengsel: ${betingetFengsel}`);
+
+  if (dom.samfunnsstraffTimer != null) {
+    detaljer.push(`Samfunnsstraff: ${dom.samfunnsstraffTimer} timer`);
+  }
+  if (dom.domfeltBelop != null) {
+    detaljer.push(`Domfelt beløp: ${formaterBelop(dom.domfeltBelop)} kr`);
+  }
+  if (dom.siviltRettskrav != null) {
+    detaljer.push(`Sivilt rettskrav: ${formaterBelop(dom.siviltRettskrav)} kr`);
+  }
+  if (dom.tilstaaelsesdom) detaljer.push("Tilståelsesdom");
+  if (dom.detaljer?.trim()) detaljer.push(dom.detaljer.trim());
+
+  return detaljer;
+}
+
 /**
  * Tekst og farge for status-taggen til en sak. Avsluttede saker viser resultatet i stedet
  * for status, i nøytral farge.
