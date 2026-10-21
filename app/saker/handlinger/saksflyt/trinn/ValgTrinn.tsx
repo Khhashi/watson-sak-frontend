@@ -1,8 +1,10 @@
 import {
   BodyLong,
+  BodyShort,
   Checkbox,
   CheckboxGroup,
   Detail,
+  Fieldset,
   Radio,
   RadioGroup,
   UNSAFE_Combobox,
@@ -75,6 +77,11 @@ export function EnkeltvalgTrinn({
     ? hentValg(felt, tillatteHandlinger.tillatteResultater, trinn.tillatteVerdier)
     : [];
   const valgt = verdier[trinn.felt] ?? "";
+  if (trinn.grupper) {
+    return (
+      <GrupperteValg trinn={trinn} valg={valg} valgt={valgt} feil={feil} onChange={onChange} />
+    );
+  }
   if (valg.length > MAKS_ANTALL_RADIOKNAPPER) {
     const valgtAlternativ = valg.find((alternativ) => alternativ.verdi === valgt);
     return (
@@ -104,6 +111,55 @@ export function EnkeltvalgTrinn({
         </Radio>
       ))}
     </RadioGroup>
+  );
+}
+
+/**
+ * Radioknapper i grupper med overskrift, for eksempel resultater fra politiet og fra domstolen.
+ * Hver gruppe er en egen radiogruppe, men alle setter det samme feltet.
+ */
+function GrupperteValg({
+  trinn,
+  valg,
+  valgt,
+  feil,
+  onChange,
+}: Pick<TrinnProps<"enkeltvalg">, "trinn" | "feil" | "onChange"> & {
+  valg: ReturnType<typeof hentValg>;
+  valgt: string;
+}) {
+  const grupper = (trinn.grupper ?? [])
+    .map((gruppe) => ({
+      tittel: gruppe.tittel,
+      valg: valg.filter((alternativ) => gruppe.verdier.includes(alternativ.verdi)),
+    }))
+    .filter((gruppe) => gruppe.valg.length > 0);
+  return (
+    <VStack gap="space-16">
+      {trinn.beskrivelse && (
+        <BodyShort size="small" textColor="subtle">
+          {trinn.beskrivelse}
+        </BodyShort>
+      )}
+      <Fieldset legend={trinn.legend} hideLegend error={feil[trinn.felt]}>
+        <VStack gap="space-24">
+          {grupper.map((gruppe) => (
+            <RadioGroup
+              key={gruppe.tittel}
+              legend={gruppe.tittel}
+              value={gruppe.valg.some((alternativ) => alternativ.verdi === valgt) ? valgt : ""}
+              onChange={(verdi: string) => onChange(trinn.felt, verdi)}
+            >
+              {gruppe.valg.map((alternativ) => (
+                <Radio key={alternativ.verdi} value={alternativ.verdi}>
+                  {alternativ.etikett}
+                </Radio>
+              ))}
+            </RadioGroup>
+          ))}
+        </VStack>
+      </Fieldset>
+    </VStack>
   );
 }
 

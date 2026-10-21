@@ -11,13 +11,12 @@ import {
   hentHandlinger,
   hentStartverdier,
   type Innsending,
-  kanLagreUtenAvslutning,
   type Sakshandling,
   type Trinn,
   type Verdier,
 } from "./saksflyt";
 import { lagStarttilstand, saksflytReducer } from "./saksflytReducer";
-import { BekreftAvslutningTrinn } from "./trinn/BekreftAvslutningTrinn";
+import { Avslutningsvarsel } from "./trinn/Avslutningsvarsel";
 import { MenyTrinn } from "./trinn/MenyTrinn";
 import { SkjemaTrinn } from "./trinn/SkjemaTrinn";
 import { EnkeltvalgTrinn, SjekklisteTrinn, StatusTrinn } from "./trinn/ValgTrinn";
@@ -34,24 +33,24 @@ type SaksflytModalProps = {
 
 const lagringsfeil = "Kunne ikke lagre endringen. Last inn siden på nytt og prøv igjen.";
 
-function trinntittel(
-  trinn: Trinn,
-  verdier: Verdier,
-  tillatteHandlinger: TillatteHandlingerResponse,
-) {
-  if (trinn.type === "bekreftAvslutning") return "Avslutt sak";
-  if (typeof trinn.tittel === "function")
-    return trinn.tittel(verdier, tillatteHandlinger.feltskjema);
-  return trinn.tittel;
+function trinntittel(trinn: Trinn) {
+  return trinn.type === "bekreftAvslutning" ? "Avslutt sak" : trinn.tittel;
 }
 
 function primærtekst(trinn: Trinn, verdier: Verdier): string {
   return typeof trinn.primær === "function" ? trinn.primær(verdier) : trinn.primær;
 }
 
-/** Trinn som åpner en ny del av flyten viser «Tilbake til saksbildet» i stedet for «Tilbake». */
-function lukkerVedTilbake(trinn: Trinn): boolean {
-  return trinn.type === "sjekkliste" || trinn.type === "bekreftAvslutning";
+/**
+ * Den sekundære knappen. Trinn som åpner en ny del av flyten viser «Tilbake til saksbildet», og
+ * trinn med `avbryt` viser «Avbryt». Begge lukker modalen. Ellers går «Tilbake» ett trinn tilbake.
+ */
+function sekundærknapp(trinn: Trinn, kanGåTilbake: boolean) {
+  if (trinn.type === "sjekkliste" || trinn.type === "bekreftAvslutning") {
+    return { tekst: "Tilbake til saksbildet", lukker: true };
+  }
+  if (trinn.type === "enkeltvalg" && trinn.avbryt) return { tekst: "Avbryt", lukker: true };
+  return kanGåTilbake ? { tekst: "Tilbake", lukker: false } : null;
 }
 
 /**
@@ -225,10 +224,7 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
     onChange: settVerdi,
     tillatteHandlinger,
   };
-  const kanGåTilbake = trinnIndeks > 0 || tilstand.fraMeny;
-  const kanLagre = kanLagreUtenAvslutning(tillatteHandlinger);
-  const visLagreUtenAvslutning =
-    trinn.type === "skjema" && trinn.kanLagreUtenAvslutning?.(alleVerdier) === true && kanLagre;
+  const sekundær = sekundærknapp(trinn, trinnIndeks > 0 || tilstand.fraMeny);
   const primærLagrerUtenAvslutning =
     trinn.type === "skjema" && trinn.lagreUtenAvslutning?.(alleVerdier) === true;
 
@@ -238,7 +234,7 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
       open
       onClose={lukk}
       onBeforeClose={() => !erSubmitting}
-      header={{ heading: trinntittel(trinn, alleVerdier, tillatteHandlinger) }}
+      header={{ heading: trinntittel(trinn) }}
       width="small"
     >
       <Modal.Body>
@@ -247,7 +243,10 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
           {trinn.type === "enkeltvalg" && <EnkeltvalgTrinn trinn={trinn} {...trinnProps} />}
           {trinn.type === "status" && <StatusTrinn trinn={trinn} {...trinnProps} />}
           {trinn.type === "skjema" && <SkjemaTrinn trinn={trinn} {...trinnProps} />}
-          {trinn.type === "bekreftAvslutning" && <BekreftAvslutningTrinn />}
+          {(trinn.type === "bekreftAvslutning" ||
+            (trinn.type === "skjema" && trinn.visAvslutningsvarsel?.(alleVerdier))) && (
+            <Avslutningsvarsel />
+          )}
           {generellFeil && <ErrorMessage showIcon>{generellFeil}</ErrorMessage>}
         </VStack>
       </Modal.Body>
@@ -268,39 +267,16 @@ export function SaksflytModal({ sakId, tillatteHandlinger, start, onClose }: Sak
           >
             {primærtekst(trinn, alleVerdier)}
           </Button>
-          {visLagreUtenAvslutning && (
+          {sekundær && (
             <Button
               type="button"
               className="w-full"
               variant="secondary"
               disabled={erSubmitting}
-              onClick={() => fortsett(trinn, alleVerdier, { handling: "lagre_resultat" })}
+              onClick={sekundær.lukker ? lukk : () => dispatch({ type: "tilbake" })}
             >
-              Registrer resultat, men ikke avslutt
+              {sekundær.tekst}
             </Button>
-          )}
-          {lukkerVedTilbake(trinn) ? (
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full"
-              disabled={erSubmitting}
-              onClick={lukk}
-            >
-              Tilbake til saksbildet
-            </Button>
-          ) : (
-            kanGåTilbake && (
-              <Button
-                type="button"
-                className="w-full"
-                variant="secondary"
-                disabled={erSubmitting}
-                onClick={() => dispatch({ type: "tilbake" })}
-              >
-                Tilbake
-              </Button>
-            )
           )}
         </VStack>
       </Modal.Footer>

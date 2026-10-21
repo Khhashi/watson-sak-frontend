@@ -70,21 +70,11 @@ export function manglerEndeligUtfallVedAvslutning(
 export function erPolitiresultatKomplett(
   politi: NonNullable<TillatteHandlingerResponse["tilstand"]["resultat"]>["politi"],
 ): boolean {
-  switch (politi?.type) {
-    case "HENLAGT":
-      return politi.henleggelsesarsak != null || Boolean(politi.begrunnelse?.trim());
-    case "FRIFINNELSE":
-      return Boolean(politi.begrunnelse?.trim());
-    case "DOMFELLELSE":
-      return (
-        politi.belopTilbakekrevd != null &&
-        typeof politi.strafferabatt === "boolean" &&
-        (politi.strafferabatt === false || politi.strafferabattProsent != null) &&
-        Boolean(politi.domsdato)
-      );
-    default:
-      return politi?.type != null;
+  // Speiler `erGyldigPolitiavslutning` i backend. Eldre henleggelser har bare årsak.
+  if (politi?.type === "HENLAGT") {
+    return politi.henleggelsesarsak != null || Boolean(politi.begrunnelse?.trim());
   }
+  return politi?.type != null;
 }
 
 export function harLagretResultatForOvergang(
