@@ -1,18 +1,53 @@
-import { ChevronDownIcon, ChevronUpIcon, LinkBrokenIcon, LinkIcon } from "@navikt/aksel-icons";
-import { Alert, BodyShort, Box, Button, Heading, HStack, Modal, VStack } from "@navikt/ds-react";
-import { useEffect, useRef, useState } from "react";
+import {
+  ChevronDownIcon,
+  ChevronUpIcon,
+  ExternalLinkIcon,
+  LinkBrokenIcon,
+  LinkIcon,
+  PersonGroupIcon,
+} from "@navikt/aksel-icons";
+import {
+  Alert,
+  BodyShort,
+  Box,
+  Button,
+  Detail,
+  Heading,
+  HGrid,
+  HStack,
+  Modal,
+  Tag,
+  VStack,
+} from "@navikt/ds-react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useFetcher } from "react-router";
 import { finnEnhetsnavn } from "~/kodeverk/enheter";
 import { useKodeverk } from "~/kodeverk/useKodeverk";
 import { AvkortetTag } from "~/komponenter/AvkortetTag";
 import { RouteConfig } from "~/routeConfig";
+import { hentAnmeldelseForVisning } from "~/saker/anmeldelse";
+import { merkingEtikett } from "~/saker/kategorier";
 import { getSaksreferanse } from "~/saker/id";
-import { getKategoriText, getSaksenhet } from "~/saker/selectors";
+import {
+  getBelop,
+  getKategoriText,
+  getMisbrukstyper,
+  getSaksenhet,
+  getTags,
+} from "~/saker/selectors";
 import type { KontrollsakResponse } from "~/saker/types.backend";
-import { storFørsteBokstavPerOrd } from "~/utils/string-utils";
+import { formaterOrganisasjonsnummer, storFørsteBokstavPerOrd } from "~/utils/string-utils";
 import { PersonIdentHistorikkModal } from "./PersonIdentHistorikkModal";
-import { SakDetaljerFelter } from "./SakDetaljerFelter";
-import { getPersonIdent, getStegOgStatusTekst, hentStatusTag, STEG_FARGE } from "~/saker/visning";
+import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
+import {
+  formaterBelop,
+  getPersonIdent,
+  getKildeText,
+  getStegOgStatusTekst,
+  getYtelseTyper,
+  hentStatusTag,
+  formaterYtelsePeriode,
+} from "~/saker/visning";
 
 interface SakerPåSammePersonProps {
   saker: KontrollsakResponse[];
@@ -31,6 +66,182 @@ interface SakKortProps {
 type Koblingshandling = "koble" | "fjerne";
 type KobleSakActionResult = { ok: true } | { ok: false; feil: { skjema?: string[] } };
 
+function SakDetaljfelt({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <VStack gap="space-8">
+      <Detail className="text-ax-text-neutral-subtle" uppercase>
+        {label}
+      </Detail>
+      {children}
+    </VStack>
+  );
+}
+
+function SakPåSammePersonDetaljer({
+  sak,
+  onVisIdentHistorikk,
+}: {
+  sak: KontrollsakResponse;
+  onVisIdentHistorikk: () => void;
+}) {
+  const kategori = getKategoriText(sak);
+  const misbrukstyper = getMisbrukstyper(sak);
+  const merkinger = getTags(sak);
+  const ytelseTyper = getYtelseTyper(sak);
+  const belop = getBelop(sak);
+  const personIdent = getPersonIdent(sak);
+  const harHistoriskIdent = sak.historiskeIdenter.some((ident) => ident.historisk);
+  const endeligeBeløp = sak.ytelser.flatMap((ytelse) =>
+    ytelse.endeligBelop === null ? [] : [formaterBelop(ytelse.endeligBelop)],
+  );
+  const anmeldelse = hentAnmeldelseForVisning(sak);
+  const perioder = [
+    ...new Set(
+      sak.ytelser
+        .map((ytelse) => formaterYtelsePeriode(ytelse.periodeFra, ytelse.periodeTil))
+        .filter((periode) => periode !== "–"),
+    ),
+  ];
+
+  return (
+    <VStack gap="space-24">
+      <HGrid columns={{ xs: 1, lg: 2 }} gap="space-24">
+        <VStack gap="space-24">
+          <SakDetaljfelt label="Kategori">
+            {kategori ? (
+              <HStack align="start">
+                <Tag
+                  variant="moderate"
+                  data-color="info"
+                  size="small"
+                  icon={<PersonGroupIcon aria-hidden />}
+                >
+                  {kategori}
+                </Tag>
+              </HStack>
+            ) : (
+              <BodyShort size="medium">–</BodyShort>
+            )}
+          </SakDetaljfelt>
+          <SakDetaljfelt label="Misbruktype">
+            {misbrukstyper.length > 0 ? (
+              <HStack gap="space-8" wrap>
+                {misbrukstyper.map((type) => (
+                  <Tag key={type} variant="moderate" data-color="info" size="small">
+                    {type}
+                  </Tag>
+                ))}
+              </HStack>
+            ) : (
+              <BodyShort size="medium">–</BodyShort>
+            )}
+          </SakDetaljfelt>
+          <SakDetaljfelt label="Merking">
+            {merkinger.length > 0 ? (
+              <HStack gap="space-8" wrap>
+                {merkinger.map((merking) => (
+                  <Tag key={merking} variant="moderate" data-color="info" size="small">
+                    {merkingEtikett(merking)}
+                  </Tag>
+                ))}
+              </HStack>
+            ) : (
+              <BodyShort size="medium">–</BodyShort>
+            )}
+          </SakDetaljfelt>
+        </VStack>
+
+        <VStack gap="space-24">
+          <VStack gap="space-24">
+            <SakDetaljfelt label="Periode">
+              {perioder.length > 0 ? (
+                <VStack gap="space-4">
+                  {perioder.map((periode) => (
+                    <BodyShort key={periode} size="medium">
+                      {periode}
+                    </BodyShort>
+                  ))}
+                </VStack>
+              ) : (
+                <BodyShort size="medium">–</BodyShort>
+              )}
+            </SakDetaljfelt>
+            <SakDetaljfelt label="Ca beløp">
+              <BodyShort size="medium">{belop === null ? "–" : formaterBelop(belop)}</BodyShort>
+            </SakDetaljfelt>
+          </VStack>
+          <SakDetaljfelt label="Ytelse">
+            {ytelseTyper.length > 0 ? (
+              <HStack gap="space-8" wrap>
+                {ytelseTyper.map((ytelse) => (
+                  <Tag key={ytelse} variant="moderate" data-color="brand-beige" size="small">
+                    {ytelse}
+                  </Tag>
+                ))}
+              </HStack>
+            ) : (
+              <BodyShort size="medium">–</BodyShort>
+            )}
+          </SakDetaljfelt>
+          <SakDetaljfelt label="Kilde">
+            <BodyShort size="medium">{getKildeText(sak)}</BodyShort>
+          </SakDetaljfelt>
+        </VStack>
+      </HGrid>
+
+      <SakDetaljfelt label="Personnummer">
+        <VStack gap="space-8" align="start">
+          <PersonIdentMedHistorikk
+            personIdent={sak.gjeldendePersonIdent ?? personIdent}
+            harHistorikk={harHistoriskIdent}
+            onVisHistorikk={onVisIdentHistorikk}
+          />
+          {sak.gjeldendePersonIdent && sak.gjeldendePersonIdent !== sak.personIdent && (
+            <Detail>Saken ble opprettet under {personIdent}</Detail>
+          )}
+        </VStack>
+      </SakDetaljfelt>
+
+      {(sak.legacyPid ||
+        sak.arbeidsgivere.length > 0 ||
+        endeligeBeløp.length > 0 ||
+        anmeldelse) && (
+        <HGrid columns={{ xs: 1, lg: 2 }} gap="space-24">
+          {sak.legacyPid && (
+            <SakDetaljfelt label="PID">
+              <BodyShort size="medium">{sak.legacyPid}</BodyShort>
+            </SakDetaljfelt>
+          )}
+          {sak.arbeidsgivere.length > 0 && (
+            <SakDetaljfelt label="Organisasjonsnummer">
+              <BodyShort size="medium">
+                {sak.arbeidsgivere
+                  .map((organisasjonsnummer) => formaterOrganisasjonsnummer(organisasjonsnummer))
+                  .join(", ")}
+              </BodyShort>
+            </SakDetaljfelt>
+          )}
+          {endeligeBeløp.length > 0 && (
+            <SakDetaljfelt label="Endelig beløp">
+              <BodyShort size="medium">{endeligeBeløp.join(", ")}</BodyShort>
+            </SakDetaljfelt>
+          )}
+          {anmeldelse && (
+            <>
+              <SakDetaljfelt label="Anmeldt beløp">
+                <BodyShort size="medium">{formaterBelop(anmeldelse.anmeldtBelop)}</BodyShort>
+              </SakDetaljfelt>
+              <SakDetaljfelt label="Politidistrikt">
+                <BodyShort size="medium">{anmeldelse.politidistrikt ?? "Ikke oppgitt"}</BodyShort>
+              </SakDetaljfelt>
+            </>
+          )}
+        </HGrid>
+      )}
+    </VStack>
+  );
+}
+
 function SakKort({
   sak,
   erKoblet,
@@ -39,9 +250,9 @@ function SakKort({
   onVisIdentHistorikk,
 }: SakKortProps) {
   const [åpen, setÅpen] = useState(false);
+  const detaljerId = useId();
   const kodeverk = useKodeverk();
   const saksreferanse = getSaksreferanse(sak.id);
-  const personIdent = getPersonIdent(sak);
   const stegOgStatusTekst = getStegOgStatusTekst(sak);
   const statusTag = hentStatusTag(sak);
   const enhetskode = getSaksenhet(sak);
@@ -49,16 +260,25 @@ function SakKort({
   const saksbehandler = sak.saksbehandlere.eier?.navn ?? sak.saksbehandlere.opprettetAv.navn;
 
   return (
-    <Box borderWidth="1" borderColor="neutral-subtle" borderRadius="8" background="sunken">
-      <VStack gap="space-16">
-        <Box padding="space-16">
-          <HStack justify="space-between" align="center" wrap gap="space-8">
-            <HStack gap="space-16" align="center" wrap>
+    <Box
+      borderWidth="1"
+      borderColor="neutral-subtle"
+      borderRadius="8"
+      background="default"
+      overflow="hidden"
+    >
+      <VStack gap="space-0">
+        <Box
+          background="neutral-soft"
+          borderWidth="0 0 1 0"
+          borderColor="neutral-subtle"
+          paddingBlock="space-12"
+          paddingInline="space-20"
+        >
+          <HStack justify="space-between" align="center" wrap gap="space-12">
+            <HStack gap="space-24" align="center" wrap>
               <BodyShort size="small">
-                Personnummer: <strong>{personIdent}</strong>
-              </BodyShort>
-              <BodyShort size="small">
-                Saksid: <strong>#{saksreferanse}</strong>
+                Saksid: <strong>{saksreferanse}</strong>
               </BodyShort>
               <BodyShort size="small">
                 Enhet: <strong>{enhet}</strong>
@@ -67,60 +287,62 @@ function SakKort({
                 Saksbehandler: <strong>{storFørsteBokstavPerOrd(saksbehandler)}</strong>
               </BodyShort>
               {sak.status || sak.steg === "AVSLUTTET" ? (
-                <AvkortetTag variant="outline" data-color={statusTag.farge} size="small">
+                <AvkortetTag variant="moderate" data-color={statusTag.farge} size="small">
                   {statusTag.tekst}
                 </AvkortetTag>
               ) : (
-                <AvkortetTag variant="outline" data-color={STEG_FARGE} size="small">
+                <AvkortetTag variant="moderate" data-color="success" size="small">
                   {stegOgStatusTekst}
                 </AvkortetTag>
               )}
             </HStack>
-            <Button
-              variant="tertiary"
-              size="xsmall"
-              icon={åpen ? <ChevronUpIcon aria-hidden /> : <ChevronDownIcon aria-hidden />}
-              iconPosition="right"
-              onClick={() => setÅpen((prev) => !prev)}
-              aria-expanded={åpen}
-            >
-              {åpen ? "Skjul" : "Vis detaljer"}
-            </Button>
+            <HStack gap="space-8" align="center">
+              <Button
+                as={Link}
+                to={RouteConfig.SAKER_DETALJ.replace(":sakId", saksreferanse)}
+                variant="secondary"
+                size="small"
+                icon={<ExternalLinkIcon aria-hidden />}
+              >
+                Gå til sak
+              </Button>
+              <Button
+                type="button"
+                variant="tertiary"
+                size="small"
+                icon={åpen ? <ChevronUpIcon aria-hidden /> : <ChevronDownIcon aria-hidden />}
+                aria-label={`${åpen ? "Skjul" : "Vis"} detaljer for sak ${saksreferanse}`}
+                aria-expanded={åpen}
+                aria-controls={detaljerId}
+                onClick={() => setÅpen((prev) => !prev)}
+              />
+            </HStack>
           </HStack>
         </Box>
 
         {åpen && (
-          <>
-            <Box borderWidth="0 0 1 0" borderColor="neutral-subtle" />
-            <Box padding="space-16">
-              <VStack gap="space-24">
-                <SakDetaljerFelter sak={sak} onVisIdentHistorikk={() => onVisIdentHistorikk(sak)} />
-
-                <HStack justify="end" gap="space-8" wrap>
+          <Box id={detaljerId} padding="space-20">
+            <VStack gap="space-24">
+              <SakPåSammePersonDetaljer
+                sak={sak}
+                onVisIdentHistorikk={() => onVisIdentHistorikk(sak)}
+              />
+              {kanEndreKobling && (
+                <HStack justify="end">
                   <Button
-                    as={Link}
-                    to={RouteConfig.SAKER_DETALJ.replace(":sakId", saksreferanse)}
-                    variant="primary"
+                    type="button"
+                    variant={erKoblet ? "tertiary-neutral" : "secondary"}
                     size="small"
+                    icon={erKoblet ? <LinkBrokenIcon aria-hidden /> : <LinkIcon aria-hidden />}
+                    iconPosition="right"
+                    onClick={() => onEndreKobling(sak, erKoblet ? "fjerne" : "koble")}
                   >
-                    Gå til sak
+                    {erKoblet ? "Fjern kobling" : "Koble til sak"}
                   </Button>
-                  {kanEndreKobling && (
-                    <Button
-                      type="button"
-                      variant={erKoblet ? "tertiary-neutral" : "secondary"}
-                      size="small"
-                      icon={erKoblet ? <LinkBrokenIcon aria-hidden /> : <LinkIcon aria-hidden />}
-                      iconPosition="right"
-                      onClick={() => onEndreKobling(sak, erKoblet ? "fjerne" : "koble")}
-                    >
-                      {erKoblet ? "Fjern kobling" : "Koble til sak"}
-                    </Button>
-                  )}
                 </HStack>
-              </VStack>
-            </Box>
-          </>
+              )}
+            </VStack>
+          </Box>
         )}
       </VStack>
     </Box>
