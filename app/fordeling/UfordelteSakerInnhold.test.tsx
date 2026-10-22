@@ -27,11 +27,12 @@ const lagSak = (overstyringer: Partial<FordelingSak> = {}): FordelingSak => ({
 });
 
 describe("UfordelteSakerInnhold", () => {
-  it("viser bare 'Ufordelte saker' som overskrift når ingen filtre er aktive", () => {
+  it("viser enheten som sakene filtreres på i overskriften", () => {
     render(
       <MemoryRouter>
         <UfordelteSakerInnhold
           saker={[lagSak()]}
+          enhet="Analyse"
           saksbehandlere={["Kari Nordmann"]}
           saksbehandlerDetaljer={mockSaksbehandlerDetaljer}
           submitPath={RouteConfig.FORDELING}
@@ -39,7 +40,7 @@ describe("UfordelteSakerInnhold", () => {
       </MemoryRouter>,
     );
 
-    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Ufordelte saker");
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe("Ufordelte saker i Analyse");
   });
 
   it("viser aktive filtre i overskriften når filtre er valgt", () => {
@@ -50,6 +51,7 @@ describe("UfordelteSakerInnhold", () => {
             lagSak(),
             lagSak({ id: 302, misbrukstyper: ["Skjult samliv"], merking: ["Prioritert"] }),
           ]}
+          enhet="Analyse"
           saksbehandlere={["Kari Nordmann"]}
           saksbehandlerDetaljer={mockSaksbehandlerDetaljer}
           submitPath={RouteConfig.FORDELING}
@@ -58,8 +60,26 @@ describe("UfordelteSakerInnhold", () => {
     );
 
     expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
-      "Ufordelte saker – Skjult samliv, Prioritert",
+      "Ufordelte saker i Analyse – Skjult samliv, Prioritert",
     );
+  });
+
+  it("viser saker uavhengig av steg-parameter uten å vise steg-filter", () => {
+    render(
+      <MemoryRouter initialEntries={["/?steg=UTREDES"]}>
+        <UfordelteSakerInnhold
+          saker={[lagSak(), lagSak({ id: 302, steg: "Utredes", stegKode: "UTREDES" })]}
+          enhet="Analyse"
+          saksbehandlere={["Kari Nordmann"]}
+          saksbehandlerDetaljer={mockSaksbehandlerDetaljer}
+          submitPath={RouteConfig.FORDELING}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByRole("link", { name: "#301" })).toBeDefined();
+    expect(screen.getByRole("link", { name: "#302" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Utredes" })).toBeNull();
   });
 
   it("bruker ikke ekstra section-landmarks for oppsummeringskortene", () => {
@@ -67,6 +87,7 @@ describe("UfordelteSakerInnhold", () => {
       <MemoryRouter>
         <UfordelteSakerInnhold
           saker={[lagSak()]}
+          enhet={null}
           saksbehandlere={["Kari Nordmann"]}
           saksbehandlerDetaljer={mockSaksbehandlerDetaljer}
           submitPath={RouteConfig.FORDELING}
@@ -82,6 +103,7 @@ describe("UfordelteSakerInnhold", () => {
       <MemoryRouter>
         <UfordelteSakerInnhold
           saker={[lagSak()]}
+          enhet={null}
           saksbehandlere={["Kari Nordmann"]}
           saksbehandlerDetaljer={mockSaksbehandlerDetaljer}
           submitPath={RouteConfig.FORDELING}
@@ -112,6 +134,7 @@ describe("UfordelteSakerInnhold", () => {
             element: (
               <UfordelteSakerInnhold
                 saker={mangeSaker}
+                enhet={null}
                 saksbehandlere={["Kari Nordmann"]}
                 saksbehandlerDetaljer={mockSaksbehandlerDetaljer}
                 submitPath={RouteConfig.FORDELING}

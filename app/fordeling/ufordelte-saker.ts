@@ -2,8 +2,6 @@ import { forskjellIDager } from "~/utils/date-utils";
 import { getSaksreferanse } from "~/saker/id";
 export { paginerElementer } from "~/utils/paginering";
 import type { FordelingSak } from "./typer";
-import type { KontrollsakSteg } from "~/saker/types.backend";
-import { matcherSteg } from "~/saker/steg";
 
 export const ufordelteSorteringskolonner = [
   "saksid",
@@ -21,7 +19,6 @@ interface UfordelteFiltre {
   kategorier: string[];
   misbrukstyper: string[];
   merkinger: string[];
-  steg: KontrollsakSteg[];
 }
 
 export function hentUfordelteFiltervalg(saker: FordelingSak[]) {
@@ -48,9 +45,8 @@ export function filtrerUfordelteSaker(
     const matcherMerking =
       filtre.merkinger.length === 0 ||
       sak.merking.some((merking) => filtre.merkinger.includes(merking));
-    const matcherValgtSteg = matcherSteg(sak.stegKode, filtre.steg);
 
-    return matcherKategori && matcherMisbrukstype && matcherMerking && matcherValgtSteg;
+    return matcherKategori && matcherMisbrukstype && matcherMerking;
   });
 }
 

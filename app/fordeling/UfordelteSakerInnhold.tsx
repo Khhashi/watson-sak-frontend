@@ -22,8 +22,6 @@ import {
   type UfordeltSorteringsretning,
 } from "./ufordelte-saker";
 import type { KontrollsakSaksbehandler } from "~/saker/types.backend";
-import { ALLE_STEG, parseSteg } from "~/saker/steg";
-import { formaterSteg } from "~/saker/visning";
 import { ANTALL_PER_SIDE } from "~/utils/paginering";
 import type { FordelingSak } from "./typer";
 
@@ -31,6 +29,7 @@ const RESET_KEYS = ["side"];
 
 interface UfordelteSakerInnholdProps {
   saker: FordelingSak[];
+  enhet: string | null;
   saksbehandlere: string[];
   saksbehandlerDetaljer?: KontrollsakSaksbehandler[];
   submitPath?: string;
@@ -38,6 +37,7 @@ interface UfordelteSakerInnholdProps {
 
 export function UfordelteSakerInnhold({
   saker,
+  enhet,
   saksbehandlere,
   saksbehandlerDetaljer,
   submitPath = RouteConfig.FORDELING,
@@ -48,36 +48,34 @@ export function UfordelteSakerInnhold({
   const kategoriFilter = useFilterParam("kategori", { resetKeys: RESET_KEYS });
   const misbrukstypeFilter = useFilterParam("misbrukstype", { resetKeys: RESET_KEYS });
   const merkingFilter = useFilterParam("merking", { resetKeys: RESET_KEYS });
-  const stegFilter = useFilterParam("steg", { resetKeys: RESET_KEYS });
 
   const valgtSide = Number.parseInt(searchParams.get("side") ?? "1", 10) || 1;
   const sorteringskolonne = hentSorteringskolonne(searchParams.get("sorter"));
   const sorteringsretning = hentSorteringsretning(searchParams.get("retning"));
 
   const filtervalg = useMemo(() => hentUfordelteFiltervalg(saker), [saker]);
-  const gyldigSteg = useMemo(() => parseSteg(stegFilter.valgteVerdier), [stegFilter.valgteVerdier]);
   const aktiveFiltreVerdier = [
     ...kategoriFilter.valgteVerdier,
     ...misbrukstypeFilter.valgteVerdier,
     ...merkingFilter.valgteVerdier,
-    ...gyldigSteg.map((steg) => formaterSteg(steg)),
   ];
   const filterTekst = aktiveFiltreVerdier.length > 0 ? aktiveFiltreVerdier.join(", ") : null;
-  const overskrift = filterTekst ? `Ufordelte saker – ${filterTekst}` : "Ufordelte saker";
+  const overskriftUtenFilter = enhet ? `Ufordelte saker i ${enhet}` : "Ufordelte saker";
+  const overskrift = filterTekst
+    ? `${overskriftUtenFilter} – ${filterTekst}`
+    : overskriftUtenFilter;
   const filtrerteSaker = useMemo(
     () =>
       filtrerUfordelteSaker(saker, {
         kategorier: kategoriFilter.valgteVerdier,
         misbrukstyper: misbrukstypeFilter.valgteVerdier,
         merkinger: merkingFilter.valgteVerdier,
-        steg: gyldigSteg,
       }),
     [
       saker,
       kategoriFilter.valgteVerdier,
       misbrukstypeFilter.valgteVerdier,
       merkingFilter.valgteVerdier,
-      gyldigSteg,
     ],
   );
   const sorterteSaker = useMemo(() => {
@@ -126,9 +124,7 @@ export function UfordelteSakerInnhold({
 
   return (
     <section aria-labelledby="ufordelte-saker-overskrift" className="pb-12">
-      <MiljøtilpassetTittel>
-        {filterTekst ? `${overskrift} – Watson Sak` : "Ufordelte saker – Watson Sak"}
-      </MiljøtilpassetTittel>
+      <MiljøtilpassetTittel>{`${overskrift} – Watson Sak`}</MiljøtilpassetTittel>
       <VStack gap="space-12" className="mt-4 mb-8">
         <Heading id="ufordelte-saker-overskrift" level="1" size="large">
           {overskrift}
@@ -235,16 +231,6 @@ export function UfordelteSakerInnhold({
                   size="small"
                 />
               )}
-              <ChipsFiltergruppe
-                tittel="Steg"
-                alternativer={ALLE_STEG.map((s) => ({ verdi: s, etikett: formaterSteg(s) }))}
-                valgteVerdier={stegFilter.valgteVerdier}
-                onToggle={(verdi) => {
-                  sporHendelse("filter brukt", { filtergruppe: "steg", side: "fordeling" });
-                  stegFilter.toggle(verdi);
-                }}
-                size="small"
-              />
               {filtervalg.merkinger.length > 0 && (
                 <ChipsFiltergruppe
                   tittel="Merking"

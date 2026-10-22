@@ -203,9 +203,10 @@ describe("FordelingSide loader", () => {
       .filter((sak) => sak.saksbehandlere.eier === null && sak.steg !== "AVSLUTTET")
       .map((sak) => sak.id);
 
-    expect(resultat.map((sak) => sak.id)).toEqual(forventedeSaker);
-    expect(resultat.every((sak) => sak.stegKode !== "AVSLUTTET")).toBe(true);
-    expect(resultat[0]).toMatchObject({
+    expect(resultat.enhet).toBeNull();
+    expect(resultat.saker.map((sak) => sak.id)).toEqual(forventedeSaker);
+    expect(resultat.saker.every((sak) => sak.stegKode !== "AVSLUTTET")).toBe(true);
+    expect(resultat.saker[0]).toMatchObject({
       navn: mockKontrollsaker[0].personNavn ?? null,
       opprettetDato: mockKontrollsaker[0].opprettet.slice(0, 10),
       oppdatertDato: (mockKontrollsaker[0].oppdatert ?? mockKontrollsaker[0].opprettet).slice(
@@ -229,13 +230,14 @@ describe("FordelingSide loader", () => {
     });
 
     const { loader } = await import("./FordelingSide.server");
-    await loader({
+    const resultat = await loader({
       request: new Request("http://localhost/fordeling?enhet=9999&utenAnsvarlig=false"),
       params: {},
       context: {},
     } as Route.LoaderArgs);
 
     expect(hentKontrollsakerForFordeling).toHaveBeenCalledWith(expect.any(Request), "4812");
+    expect(resultat.enhet).toBe("NAV Kontroll Øst");
   });
 
   it("skjuler avsluttede saker fra backend-resultatet", async () => {
@@ -260,7 +262,7 @@ describe("FordelingSide loader", () => {
       context: {},
     } as Route.LoaderArgs);
 
-    expect(resultat.map((sak) => sak.stegKode)).toEqual(["OPPRETTET"]);
+    expect(resultat.saker.map((sak) => sak.stegKode)).toEqual(["OPPRETTET"]);
   });
 
   it("feiler tydelig når innlogget bruker ikke kan knyttes til en konfigurert enhet", async () => {
