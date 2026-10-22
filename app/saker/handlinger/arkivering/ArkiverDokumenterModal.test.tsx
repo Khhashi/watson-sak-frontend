@@ -174,6 +174,23 @@ describe("ArkiverDokumenterModal", () => {
     expect(submitMock.mock.calls[0][0].getAll("vedleggId").sort()).toEqual(["fil-1", "fil-2"]);
   });
 
+  it("viser feilmeldingen fra backend når en Word-fil ikke kan gjøres om til PDF", async () => {
+    const { rerenderModal } = await renderModal([fil("fil-1", "rapport.pdf")]);
+
+    fyllUtSkjema();
+    fireEvent.click(screen.getByRole("checkbox", { name: "rapport.pdf" }));
+    fireEvent.click(screen.getByRole("button", { name: "Arkiver" }));
+    await waitFor(() => expect(submitMock).toHaveBeenCalledTimes(1));
+
+    fetcher.state = "submitting";
+    act(rerenderModal);
+    fetcher.state = "idle";
+    fetcher.data = { ok: false, feil: "Word-filen kunne ikke gjøres om til PDF." };
+    act(rerenderModal);
+
+    expect(await screen.findByText("Word-filen kunne ikke gjøres om til PDF.")).toBeDefined();
+  });
+
   it("viser suksess og lar saksbehandleren knytte en oppgave til journalposten", async () => {
     const { rerenderModal } = await renderModal([fil("fil-1", "rapport.pdf")]);
 

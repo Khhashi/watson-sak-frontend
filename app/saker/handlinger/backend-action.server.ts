@@ -222,18 +222,25 @@ export async function backendAction(
         throw data("Velg minst én fil eller ett dokument", { status: 400 });
       }
 
-      const { journalpostId } = await backendApi.opprettJournalpost(
-        token,
-        sakId,
-        tema,
-        "NOTAT",
-        tittel.trim(),
-        null,
-        vedleggIds,
-        dokumentIds,
-      );
-
-      return { ok: true, journalpostId };
+      try {
+        const { journalpostId } = await backendApi.opprettJournalpost(
+          token,
+          sakId,
+          tema,
+          "NOTAT",
+          tittel.trim(),
+          null,
+          vedleggIds,
+          dokumentIds,
+        );
+        return { ok: true, journalpostId };
+      } catch (feil) {
+        // 422 betyr at en Word-fil ikke kunne gjøres om til PDF. Backend-meldingen sier hva brukeren kan gjøre.
+        if (feil instanceof backendApi.BackendFeilException && feil.status === 422) {
+          return { ok: false, feil: feil.message };
+        }
+        throw feil;
+      }
     }
     case "opprett_oppgave": {
       const tema = hentTema(formData);

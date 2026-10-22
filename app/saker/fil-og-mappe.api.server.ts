@@ -26,6 +26,7 @@ const filResponseSchema = z.object({
   arkivertAv: z.string().nullish(),
   arkivertJournalpostId: z.string().nullish(),
   arkivertFraDokumentId: z.string().nullish(),
+  arkivertFraFilId: z.string().nullish(),
   mappe: z.string().nullish(),
 });
 

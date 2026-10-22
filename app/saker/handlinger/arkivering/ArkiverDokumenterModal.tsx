@@ -179,7 +179,11 @@ export function ArkiverDokumenterModal({
     const data: unknown = fetcher.data;
     const ok = typeof data === "object" && data !== null && "ok" in data && data.ok === true;
     if (!ok || !innsendt.current) {
-      settFeilmelding("Kunne ikke arkivere dokumentene i Gosys. Prøv igjen.");
+      const feil =
+        typeof data === "object" && data !== null && "feil" in data && typeof data.feil === "string"
+          ? data.feil
+          : null;
+      settFeilmelding(feil ?? "Kunne ikke arkivere dokumentene i Gosys. Prøv igjen.");
       return;
     }
     const journalpostId =
@@ -272,7 +276,7 @@ export function ArkiverDokumenterModal({
                 </InfoCard.Header>
                 <InfoCard.Content>
                   Når du arkiverer og journalfører dokumentene i Gosys kan de ikke lenger åpnes og
-                  redigeres i Watson sak.
+                  redigeres i Watson sak. Word-filer blir arkivert som PDF.
                 </InfoCard.Content>
               </InfoCard>
 

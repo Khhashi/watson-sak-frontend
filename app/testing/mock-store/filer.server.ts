@@ -104,8 +104,23 @@ export function arkiverFil(
     arkivertJournalpostId: journalpostId,
   };
   liste[indeks] = arkivertFil;
+  if (fil.contentType === DOCX_CONTENT_TYPE) {
+    liste.unshift({
+      ...arkivertFil,
+      id: crypto.randomUUID(),
+      filnavn: `${fil.filnavn.replace(/\.[^.]*$/, "")}.pdf`,
+      contentType: "application/pdf",
+      opprettetAv: arkivertAv,
+      opprettet: arkivertFil.arkivert,
+      bruktIDokumenter: [],
+      arkivertFraFilId: fil.id,
+      mappe: null,
+    });
+  }
   return arkivertFil;
 }
+
+const DOCX_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
 
 /**
  * Speiler backend sin konvertering av et Watson Sak-dokument til en arkivert PDF-fil.
