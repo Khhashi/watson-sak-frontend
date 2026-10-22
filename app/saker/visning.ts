@@ -166,49 +166,66 @@ function formaterHenleggelsesarsak(arsak: string): string {
     : arsak;
 }
 
+export type SluttresultatDetalj = { etikett: string; verdi: string };
+
+const strafferabattEtiketter: Record<string, string> = {
+  INGEN: "Ingen",
+  NAV: "Liggetid hos Nav",
+  POLITIET: "Liggetid hos politiet",
+  BEGGE: "Liggetid hos Nav og politiet",
+};
+
 export function hentSluttresultatDetaljer(
   resultat: KontrollsakResponse["resultat"],
   ytelser: KontrollsakResponse["ytelser"] = [],
-): string[] {
+): SluttresultatDetalj[] {
   const dom = resultat?.politi;
-  const detaljer: string[] = [];
-  if (dom && (dom.type === "BOT" || dom.type === "FORELEGG") && dom.belop != null) {
-    detaljer.push(`Beløp: ${formaterBelop(dom.belop)} kr`);
-  }
+  const detaljer: SluttresultatDetalj[] = [];
+  const leggTil = (etikett: string, verdi: string) => detaljer.push({ etikett, verdi });
 
-  if (dom?.type === "DOMFELLELSE" && dom.domsdato) {
-    detaljer.push(`Domsdato: ${formaterIsoTilNorskDato(dom.domsdato)}`);
+  if (dom && (dom.type === "BOT" || dom.type === "FORELEGG") && dom.belop != null) {
+    leggTil("Beløp", `${formaterBelop(dom.belop)} kr`);
   }
 
   if (dom?.type === "DOMFELLELSE") {
+    if (dom.domsdato) leggTil("Domsdato", formaterIsoTilNorskDato(dom.domsdato));
+
     const ubetingetFengsel = formaterFengselsstraff(
       dom.ubetingetFengselMaaneder,
       dom.ubetingetFengselDager,
     );
-    if (ubetingetFengsel) detaljer.push(`Ubetinget fengsel: ${ubetingetFengsel}`);
+    if (ubetingetFengsel) leggTil("Ubetinget fengsel", ubetingetFengsel);
 
     const betingetFengsel = formaterFengselsstraff(
       dom.betingetFengselMaaneder,
       dom.betingetFengselDager,
     );
-    if (betingetFengsel) detaljer.push(`Betinget fengsel: ${betingetFengsel}`);
+    if (betingetFengsel) leggTil("Betinget fengsel", betingetFengsel);
 
     if (dom.samfunnsstraffTimer != null) {
-      detaljer.push(`Samfunnsstraff: ${dom.samfunnsstraffTimer} timer`);
+      leggTil("Samfunnsstraff", `${dom.samfunnsstraffTimer} timer`);
     }
     if (dom.domfeltBelop != null) {
-      detaljer.push(`Domfelt beløp: ${formaterBelop(dom.domfeltBelop)} kr`);
+      leggTil("Domfelt beløp", `${formaterBelop(dom.domfeltBelop)} kr`);
     }
     if (dom.siviltRettskrav != null) {
-      detaljer.push(`Sivilt rettskrav: ${formaterBelop(dom.siviltRettskrav)} kr`);
+      leggTil("Sivilt rettskrav", `${formaterBelop(dom.siviltRettskrav)} kr`);
     }
-    if (dom.tilstaaelsesdom) detaljer.push("Tilståelsesdom");
-    if (dom.detaljer?.trim()) detaljer.push(dom.detaljer.trim());
+    if (dom.tilstaaelsesdom != null) {
+      leggTil("Tilståelsesdom", dom.tilstaaelsesdom ? "Ja" : "Nei");
+    }
+    if (dom.strafferabattLiggetid) {
+      leggTil(
+        "Strafferabatt",
+        strafferabattEtiketter[dom.strafferabattLiggetid] ?? dom.strafferabattLiggetid,
+      );
+    }
+    if (dom.detaljer?.trim()) leggTil("Detaljer", dom.detaljer.trim());
   }
 
   const henleggelsesarsak = hentHenleggelsesarsak(resultat);
   if (henleggelsesarsak) {
-    detaljer.push(`Årsak: ${formaterHenleggelsesarsak(henleggelsesarsak)}`);
+    leggTil("Årsak", formaterHenleggelsesarsak(henleggelsesarsak));
   }
 
   const ytelsesSum =
@@ -219,7 +236,7 @@ export function hentSluttresultatDetaljer(
       : null;
   const tilbakekrevdBelop = resultat?.forvaltning?.tilbakekrevdBelop ?? ytelsesSum;
   if (tilbakekrevdBelop != null) {
-    detaljer.push(`Tilbakekrevd beløp: ${formaterBelop(tilbakekrevdBelop)} kr`);
+    leggTil("Tilbakekrevd beløp", `${formaterBelop(tilbakekrevdBelop)} kr`);
   }
 
   return detaljer;
