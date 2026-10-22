@@ -14,13 +14,14 @@ export { action };
 export const handle = { bredPageBlock: true };
 
 export async function loader(args: Parameters<typeof lastSakerForFordeling>[0]) {
-  const saker = await lastSakerForFordeling(args);
+  const { saker, enhet } = await lastSakerForFordeling(args);
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(args.request);
     const saksbehandlerDetaljer = await backendApi.hentSaksbehandlere(token);
     return {
       saker,
+      enhet,
       saksbehandlere: saksbehandlerDetaljer.map((sb) => sb.navn),
       saksbehandlerDetaljer,
     };
@@ -28,17 +29,19 @@ export async function loader(args: Parameters<typeof lastSakerForFordeling>[0]) 
 
   return {
     saker,
+    enhet,
     saksbehandlere: mockSaksbehandlere,
     saksbehandlerDetaljer: mockSaksbehandlerDetaljer,
   };
 }
 
 export default function FordelingSide() {
-  const { saker, saksbehandlere, saksbehandlerDetaljer } = useLoaderData<typeof loader>();
+  const { saker, enhet, saksbehandlere, saksbehandlerDetaljer } = useLoaderData<typeof loader>();
 
   return (
     <UfordelteSakerInnhold
       saker={saker}
+      enhet={enhet}
       saksbehandlere={saksbehandlere}
       saksbehandlerDetaljer={saksbehandlerDetaljer}
       submitPath={RouteConfig.FORDELING}

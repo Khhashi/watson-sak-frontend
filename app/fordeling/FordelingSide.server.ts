@@ -63,9 +63,12 @@ export async function action({ request }: Route.ActionArgs) {
 
 export async function loader({ request }: Route.LoaderArgs) {
   if (skalBrukeMockdata) {
-    return hentFordelingssaker(request)
-      .filter(erKlarForFordeling)
-      .map(mapKontrollsakTilFordelingSak);
+    return {
+      saker: hentFordelingssaker(request)
+        .filter(erKlarForFordeling)
+        .map(mapKontrollsakTilFordelingSak),
+      enhet: null,
+    };
   }
 
   const innloggetBruker = await hentInnloggetBruker({ request });
@@ -79,5 +82,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   // Backend returnerer kun saker uten ansvarlig i saksbehandlerens enhet
   // (utenAnsvarlig=true og enhet=<innlogget enhet> er sendt).
-  return kontrollsaker.items.filter(erKlarForFordeling).map(mapKontrollsakTilFordelingSak);
+  return {
+    saker: kontrollsaker.items.filter(erKlarForFordeling).map(mapKontrollsakTilFordelingSak),
+    enhet: innloggetBruker.enhet,
+  };
 }

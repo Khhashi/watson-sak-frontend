@@ -40,7 +40,7 @@ describe("ufordelte-saker", () => {
     });
   });
 
-  it("filtrerer med kategori, misbrukstype, merking og steg og justerer ugyldig side ved paginering", () => {
+  it("filtrerer med kategori, misbrukstype og merking og justerer ugyldig side ved paginering", () => {
     const saker = [
       lagSak({ id: 1, kategori: "Arbeid", misbrukstyper: ["Svart arbeid"] }),
       lagSak({ id: 2, kategori: "Arbeid", misbrukstyper: ["Falsk identitet"] }),
@@ -53,7 +53,6 @@ describe("ufordelte-saker", () => {
       kategorier: ["Arbeid"],
       misbrukstyper: ["Svart arbeid"],
       merkinger: [],
-      steg: [],
     });
 
     expect(filtrerteSaker.map((sak) => sak.id)).toEqual([1, 3]);
@@ -63,23 +62,6 @@ describe("ufordelte-saker", () => {
       totalSider: 2,
       elementer: [filtrerteSaker[1]],
     });
-  });
-
-  it("filtrerer på stegkode", () => {
-    const saker = [
-      lagSak({ id: 1, stegKode: "OPPRETTET" }),
-      lagSak({ id: 2, stegKode: "UTREDES" }),
-      lagSak({ id: 3, stegKode: "UTREDNING" }),
-    ];
-
-    expect(
-      filtrerUfordelteSaker(saker, {
-        kategorier: [],
-        misbrukstyper: [],
-        merkinger: [],
-        steg: ["UTREDNING"],
-      }).map((sak) => sak.id),
-    ).toEqual([2, 3]);
   });
 
   it("lager oppsummering med antall saker, eldste liggetid og relevante ytelser", () => {
