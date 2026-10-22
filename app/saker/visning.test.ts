@@ -15,6 +15,7 @@ import {
   hentSluttresultatDetaljer,
   hentStatusFarge,
   hentStatusTag,
+  type SluttresultatDetalj,
 } from "./visning";
 
 function lagKontrollsak(overrides: Partial<KontrollsakResponse> = {}): KontrollsakResponse {
@@ -196,25 +197,27 @@ describe("hentSluttresultatDetaljer", () => {
           domfeltBelop: 15000,
           siviltRettskrav: 4500,
           tilstaaelsesdom: true,
+          strafferabattLiggetid: "INGEN",
         },
       }),
     ).toEqual([
-      "Domsdato: 01.06.2026",
-      "Ubetinget fengsel: 1 måned og 2 dager",
-      "Betinget fengsel: 3 måneder",
-      "Samfunnsstraff: 40 timer",
-      "Domfelt beløp: 15 000 kr",
-      "Sivilt rettskrav: 4 500 kr",
-      "Tilståelsesdom",
+      { etikett: "Domsdato", verdi: "01.06.2026" },
+      { etikett: "Ubetinget fengsel", verdi: "1 måned og 2 dager" },
+      { etikett: "Betinget fengsel", verdi: "3 måneder" },
+      { etikett: "Samfunnsstraff", verdi: "40 timer" },
+      { etikett: "Domfelt beløp", verdi: "15 000 kr" },
+      { etikett: "Sivilt rettskrav", verdi: "4 500 kr" },
+      { etikett: "Tilståelsesdom", verdi: "Ja" },
+      { etikett: "Strafferabatt", verdi: "Ingen" },
     ]);
   });
 
   it("viser beløp for bot og forelegg", () => {
     expect(hentSluttresultatDetaljer({ politi: { type: "BOT", belop: 1000 } })).toEqual([
-      "Beløp: 1 000 kr",
+      { etikett: "Beløp", verdi: "1 000 kr" },
     ]);
     expect(hentSluttresultatDetaljer({ politi: { type: "FORELEGG", belop: 2500 } })).toEqual([
-      "Beløp: 2 500 kr",
+      { etikett: "Beløp", verdi: "2 500 kr" },
     ]);
   });
 
@@ -224,7 +227,7 @@ describe("hentSluttresultatDetaljer", () => {
   it.each([
     [
       { utredning: { type: "HENLAGT", henleggelsesarsak: "IKKE_KAPASITET" } },
-      ["Årsak: Ikke kapasitet"],
+      [{ etikett: "Årsak", verdi: "Ikke kapasitet" }],
     ],
     [
       {
@@ -233,13 +236,13 @@ describe("hentSluttresultatDetaljer", () => {
           endeligUtfall: { type: "HENLAGT", henleggelsesarsak: "FORELDET" },
         },
       },
-      ["Årsak: Foreldet"],
+      [{ etikett: "Årsak", verdi: "Foreldet" }],
     ],
     [
       { politi: { type: "HENLAGT", henleggelsesarsak: "Bevisets stilling" } },
-      ["Årsak: Bevisets stilling"],
+      [{ etikett: "Årsak", verdi: "Bevisets stilling" }],
     ],
-  ] as [NonNullable<KontrollsakResponse["resultat"]>, string[]][])(
+  ] as [NonNullable<KontrollsakResponse["resultat"]>, SluttresultatDetalj[]][])(
     "viser årsaken til henleggelsen",
     (resultat, forventet) => {
       expect(hentSluttresultatDetaljer(resultat)).toEqual(forventet);
@@ -254,7 +257,7 @@ describe("hentSluttresultatDetaljer", () => {
           tilbakekrevdBelop: 12500,
         },
       }),
-    ).toEqual(["Tilbakekrevd beløp: 12 500 kr"]);
+    ).toEqual([{ etikett: "Tilbakekrevd beløp", verdi: "12 500 kr" }]);
   });
 
   it("summerer endelige ytelsesbeløp når totalbeløpet ikke er registrert", () => {
@@ -287,7 +290,7 @@ describe("hentSluttresultatDetaljer", () => {
         },
         ytelser,
       ),
-    ).toEqual(["Tilbakekrevd beløp: 10 000 kr"]);
+    ).toEqual([{ etikett: "Tilbakekrevd beløp", verdi: "10 000 kr" }]);
   });
 
   it("unngår å vise en ufullstendig sum av ytelsesbeløp", () => {

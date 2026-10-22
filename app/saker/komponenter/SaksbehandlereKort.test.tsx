@@ -232,8 +232,10 @@ describe("SaksbehandlereKort", () => {
 
     expect(screen.getByText("Avsluttet")).toBeDefined();
     expect(screen.getByText("Domfellelse")).toBeDefined();
-    expect(screen.getByText("Ubetinget fengsel: 14 dager")).toBeDefined();
-    expect(screen.getByText(/Domfelt beløp: 15\s000 kr/)).toBeDefined();
+    expect(screen.getByText("Ubetinget fengsel")).toBeDefined();
+    expect(screen.getByText("14 dager")).toBeDefined();
+    expect(screen.getByText("Domfelt beløp")).toBeDefined();
+    expect(screen.getByText(/^15\s000 kr$/)).toBeDefined();
   });
 
   it("viser henleggelsesårsak og tilbakekrevd beløp under avsluttet", async () => {
@@ -262,8 +264,10 @@ describe("SaksbehandlereKort", () => {
     );
 
     expect(screen.getByText("Henlagt")).toBeDefined();
-    expect(screen.getByText("Årsak: Foreldet")).toBeDefined();
-    expect(screen.getByText(/Tilbakekrevd beløp: 12\s500 kr/)).toBeDefined();
+    expect(screen.getByText("Årsak")).toBeDefined();
+    expect(screen.getByText("Foreldet")).toBeDefined();
+    expect(screen.getByText("Tilbakekrevd beløp")).toBeDefined();
+    expect(screen.getByText(/^12\s500 kr$/)).toBeDefined();
   });
 
   it("sender egen handling når Tildel meg brukes", async () => {

@@ -148,18 +148,29 @@ export function SaksbehandlereKort({
           <hr className="border-ax-border-neutral-subtle" />
 
           {erAvsluttet ? (
-            <VStack gap="space-2" className="mb-2">
+            <VStack gap="space-8" className="mb-2">
               <Detail className="text-ax-text-neutral-subtle" uppercase>
                 Resultat
               </Detail>
-              <BodyShort weight="semibold" size="small">
-                {statusTag.tekst}
-              </BodyShort>
-              {sluttresultatDetaljer.map((detalj) => (
-                <BodyShort key={detalj} size="small">
-                  {detalj}
-                </BodyShort>
-              ))}
+              <div className="min-w-0">
+                <AvkortetTag variant="moderate" data-color={statusTag.farge} size="medium">
+                  {statusTag.tekst}
+                </AvkortetTag>
+              </div>
+              {sluttresultatDetaljer.length > 0 && (
+                <VStack as="dl" gap="space-8">
+                  {sluttresultatDetaljer.map(({ etikett, verdi }) => (
+                    <div key={etikett}>
+                      <BodyShort as="dt" size="small" textColor="subtle">
+                        {etikett}
+                      </BodyShort>
+                      <BodyShort as="dd" weight="semibold">
+                        {verdi}
+                      </BodyShort>
+                    </div>
+                  ))}
+                </VStack>
+              )}
             </VStack>
           ) : (
             <VStack gap="space-2" className="mb-2">
