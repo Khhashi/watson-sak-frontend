@@ -3,6 +3,7 @@
  */
 
 import { rootLoader } from "~/layout/loader.server";
+import { krevInnloggingMiddleware } from "~/auth/middleware.server";
 import { default as RootRoute } from "~/layout/root";
 import { RootErrorBoundary } from "./layout/ErrorBoundary";
 import { ingenCacheMiddleware } from "./sikkerhet/cache.server";
@@ -13,4 +14,4 @@ export const ErrorBoundary = RootErrorBoundary;
 // CSP med nonce settes i entry.server.tsx
 export const headers = () => sikkerhetHeaders();
 export const loader = rootLoader;
-export const middleware = [ingenCacheMiddleware];
+export const middleware = [ingenCacheMiddleware, krevInnloggingMiddleware];

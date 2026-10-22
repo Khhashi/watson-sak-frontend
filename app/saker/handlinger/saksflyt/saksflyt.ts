@@ -1,8 +1,4 @@
-import {
-  type KontrollsakSteg,
-  POLITIDISTRIKT_MAKS_LENGDE,
-  type TillatteHandlingerResponse,
-} from "~/saker/types.backend";
+import { type KontrollsakSteg, type TillatteHandlingerResponse } from "~/saker/types.backend";
 import { resultatFeltErAktivt } from "../resultat-request";
 import { erHenlagtIGjeldendeSteg, hentVisbareSteg } from "../tillatte-steg";
 import { sjekklister } from "./sjekklister";
@@ -29,26 +25,32 @@ export type Trinn =
       legend: string;
       beskrivelse?: string;
       tillatteVerdier?: readonly string[];
+      /** Viser valgene i grupper med overskrift. Valg som ikke står i en gruppe, vises ikke. */
+      grupper?: readonly { tittel: string; verdier: readonly string[] }[];
+      /** Viser «Avbryt», som lukker modalen, i stedet for «Tilbake». */
+      avbryt?: boolean;
       primær: string;
     }
   | { type: "status"; tittel: string; primær: string }
   | {
       type: "skjema";
-      tittel: string | ((verdier: Verdier, feltskjema: Feltskjema) => string);
+      tittel: string;
+      /** Viser etiketten til den valgte verdien i dette feltet som undertittel, for eksempel resultattypen. */
+      undertittelFelt?: string;
       felter: readonly string[];
+      /** Verdier feltene starter med, for eksempel «Nei» på ja/nei-spørsmål. */
+      standardverdier?: Verdier;
       /** Begrenser valgene i enum-felt, for eksempel hvilke utredningsresultater som gir forvaltning. */
       tillatteVerdier?: Readonly<Record<string, readonly string[]>>;
       /** Ledetekst for beløpsfeltene. Ytelsestypen legges til når saken har flere ytelser. */
       belopEtikett?: string;
       /** Beløpene per ytelse kan stå tomme. */
       belopValgfritt?: boolean;
-      /** Ledetekster som avhenger av valgte verdier, for eksempel årsak når politiet henlegger. */
-      etiketter?: (verdier: Verdier) => Readonly<Record<string, string>>;
       primær: string | ((verdier: Verdier) => string);
-      /** Tilbyr «Registrer resultat, men ikke avslutt» når backend tillater det. */
-      kanLagreUtenAvslutning?: (verdier: Verdier) => boolean;
       /** Primærknappen lagrer resultatet uten stegbytte, for eksempel ved påklaget henleggelse. */
       lagreUtenAvslutning?: (verdier: Verdier) => boolean;
+      /** Viser varselet om at saken avsluttes nederst i skjemaet. */
+      visAvslutningsvarsel?: (verdier: Verdier) => boolean;
     }
   | { type: "bekreftAvslutning"; primær: string };
 
@@ -62,21 +64,75 @@ export type Sakshandling = {
   seksjon: "steg" | "resultat";
   etikett: string;
   erPrimær?: boolean;
+  /** Bredden på modalen gjennom hele handlingen. Standard er `small`. */
+  bredde?: "small" | "medium";
   trinn: readonly Trinn[];
   /** Resultatverdier handlingen alltid sender, for eksempel `utredning.type=HENLAGT`. */
   faste: Verdier;
   innsending: Innsending;
 };
 
-/** Tekstfelt som vises på én linje, med hjelpetekst og maks lengde. Andre tekstfelt er flerlinjede. */
-export const enlinjeTekstfelt: Readonly<
-  Record<string, { beskrivelse: string; maksLengde: number }>
-> = {
+export type Feltvisning = {
+  /** Hjelpetekst under ledeteksten. */
+  beskrivelse?: string;
+  /** Låste valg vises som en nedtrekksliste. */
+  valg?: readonly string[];
+  /** Tekstfeltet vises på én linje og har maks lengde. Andre tekstfelt er flerlinjede. */
+  maksLengde?: number;
+  /** Feltet vises smalt med enheten til høyre, for eksempel «kr» eller «timer». */
+  enhet?: string;
+};
+
+/** Hvordan enkeltfelt vises, utover det feltskjemaet fra backend sier. */
+export const feltvisning: Readonly<Record<string, Feltvisning>> = {
   "strafferettsligVurdering.politidistrikt": {
-    beskrivelse: "Skriv inn politidistriktet som saken er anmeldt til.",
-    maksLengde: POLITIDISTRIKT_MAKS_LENGDE,
+    beskrivelse: "Velg politidistriktet saken anmeldes til.",
+    valg: [
+      "Agder politidistrikt",
+      "Finnmark politidistrikt",
+      "Innlandet politidistrikt",
+      "Kripos",
+      "Møre og Romsdal politidistrikt",
+      "Nordland politidistrikt",
+      "Oslo politidistrikt",
+      "Sør-Vest politidistrikt",
+      "Sør-Øst politidistrikt",
+      "Troms politidistrikt",
+      "Trøndelag politidistrikt",
+      "Vest politidistrikt",
+      "Økokrim",
+      "Øst politidistrikt",
+    ],
+  },
+  "politi.begrunnelse": { maksLengde: 200 },
+  "politi.ubetingetFengselMaaneder": { enhet: "mnd" },
+  "politi.ubetingetFengselDager": { enhet: "dag" },
+  "politi.betingetFengselMaaneder": { enhet: "mnd" },
+  "politi.betingetFengselDager": { enhet: "dag" },
+  "politi.samfunnsstraffTimer": { enhet: "timer" },
+  "politi.domfeltBelop": { enhet: "kr" },
+  "politi.siviltRettskrav": { enhet: "kr" },
+  "politi.strafferabattLiggetid": {
+    beskrivelse:
+      "Lang liggetid (saksbehandlingstid) hos Nav og/eller politiet kan gi redusert straff.",
   },
 };
+
+/**
+ * Felt som vises sammen under én ledetekst, for eksempel måneder og dager fengsel.
+ * Nøkkelen er det første feltet i gruppen.
+ */
+export const feltgrupper: Readonly<Record<string, { legend: string; felter: readonly string[] }>> =
+  {
+    "politi.ubetingetFengselMaaneder": {
+      legend: "Ubetinget fengsel",
+      felter: ["politi.ubetingetFengselMaaneder", "politi.ubetingetFengselDager"],
+    },
+    "politi.betingetFengselMaaneder": {
+      legend: "Betinget fengsel",
+      felter: ["politi.betingetFengselMaaneder", "politi.betingetFengselDager"],
+    },
+  };
 
 const bekreftAvslutning: Trinn = { type: "bekreftAvslutning", primær: "Avslutt sak" };
 
@@ -112,25 +168,8 @@ function avsluttMedResultat(id: string, etikett: string, faste: Verdier): Saksha
   };
 }
 
-function registrerPolitiresultatTittel(verdier: Verdier, feltskjema: Feltskjema): string {
-  const utfall = verdier["politi.type"];
-  if (utfall === "DOMFELLELSE") return "Registrer dom";
-  if (utfall === "HENLAGT") return "Registrer henleggelse";
-  const etikett = feltskjema
-    .find((felt) => felt.felt === "politi.type")
-    ?.verdier.find((valg) => valg.verdi === utfall)?.etikett;
-  return etikett ? `Registrer ${etikett.toLowerCase()}` : "Registrer avgjørelse";
-}
-
-const erPolitietsHenleggelse = (verdier: Verdier) => verdier["politi.type"] === "HENLAGT";
 const erPåklagetHenleggelse = (verdier: Verdier) =>
-  erPolitietsHenleggelse(verdier) && verdier.paaklaget === "true";
-
-function politiavgjørelsePrimær(verdier: Verdier): string {
-  if (erPåklagetHenleggelse(verdier)) return "Registrer påklaget henleggelse";
-  if (erPolitietsHenleggelse(verdier)) return "Henlegg og avslutt sak";
-  return "Registrer resultat og avslutt saken";
-}
+  verdier["politi.type"] === "HENLAGT" && verdier.paaklaget === "true";
 
 /** Handlingene i hvert steg, i visningsrekkefølge. Backend avgjør hvilke som faktisk tilbys. */
 const handlingstabell: Partial<Record<KontrollsakSteg, readonly Sakshandling[]>> = {
@@ -255,49 +294,55 @@ const handlingstabell: Partial<Record<KontrollsakSteg, readonly Sakshandling[]>>
   ],
   POLITI: [
     {
-      id: "registrer-avgjorelse",
+      id: "registrer-resultat",
       seksjon: "steg",
-      etikett: "Registrer avgjørelse",
+      etikett: "Registrer resultat",
       erPrimær: true,
+      bredde: "medium",
       faste: {},
       trinn: [
         {
           type: "enkeltvalg",
-          tittel: "Registrer avgjørelse",
+          tittel: "Registrer resultat",
           felt: "politi.type",
-          legend: "Utfall",
-          beskrivelse: "Velg utfallet av saken hos politiet",
-          tillatteVerdier: [
-            "FORELEGG",
-            "BOT",
-            "PATALEUNNLATELSE",
-            "FRIFINNELSE",
-            "DOMFELLELSE",
-            "HENLAGT",
+          legend: "Resultat",
+          beskrivelse: "Velg resultatet som er registrert i saken.",
+          grupper: [
+            { tittel: "Politiet", verdier: ["HENLAGT", "FORELEGG", "BOT", "PATALEUNNLATELSE"] },
+            { tittel: "Domstolen", verdier: ["FRIFINNELSE", "DOMFELLELSE"] },
           ],
+          avbryt: true,
           primær: "Neste",
         },
         {
           type: "skjema",
-          tittel: registrerPolitiresultatTittel,
+          tittel: "Registrer resultat",
+          undertittelFelt: "politi.type",
           felter: [
             "politi.begrunnelse",
             "paaklaget",
-            "politi.belopTilbakekrevd",
-            "politi.strafferabatt",
-            "politi.strafferabattProsent",
+            "politi.belop",
             "politi.domsdato",
-            "politi.detaljer",
+            "politi.ubetingetFengselMaaneder",
+            "politi.ubetingetFengselDager",
+            "politi.betingetFengselMaaneder",
+            "politi.betingetFengselDager",
+            "politi.samfunnsstraffTimer",
+            "politi.domfeltBelop",
+            "politi.siviltRettskrav",
+            "politi.tilstaaelsesdom",
+            "politi.strafferabattLiggetid",
           ],
-          etiketter: (verdier): Record<string, string> =>
-            erPolitietsHenleggelse(verdier)
-              ? { "politi.begrunnelse": "Årsak til henleggelse" }
-              : {},
-          primær: politiavgjørelsePrimær,
-          kanLagreUtenAvslutning: (verdier) => !erPolitietsHenleggelse(verdier),
+          standardverdier: {
+            paaklaget: "false",
+            "politi.tilstaaelsesdom": "false",
+            "politi.strafferabattLiggetid": "INGEN",
+          },
+          primær: (verdier) =>
+            erPåklagetHenleggelse(verdier) ? "Registrer påklaget henleggelse" : "Lagre og avslutt",
           lagreUtenAvslutning: erPåklagetHenleggelse,
+          visAvslutningsvarsel: (verdier) => !erPåklagetHenleggelse(verdier),
         },
-        bekreftAvslutning,
       ],
       innsending: { handling: "endre_steg_dialog", steg: "AVSLUTTET" },
     },
@@ -398,10 +443,6 @@ export function hentHandlinger(tillatteHandlinger: TillatteHandlingerResponse): 
   return kanAvslutteMedLagretResultat ? [...handlinger, avsluttSak] : handlinger;
 }
 
-export function kanLagreUtenAvslutning(tillatteHandlinger: TillatteHandlingerResponse): boolean {
-  return tillatteHandlinger.handlinger.some((handling) => handling.type === "REGISTRER_RESULTAT");
-}
-
 /** Verdien som representerer «ingen status» i skjemaet. Serveren tolker den som `null`. */
 export const INGEN_STATUS = "__NULL__";
 
@@ -440,8 +481,8 @@ function lagretResultatbelop(
 }
 
 /**
- * Startverdier: statusen saken har nå, og lagrede beløp. Endelig beløp starter med antatt beløp
- * når det ikke er registrert, siden de ofte er like.
+ * Startverdier: statusen saken har nå, standardverdiene i skjemaet og lagrede beløp. Endelig beløp
+ * starter med antatt beløp når det ikke er registrert, siden de ofte er like.
  */
 export function hentStartverdier(
   handling: Sakshandling,
@@ -457,6 +498,7 @@ export function hentStartverdier(
   }
   for (const trinn of handling.trinn) {
     if (trinn.type !== "skjema") continue;
+    Object.assign(verdier, trinn.standardverdier);
     for (const felt of trinn.felter) {
       if (!erBelopsfelt(felt)) {
         const lagret = lagretResultatbelop(tilstand.resultat, felt);
@@ -490,9 +532,9 @@ export function hentValg(
 }
 
 /**
- * Fjerner verdier for felt som ikke er aktive. Feltskjemaet gås gjennom i rekkefølge, slik at
- * `politi.strafferabattProsent` forsvinner når `politi.strafferabatt` er inaktiv fordi utfallet
- * er endret. Serveren gjør det samme i `byggLagreResultatRequest`.
+ * Fjerner verdier for felt som ikke er aktive, for eksempel domsdato når resultatet er endret fra
+ * domfellelse til bot. Feltskjemaet gås gjennom i rekkefølge, slik at felt som avhenger av et
+ * inaktivt felt også forsvinner. Serveren gjør det samme i `byggLagreResultatRequest`.
  */
 export function aktiveVerdier(verdier: Verdier, feltskjema: Feltskjema): Verdier {
   const aktive = { ...verdier };

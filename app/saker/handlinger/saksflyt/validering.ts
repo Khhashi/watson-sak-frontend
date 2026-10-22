@@ -3,14 +3,14 @@ import {
   dagensDatoIOslo,
   erGyldigIsoDato,
   lesBelop,
+  lesHeltall,
   resultatFeltErAktivt,
   resultatFeltErPaakrevd,
-  strafferabattOver100,
 } from "../resultat-request";
 import {
   aktiveVerdier,
-  enlinjeTekstfelt,
   erBelopsfelt,
+  feltvisning,
   finnSkjemafelt,
   type Trinn,
   type Verdier,
@@ -33,11 +33,9 @@ export function hentSynligeFelter(
   feltskjema: TillatteHandlingerResponse["feltskjema"],
 ): Skjemafelt[] {
   const aktive = aktiveVerdier(verdier, feltskjema);
-  const etiketter = trinn.etiketter?.(verdier) ?? {};
   return trinn.felter.flatMap((navn) => {
-    const skjemafelt = finnSkjemafelt(feltskjema, navn);
-    if (!skjemafelt) return [];
-    const felt = etiketter[navn] ? { ...skjemafelt, etikett: etiketter[navn] } : skjemafelt;
+    const felt = finnSkjemafelt(feltskjema, navn);
+    if (!felt) return [];
     if (erBelopsfelt(navn)) return [felt];
     return resultatFeltErAktivt(felt, aktive) ? [felt] : [];
   });
@@ -48,11 +46,11 @@ function validerFelt(felt: Skjemafelt, verdi: string, verdier: Verdier): string 
     return resultatFeltErPaakrevd(felt, verdier) ? `${felt.etikett} må fylles ut` : undefined;
   }
   // Enlinjefelt følger samme regler som backend: lengde i tegn (ikke UTF-16-enheter), ingen kontrolltegn.
-  const enlinje = enlinjeTekstfelt[felt.felt];
-  if (enlinje) {
+  const { maksLengde } = feltvisning[felt.felt] ?? {};
+  if (maksLengde !== undefined) {
     const trimmet = verdi.trim();
-    if ([...trimmet].length > enlinje.maksLengde) {
-      return `${felt.etikett} kan ha opptil ${enlinje.maksLengde} tegn`;
+    if ([...trimmet].length > maksLengde) {
+      return `${felt.etikett} kan ha opptil ${maksLengde} tegn`;
     }
     if (/[\p{Cc}\p{Cf}\u2028\u2029]/u.test(trimmet)) {
       return `${felt.etikett} kan ikke inneholde linjeskift eller usynlige tegn`;
@@ -67,12 +65,16 @@ function validerFelt(felt: Skjemafelt, verdi: string, verdier: Verdier): string 
   }
   if (felt.datatype === "tall") {
     try {
-      const tall = lesBelop(verdi, felt.etikett);
-      if (felt.felt === "politi.strafferabattProsent" && tall > 100) {
-        return strafferabattOver100;
-      }
+      lesBelop(verdi, felt.etikett);
     } catch {
       return `${felt.etikett} må være et gyldig tall`;
+    }
+  }
+  if (felt.datatype === "heltall") {
+    try {
+      lesHeltall(verdi, felt.etikett);
+    } catch (feil) {
+      return feil instanceof Error ? feil.message : `${felt.etikett} må være et helt tall`;
     }
   }
   if (felt.datatype === "dato") {

@@ -30,7 +30,7 @@ describe("hentHandlinger", () => {
       ["til-strafferettslig-vurdering", "registrer-feilutbetaling", "henlegg"],
     ],
     ["STRAFFERETTSLIG_VURDERING", "AKTIV", ["til-politiet", "feilutbetalingssak", "henlegg"]],
-    ["POLITI", "VENTER_PA_RESULTAT", ["registrer-avgjorelse"]],
+    ["POLITI", "VENTER_PA_RESULTAT", ["registrer-resultat"]],
   ] as const)("viser handlingene for %s i fast rekkefølge", (steg, status, forventet) => {
     expect(ider(hentHandlinger(lagTillatteHandlinger({ steg, status })))).toEqual(forventet);
   });
@@ -109,7 +109,7 @@ describe("hentHandlinger", () => {
       status: "PAAKLAGET",
       resultat: { politi: { type: "HENLAGT", henleggelsesarsak: "FORELDET" } },
     });
-    expect(ider(hentHandlinger(tillatte))).toEqual(["registrer-avgjorelse"]);
+    expect(ider(hentHandlinger(tillatte))).toEqual(["registrer-resultat"]);
   });
 
   it("viser bare resultattyper som backend tillater", () => {
@@ -141,33 +141,34 @@ describe("hentHandlinger", () => {
   });
 });
 
-describe("registrer avgjørelse fra politiet", () => {
+describe("registrer resultat fra politiet", () => {
   const tillatte = lagTillatteHandlinger({ steg: "POLITI", status: "VENTER_PA_RESULTAT" });
-  const handling = finn(hentHandlinger(tillatte), "registrer-avgjorelse");
+  const handling = finn(hentHandlinger(tillatte), "registrer-resultat");
   const skjema = handling.trinn.find((trinn) => trinn.type === "skjema");
   if (skjema?.type !== "skjema") throw new Error("Mangler skjematrinn");
   const primær = (verdier: Record<string, string>) =>
     typeof skjema.primær === "function" ? skjema.primær(verdier) : skjema.primær;
 
-  it("lagrer påklaget henleggelse uten å avslutte saken", () => {
+  it("lagrer påklaget henleggelse uten å avslutte saken og uten avslutningsvarsel", () => {
     const verdier = { "politi.type": "HENLAGT", paaklaget: "true" };
     expect(primær(verdier)).toBe("Registrer påklaget henleggelse");
     expect(skjema.lagreUtenAvslutning?.(verdier)).toBe(true);
-    expect(skjema.kanLagreUtenAvslutning?.(verdier)).toBe(false);
+    expect(skjema.visAvslutningsvarsel?.(verdier)).toBe(false);
   });
 
-  it("henlegger og avslutter når henleggelsen ikke påklages", () => {
-    const verdier = { "politi.type": "HENLAGT", paaklaget: "false" };
-    expect(primær(verdier)).toBe("Henlegg og avslutt sak");
+  it.each(["HENLAGT", "BOT", "DOMFELLELSE"])("lagrer og avslutter ved %s", (type) => {
+    const verdier = { "politi.type": type, paaklaget: "false" };
+    expect(primær(verdier)).toBe("Lagre og avslutt");
     expect(skjema.lagreUtenAvslutning?.(verdier)).toBe(false);
-    expect(skjema.kanLagreUtenAvslutning?.(verdier)).toBe(false);
+    expect(skjema.visAvslutningsvarsel?.(verdier)).toBe(true);
   });
 
-  it("avslutter eller lagrer andre utfall", () => {
-    const verdier = { "politi.type": "BOT", paaklaget: "true" };
-    expect(primær(verdier)).toBe("Registrer resultat og avslutt saken");
-    expect(skjema.lagreUtenAvslutning?.(verdier)).toBe(false);
-    expect(skjema.kanLagreUtenAvslutning?.(verdier)).toBe(true);
+  it("starter med Nei på ja/nei-spørsmålene og ingen strafferabatt", () => {
+    expect(hentStartverdier(handling, tillatte)).toEqual({
+      paaklaget: "false",
+      "politi.tilstaaelsesdom": "false",
+      "politi.strafferabattLiggetid": "INGEN",
+    });
   });
 });
 
@@ -280,27 +281,31 @@ describe("byggInnsending", () => {
   it("dropper felt som ikke lenger er aktive etter at utfallet er endret", () => {
     const tillatte = lagTillatteHandlinger({ steg: "POLITI", status: "VENTER_PA_RESULTAT" });
     const formData = byggInnsending(
-      finn(hentHandlinger(tillatte), "registrer-avgjorelse"),
+      finn(hentHandlinger(tillatte), "registrer-resultat"),
       {
         "politi.type": "BOT",
-        "politi.strafferabatt": "true",
-        "politi.strafferabattProsent": "20",
-        "politi.detaljer": "30 dagsbøter",
+        "politi.belop": "3000",
+        "politi.domsdato": "2026-01-15",
+        "politi.ubetingetFengselDager": "14",
+        "politi.tilstaaelsesdom": "false",
+        "politi.strafferabattLiggetid": "INGEN",
       },
       tillatte,
     );
     expect(Object.fromEntries(formData)).toMatchObject({
       "resultat.politi.type": "BOT",
-      "resultat.politi.detaljer": "30 dagsbøter",
+      "resultat.politi.belop": "3000",
     });
-    expect(formData.has("resultat.politi.strafferabatt")).toBe(false);
-    expect(formData.has("resultat.politi.strafferabattProsent")).toBe(false);
+    for (const felt of ["domsdato", "ubetingetFengselDager", "tilstaaelsesdom"]) {
+      expect(formData.has(`resultat.politi.${felt}`)).toBe(false);
+    }
+    expect(formData.has("resultat.politi.strafferabattLiggetid")).toBe(false);
   });
 
   it("lagrer politiresultat uten stegbytte", () => {
     const tillatte = lagTillatteHandlinger({ steg: "POLITI", status: "VENTER_PA_RESULTAT" });
     const formData = byggInnsending(
-      finn(hentHandlinger(tillatte), "registrer-avgjorelse"),
+      finn(hentHandlinger(tillatte), "registrer-resultat"),
       { "politi.type": "FORELEGG" },
       tillatte,
       { handling: "lagre_resultat" },
@@ -315,7 +320,7 @@ describe("byggInnsending", () => {
   it("sender påklaging sammen med politiets henleggelse", () => {
     const tillatte = lagTillatteHandlinger({ steg: "POLITI", status: "VENTER_PA_RESULTAT" });
     const formData = byggInnsending(
-      finn(hentHandlinger(tillatte), "registrer-avgjorelse"),
+      finn(hentHandlinger(tillatte), "registrer-resultat"),
       {
         "politi.type": "HENLAGT",
         "politi.begrunnelse": "Bevisene holder ikke",
@@ -351,7 +356,7 @@ describe("byggInnsending", () => {
   it("dropper påklaging når utfallet ikke er henleggelse", () => {
     const tillatte = lagTillatteHandlinger({ steg: "POLITI", status: "VENTER_PA_RESULTAT" });
     const formData = byggInnsending(
-      finn(hentHandlinger(tillatte), "registrer-avgjorelse"),
+      finn(hentHandlinger(tillatte), "registrer-resultat"),
       { "politi.type": "BOT", paaklaget: "true" },
       tillatte,
     );

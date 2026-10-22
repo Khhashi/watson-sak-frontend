@@ -187,7 +187,7 @@ export function StatistikkDiagrammer({
         ))}
       </HGrid>
 
-      <Box as="section" aria-label="Nøkkeltall">
+      <Box as="section" aria-label="Nøkkeltall" className="mt-1">
         <Heading level="2" size="small">
           Øyeblikksbilde
         </Heading>

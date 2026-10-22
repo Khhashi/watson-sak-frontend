@@ -10,7 +10,7 @@ import {
   erPolitiresultatKomplett,
   kanAvsluttesFraForvaltning,
 } from "./handlinger/tillatte-steg";
-import { resultatEtiketter } from "./visning";
+import { henleggelsesarsakEtiketter, resultatEtiketter } from "./visning";
 
 export function erGyldigMockStegovergang(
   sak: KontrollsakResponse,
@@ -84,40 +84,6 @@ const resultatvalg: Partial<Record<KontrollsakSteg, ResultatType[]>> = {
   POLITI: ["HENLAGT", "FORELEGG", "BOT", "PATALEUNNLATELSE", "FRIFINNELSE", "DOMFELLELSE"],
 };
 
-const henleggelsesarsakEtiketter = {
-  BEVISETS_STILLING: "Bevisets stilling",
-  BELOP_UNDER_PATALEGRENSE: "Beløp under påtalegrense",
-  INTET_STRAFFBART_FORHOLD: "Intet straffbart forhold",
-  FEILREGISTRERT_DUBLETT: "Feilregistrert / dublett",
-  IKKE_GRUNNLAG_FOR_TILBAKEKREVING: "Ikke grunnlag for tilbakekreving",
-  BELOP_UNDER_BELOPSGRENSE: "Beløp under beløpsgrense",
-  FEILUTBETALING: "Feilutbetaling",
-  FORELDET: "Foreldet",
-  IKKE_KAPASITET: "Ikke kapasitet",
-  IKKE_PRIORITERT: "Ikke prioritert",
-  IKKE_TILSTREKKELIG_BEVISGRUNNLAG: "Ikke tilstrekkelig dokumentasjon",
-  IKKE_TILSTREKKELIG_SKYLD: "Ikke tilstrekkelig skyld",
-  SAK_PABEGYNT_ELLER_OVERTATT_AV_ANDRE: "Sak påbegynt eller overtatt av andre",
-  NAY_MANGLER_I_SAKSBEHANDLINGEN: "NAY: Mangler i saksbehandlingen",
-  NFP_MANGLER_I_SAKSBEHANDLINGEN: "NFP: Mangler i saksbehandlingen",
-  NAY_MANGLER_VED_BEREGNINGSSKJEMA: "NAY: Mangler ved beregningsskjema",
-  NFP_MANGLER_VED_BEREGNINGSSKJEMA: "NFP: Mangler ved beregningsskjema",
-  NAY_MANGELFULL_DOKUMENTASJON: "NAY: Mangelfull dokumentasjon",
-  NFP_MANGELFULL_DOKUMENTASJON: "NFP: Mangelfull dokumentasjon",
-  NAY_MANGLENDE_DOKUMENTER: "NAY: Manglende dokumenter",
-  NFP_MANGLENDE_DOKUMENTER: "NFP: Manglende dokumenter",
-  NAY_LANG_LIGGETID_HOS_NAV: "NAY: Lang liggetid hos Nav",
-  NFP_LANG_LIGGETID_HOS_NAV: "NFP: Lang liggetid hos Nav",
-  NAY_GAMMEL_SAK: "NAY: Gammel sak",
-  NFP_GAMMEL_SAK: "NFP: Gammel sak",
-  NAV_KONTOR_BRUKER_FEILINFORMERT: "Nav-kontor: Bruker feilinformert",
-  NAV_KONTOR_MANGLENDE_INFORMASJON: "Nav-kontor: Manglende informasjon",
-  TUNGTVEIENDE_GRUNNER: "Tungtveiende grunner",
-  UNDER_BELOPSGRENSEN: "Under beløpsgrensen",
-  UNDER_KLAGEBEHANDLING: "Under klagebehandling",
-  MANGLER_SUBJEKTIV_SKYLD: "Mangler subjektiv skyld",
-} as const;
-
 type Henleggelsesarsak = keyof typeof henleggelsesarsakEtiketter;
 
 /** Speiler `Henleggelsesarsak.tillatteFor` i backend. */
@@ -168,6 +134,16 @@ function mockFelt(
   paakrevdNar?: string,
 ): TillatteHandlingerResponse["feltskjema"][number] {
   return { felt, etikett, datatype, paakrevd, verdier, paakrevdNar };
+}
+
+const DOMFELLELSE = "politi.type=DOMFELLELSE";
+
+function valgfrittDomfellelsesfelt(
+  felt: string,
+  etikett: string,
+  datatype: TillatteHandlingerResponse["feltskjema"][number]["datatype"] = "heltall",
+): TillatteHandlingerResponse["feltskjema"][number] {
+  return { felt, etikett, datatype, paakrevd: false, verdier: [], valgfriNar: DOMFELLELSE };
 }
 
 function feltskjemaFor(steg: KontrollsakSteg): TillatteHandlingerResponse["feltskjema"] {
@@ -262,13 +238,21 @@ function feltskjemaFor(steg: KontrollsakSteg): TillatteHandlingerResponse["felts
       return [
         mockFelt(
           "politi.type",
-          "Resultat fra politiet",
+          "Resultat",
           "enum",
           true,
           (resultatvalg.POLITI ?? []).map((verdi) => ({
             verdi,
             etikett: resultatEtiketter[verdi],
           })),
+        ),
+        mockFelt(
+          "politi.begrunnelse",
+          "Årsak",
+          "tekst",
+          false,
+          [],
+          "politi.type=HENLAGT, PATALEUNNLATELSE eller FRIFINNELSE",
         ),
         mockFelt(
           "paaklaget",
@@ -278,47 +262,29 @@ function feltskjemaFor(steg: KontrollsakSteg): TillatteHandlingerResponse["felts
           [],
           "politi.type=HENLAGT",
         ),
+        mockFelt("politi.belop", "Beløp", "belop", false, [], "politi.type=FORELEGG eller BOT"),
+        mockFelt("politi.domsdato", "Domsdato", "dato", false, [], DOMFELLELSE),
+        valgfrittDomfellelsesfelt("politi.ubetingetFengselMaaneder", "Ubetinget fengsel (måneder)"),
+        valgfrittDomfellelsesfelt("politi.ubetingetFengselDager", "Ubetinget fengsel (dager)"),
+        valgfrittDomfellelsesfelt("politi.betingetFengselMaaneder", "Betinget fengsel (måneder)"),
+        valgfrittDomfellelsesfelt("politi.betingetFengselDager", "Betinget fengsel (dager)"),
+        valgfrittDomfellelsesfelt("politi.samfunnsstraffTimer", "Samfunnsstraff"),
+        valgfrittDomfellelsesfelt("politi.domfeltBelop", "Domfelt beløp", "belop"),
+        valgfrittDomfellelsesfelt("politi.siviltRettskrav", "Sivilt rettskrav", "belop"),
+        mockFelt("politi.tilstaaelsesdom", "Tilståelsesdom", "boolsk", false, [], DOMFELLELSE),
         mockFelt(
-          "politi.begrunnelse",
-          "Begrunnelse",
-          "tekst",
+          "politi.strafferabattLiggetid",
+          "Strafferabatt (EMK art. 6)?",
+          "enum",
           false,
-          [],
-          "politi.type=HENLAGT eller FRIFINNELSE",
+          [
+            { verdi: "INGEN", etikett: "Ingen strafferabatt" },
+            { verdi: "NAV", etikett: "Liggetid hos Nav" },
+            { verdi: "POLITIET", etikett: "Liggetid hos politiet" },
+            { verdi: "BEGGE", etikett: "Liggetid hos begge" },
+          ],
+          DOMFELLELSE,
         ),
-        mockFelt(
-          "politi.detaljer",
-          "Tilleggsopplysninger",
-          "tekst",
-          false,
-          [],
-          "politi.type=FORELEGG, BOT eller PATALEUNNLATELSE",
-        ),
-        mockFelt(
-          "politi.belopTilbakekrevd",
-          "Beløp tilbakekrevd",
-          "belop",
-          false,
-          [],
-          "politi.type=DOMFELLELSE",
-        ),
-        mockFelt(
-          "politi.strafferabatt",
-          "Ga retten strafferabatt?",
-          "boolsk",
-          false,
-          [],
-          "politi.type=DOMFELLELSE",
-        ),
-        mockFelt(
-          "politi.strafferabattProsent",
-          "Strafferabatt (%)",
-          "tall",
-          false,
-          [],
-          "politi.strafferabatt=true",
-        ),
-        mockFelt("politi.domsdato", "Domsdato", "dato", false, [], "politi.type=DOMFELLELSE"),
       ];
     default:
       return [];

@@ -1,6 +1,7 @@
 import { LocalAlert } from "@navikt/ds-react";
 
-export function BekreftAvslutningTrinn() {
+/** Varsler om at saken ikke kan gjenåpnes etter avslutning. */
+export function Avslutningsvarsel() {
   return (
     <LocalAlert status="warning">
       <LocalAlert.Header>

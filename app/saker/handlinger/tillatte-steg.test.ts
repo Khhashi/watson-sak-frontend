@@ -69,21 +69,10 @@ describe("hentVisbareSteg", () => {
     expect(hentVisbareSteg(forvaltning)).toEqual(["AVSLUTTET"]);
     expect(harLagretResultatForOvergang(forvaltning, "AVSLUTTET")).toBe(false);
 
-    const politi = handlinger("POLITI", { politi: { type: "DOMFELLELSE" } }, []);
+    const politi = handlinger("POLITI", { politi: { type: "HENLAGT" } }, []);
     politi.muligeNesteSteg = ["AVSLUTTET"];
     expect(harLagretResultatForOvergang(politi, "AVSLUTTET")).toBe(false);
-    politi.tilstand.resultat = {
-      politi: {
-        type: "DOMFELLELSE",
-        belopTilbakekrevd: 12000,
-        strafferabatt: true,
-        domsdato: "2026-09-01",
-      },
-    };
-    expect(harLagretResultatForOvergang(politi, "AVSLUTTET")).toBe(false);
-    politi.tilstand.resultat = {
-      politi: { ...politi.tilstand.resultat.politi, type: "DOMFELLELSE", strafferabattProsent: 20 },
-    };
+    politi.tilstand.resultat = { politi: { type: "HENLAGT", begrunnelse: "Bevisets stilling" } };
     expect(harLagretResultatForOvergang(politi, "AVSLUTTET")).toBe(true);
   });
 

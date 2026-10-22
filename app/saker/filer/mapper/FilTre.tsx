@@ -32,7 +32,13 @@ import { formaterDato, ÅpneFilKnapp } from "../fil-visning-utils";
 import { FilerRad } from "../FilerRad";
 import { OmdøpFilModal } from "../OmdøpFilModal";
 import type { DokumentNode, FilResponse } from "../typer";
-import { byggFilTre, flatMappeliste, type FilTreNode, type MappeTreNode } from "./bygg-filtre";
+import {
+  antallFilerITre,
+  byggFilTre,
+  flatMappeliste,
+  type FilTreNode,
+  type MappeTreNode,
+} from "./bygg-filtre";
 import { Elementmeny, kontekstmeny } from "./Elementmeny";
 import { FlyttTilMappeModal, GiNyttNavnMappeModal, type FlyttbartElement } from "./MappeModaler";
 import { forelder, mappenavn } from "./mappesti";
@@ -96,6 +102,7 @@ export function FilTre({
   const tre = useMemo(() => byggFilTre(mapper, dokumenter, filer), [mapper, dokumenter, filer]);
   const alleMapper = useMemo(() => flatMappeliste(tre).map((mappe) => mappe.sti), [tre]);
   const [åpneMapper, settÅpneMapper] = useState<Set<string>>(() => new Set());
+  const [rotÅpen, settRotÅpen] = useState(true);
   const [modal, settModal] = useState<ÅpenModal>(null);
   const treRef = useRef<HTMLDivElement>(null);
   const [statusmelding, settStatusmelding] = useState("");
@@ -131,7 +138,7 @@ export function FilTre({
 
   /**
    * Raden med den fokuserte menyknappen forsvinner når mappen slettes. Fokus flyttes til
-   * overordnet mappe, eller til listen hvis mappen lå på rotnivå.
+   * overordnet mappe, eller til rotmappen hvis mappen lå rett under den.
    */
   function flyttFokusEtterSletting(forelderSti: string | null) {
     const tre = treRef.current;
@@ -386,6 +393,7 @@ export function FilTre({
   }
 
   const rotErSlippmål = slippmål === null;
+  const rotInnholdId = `${treId}-rot`;
 
   return (
     <div ref={treRef} tabIndex={-1} className="outline-none">
@@ -405,17 +413,12 @@ export function FilTre({
         </Alert>
       )}
 
-      {tre.length === 0 && !lasterOpp ? (
-        <BodyShort size="small" className="py-2 text-ax-text-neutral-subtle">
-          Ingen dokumenter eller filer ennå
-        </BodyShort>
-      ) : (
-        <ul
-          aria-label="Dokumenter og filer"
-          data-tre-rot
-          tabIndex={-1}
-          className={`flex flex-col rounded-sm ${
-            rotErSlippmål ? "outline-2 outline-offset-2 outline-ax-border-accent" : ""
+      {/* Alt på saken ligger i én rotmappe med saksnummeret som navn. I backend er dette
+          rotnivået (mappe = null), så rotmappen kan ikke omdøpes, flyttes eller slettes. */}
+      <ul aria-label="Dokumenter og filer" className="flex flex-col">
+        <li
+          className={`rounded-sm ${
+            rotErSlippmål ? "bg-ax-bg-accent-soft outline-2 outline-ax-border-accent" : ""
           }`}
           {...slippProps(null)}
           onDragLeave={(event) => {
@@ -424,22 +427,61 @@ export function FilTre({
             }
           }}
         >
-          {renderNoder(tre, null)}
-          {dras && kanSlippe(dras, null) && (
-            <li
-              className={`mt-2 rounded-sm border border-dashed px-3 py-2 ${
-                rotErSlippmål
-                  ? "border-ax-border-accent bg-ax-bg-accent-soft"
-                  : "border-ax-border-neutral-subtle"
-              }`}
+          <button
+            type="button"
+            aria-expanded={rotÅpen}
+            aria-controls={rotÅpen ? rotInnholdId : undefined}
+            data-tre-rot
+            onClick={() => settRotÅpen(!rotÅpen)}
+            className="flex w-full min-w-0 cursor-pointer items-center gap-2 rounded-sm py-[10px] text-left hover:bg-ax-bg-neutral-moderate-hover focus-visible:outline-2 focus-visible:outline-ax-border-focus"
+          >
+            <FolderIcon aria-hidden className="size-5 shrink-0 text-ax-icon-neutral" />
+            <BodyShort as="span" weight="semibold" className="truncate">
+              {sakId}
+            </BodyShort>
+            <BodyShort
+              as="span"
+              size="small"
+              className="ml-auto shrink-0 pl-4 text-ax-text-neutral-subtle"
             >
-              <Detail className="text-ax-text-neutral-subtle">
-                Slipp her for å flytte til rotnivå
-              </Detail>
-            </li>
+              {antallFilerTekst(antallFilerITre(tre))}
+            </BodyShort>
+            <span className="shrink-0 pr-1" aria-hidden>
+              {rotÅpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
+            </span>
+          </button>
+          {rotÅpen && (
+            <ul
+              id={rotInnholdId}
+              aria-label={sakId}
+              className="mb-2 ml-[9px] flex flex-col border-l-2 border-ax-border-neutral-subtle pl-3"
+            >
+              {tre.length === 0 && !lasterOpp ? (
+                <li>
+                  <Detail className="py-2 text-ax-text-neutral-subtle">
+                    Ingen dokumenter eller filer ennå
+                  </Detail>
+                </li>
+              ) : (
+                renderNoder(tre, null)
+              )}
+              {dras && kanSlippe(dras, null) && (
+                <li
+                  className={`mt-2 rounded-sm border border-dashed px-3 py-2 ${
+                    rotErSlippmål
+                      ? "border-ax-border-accent bg-ax-bg-accent-soft"
+                      : "border-ax-border-neutral-subtle"
+                  }`}
+                >
+                  <Detail className="text-ax-text-neutral-subtle">
+                    Slipp her for å flytte til {sakId}
+                  </Detail>
+                </li>
+              )}
+            </ul>
           )}
-        </ul>
-      )}
+        </li>
+      </ul>
 
       {lasterOpp && (
         <div className="flex items-center gap-2 pt-2 text-ax-text-neutral-subtle">
