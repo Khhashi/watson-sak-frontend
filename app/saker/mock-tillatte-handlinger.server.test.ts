@@ -14,7 +14,7 @@ describe("hentMockTillatteHandlinger", () => {
     ]);
   });
 
-  it("tilbyr nøyaktig de seks henleggelsesårsakene for utredning, i fast rekkefølge", () => {
+  it("tilbyr nøyaktig de sju henleggelsesårsakene for utredning, i fast rekkefølge", () => {
     expect(henleggelsesarsakerFor("utredning.henleggelsesarsak", "UTREDNING")).toEqual([
       { verdi: "IKKE_KAPASITET", etikett: "Ikke kapasitet" },
       { verdi: "IKKE_TILSTREKKELIG_BEVISGRUNNLAG", etikett: "Ikke tilstrekkelig dokumentasjon" },
@@ -25,6 +25,7 @@ describe("hentMockTillatteHandlinger", () => {
         etikett: "Sak påbegynt eller overtatt av andre",
       },
       { verdi: "IKKE_PRIORITERT", etikett: "Ikke prioritert" },
+      { verdi: "KONTROLLNOTAT", etikett: "Kontrollnotat" },
     ]);
   });
 

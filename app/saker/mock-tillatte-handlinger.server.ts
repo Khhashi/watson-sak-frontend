@@ -95,6 +95,7 @@ const henleggelsesarsakerPerSteg: Partial<Record<KontrollsakSteg, Henleggelsesar
     "FORELDET",
     "SAK_PABEGYNT_ELLER_OVERTATT_AV_ANDRE",
     "IKKE_PRIORITERT",
+    "KONTROLLNOTAT",
   ],
   STRAFFERETTSLIG_VURDERING: [
     "NAY_MANGLER_I_SAKSBEHANDLINGEN",
