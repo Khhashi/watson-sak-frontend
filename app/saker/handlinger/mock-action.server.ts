@@ -24,6 +24,7 @@ import { hentMockState } from "~/testing/mock-store/session.server";
 import { byggLagreResultatRequest, validerResultatFeltNavn } from "../handlinger/resultat-request";
 import { erAktivSakKontrollsak } from "../handlinger/tilgjengeligeHandlinger";
 import { kanMottaSakFraEnhet } from "./mottaksenhet";
+import { BackendFeilException } from "~/saker/api-core.server";
 import {
   erGyldigMockStegovergang,
   hentMockTillatteHandlinger,
@@ -321,9 +322,10 @@ export async function mockAction(
             kanMottaSakFraEnhet(saksbehandler, nySeksjon),
         )
       ) {
-        throw data("Ny ansvarlig saksbehandler må tilhøre enheten saken sendes til", {
-          status: 409,
-        });
+        throw new BackendFeilException(
+          409,
+          "Ny ansvarlig saksbehandler må tilhøre enheten saken sendes til",
+        );
       }
 
       sak.enhet = nySeksjon;

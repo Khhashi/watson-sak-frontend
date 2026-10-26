@@ -1615,6 +1615,33 @@ describe("SakDetaljSide tilgangskontroll", () => {
     expect(resultat).toMatchObject({ ok: true });
   });
 
+  it("returnerer avvisning til dialogen når ny ansvarlig tilhører en annen enhet", async () => {
+    const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
+    const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+    kontrollsak.enhet = "ky153k";
+    const eierFør = kontrollsak.saksbehandlere.eier;
+
+    const formData = new FormData();
+    formData.set("handling", "send_til_annen_enhet");
+    formData.set("seksjon", "gu301n");
+    formData.set("ansvarligNavIdent", "Z123456");
+
+    const resultat = await action({
+      request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+        method: "POST",
+        body: formData,
+      }),
+      params: { sakId: kontrollsakRef },
+    } as Route.ActionArgs);
+
+    expect(resultat).toMatchObject({
+      data: { ok: false, feil: "Ny ansvarlig saksbehandler må tilhøre enheten saken sendes til" },
+      init: { status: 409 },
+    });
+    expect(kontrollsak.enhet).toBe("ky153k");
+    expect(kontrollsak.saksbehandlere.eier).toEqual(eierFør);
+  });
+
   it.each([
     ["UTREDES", "Z999999"],
     ["UTREDES", "Z111111"],
