@@ -132,7 +132,7 @@ export function UfordelteSakerInnhold({
         </Heading>
 
         {harSaker && (
-          <HGrid columns={{ xs: 1, sm: "repeat(2, 15rem)" }} gap="space-12">
+          <HGrid columns={{ xs: 1, sm: "repeat(2, minmax(0, 15rem))" }} gap="space-12">
             <Nøkkeltallkort
               verdi={oppsummering.antallSaker}
               etikett="Ikke fordelt"
