@@ -83,7 +83,7 @@ describe("byggLagreResultatRequest", () => {
         etikett: "Resultat fra politiet",
         datatype: "enum",
         paakrevd: true,
-        verdier: [{ verdi: "DOMFELLELSE", etikett: "Domfellelse" }],
+        verdier: [{ verdi: "DOMFELLELSE", etikett: "Domfelt" }],
       },
       {
         felt: "politi.domsdato",
