@@ -29,7 +29,7 @@ describe("hentHandlinger", () => {
       "VENTER_PA_VEDTAK",
       ["til-strafferettslig-vurdering", "registrer-feilutbetaling", "henlegg"],
     ],
-    ["STRAFFERETTSLIG_VURDERING", "AKTIV", ["til-politiet", "feilutbetalingssak", "henlegg"]],
+    ["STRAFFERETTSLIG_VURDERING", "AKTIV", ["til-politiet", "henlegg"]],
     ["POLITI", "VENTER_PA_RESULTAT", ["registrer-resultat"]],
   ] as const)("viser handlingene for %s i fast rekkefølge", (steg, status, forventet) => {
     expect(ider(hentHandlinger(lagTillatteHandlinger({ steg, status })))).toEqual(forventet);
@@ -91,7 +91,7 @@ describe("hentHandlinger", () => {
     tillatte.feltskjema = tillatte.feltskjema.filter(
       (felt) => felt.felt !== "strafferettsligVurdering.henleggelsesarsak",
     );
-    expect(ider(hentHandlinger(tillatte))).toEqual(["til-politiet", "feilutbetalingssak"]);
+    expect(ider(hentHandlinger(tillatte))).toEqual(["til-politiet"]);
   });
 
   it("tilbyr bare avslutning når politiet har henlagt saken uten påklaging", () => {
