@@ -201,10 +201,7 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(resultat).toMatchObject({ ok: true, sak: { steg: "OPPRETTET" } });
   });
 
-  it.each([
-    ["UTREDNING", "Z999999"],
-    ["UTREDNING", "Z111111"],
-  ])(
+  it.each([["UTREDNING", "Z999999"]])(
     "avviser videresending uten ny ansvarlig i %s med eier %s i backend-stien",
     async (steg, navIdent) => {
       mockHentKontrollsak.mockResolvedValue({
@@ -232,7 +229,9 @@ describe("SakDetaljSide loader — backend-sti", () => {
   it.each(
     ["send_til_annen_enhet", "videresend_seksjon"].flatMap((handling) =>
       [true, false].flatMap((erLeder) =>
-        [null, "Z999999", "Z111111"].map((eierIdent) => ({ handling, erLeder, eierIdent })),
+        [null, "Z999999", "Z111111"]
+          .filter((eierIdent) => erLeder || eierIdent === "Z999999")
+          .map((eierIdent) => ({ handling, erLeder, eierIdent })),
       ),
     ),
   )(
@@ -260,6 +259,36 @@ describe("SakDetaljSide loader — backend-sti", () => {
         await action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
       ).toMatchObject({ ok: true });
       expect(mockVideresend).toHaveBeenCalledWith("mock-token", "1", "NORD", undefined, undefined);
+    },
+  );
+
+  it.each(["send_til_annen_enhet", "videresend_seksjon"])(
+    "avviser %s for ikke-eier uten lederrolle i backend-stien",
+    async (handling) => {
+      mockHentInnloggetBruker.mockResolvedValue({
+        preferredUsername: "z999999",
+        name: "Saks Behandlersen",
+        navIdent: "Z999999",
+        enhet: "4812",
+        erLeder: false,
+      });
+      mockHentKontrollsak.mockResolvedValue({
+        ...grunnleggendeSak,
+        saksbehandlere: {
+          ...grunnleggendeSak.saksbehandlere,
+          eier: { navIdent: "Z111111", navn: "Saksbehandler", enhet: "4812" },
+        },
+      });
+      const formData = new FormData();
+      formData.set("handling", handling);
+      formData.set("seksjon", "NORD");
+      const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+      const { action } = await import("./SakDetaljSide.server");
+
+      await expect(
+        action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+      ).rejects.toMatchObject({ init: { status: 403 } });
+      expect(mockVideresend).not.toHaveBeenCalled();
     },
   );
 

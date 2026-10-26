@@ -482,6 +482,14 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
   beforeEach(() => {
     resetDefaultSession();
+    vi.mocked(hentInnloggetBruker).mockResolvedValue({
+      navIdent: "Z999999",
+      name: "Test Saksbehandler",
+      preferredUsername: "test@nav.no",
+      enhet: "4812",
+      enhetId: "by295h",
+      erLeder: false,
+    });
   });
 
   it("loader returnerer backend-shapet kontrollsak når sakId peker på kontrollsak", async () => {
@@ -722,7 +730,15 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
     });
   });
 
-  it("oppdaterer fallback-enhet når ownerløs sak videresendes til seksjon", async () => {
+  it("oppdaterer fallback-enhet når ownerløs sak videresendes til seksjon av leder", async () => {
+    vi.mocked(hentInnloggetBruker).mockResolvedValue({
+      navIdent: "Z999999",
+      name: "Leder Lederesen",
+      preferredUsername: "leder@nav.no",
+      enhet: "4812",
+      enhetId: "by295h",
+      erLeder: true,
+    });
     const kontrollsak = hentFordelingssaker(state())[0];
     const kontrollsakRef = getSaksreferanse(kontrollsak.id);
 
@@ -1589,7 +1605,7 @@ describe("SakDetaljSide tilgangskontroll", () => {
     expect(resultat).toMatchObject({ ok: true });
   });
 
-  it("tillater send_til_annen_enhet for ikke-eier", async () => {
+  it("avviser send_til_annen_enhet for ikke-eier uten lederrolle", async () => {
     const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
     const kontrollsakRef = getSaksreferanse(kontrollsak.id);
     kontrollsak.enhet = "ky153k";
@@ -1604,21 +1620,27 @@ describe("SakDetaljSide tilgangskontroll", () => {
     formData.set("seksjon", "hu424t");
     formData.set("ansvarligNavIdent", "Z123456");
 
-    const resultat = await action({
-      request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
-        method: "POST",
-        body: formData,
-      }),
-      params: { sakId: kontrollsakRef },
-    } as Route.ActionArgs);
-
-    expect(resultat).toMatchObject({ ok: true });
+    await expect(
+      action({
+        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+          method: "POST",
+          body: formData,
+        }),
+        params: { sakId: kontrollsakRef },
+      } as Route.ActionArgs),
+    ).rejects.toMatchObject({ init: { status: 403 } });
+    expect(kontrollsak.enhet).toBe("ky153k");
   });
 
   it("returnerer avvisning til dialogen når ny ansvarlig tilhører en annen enhet", async () => {
     const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
     const kontrollsakRef = getSaksreferanse(kontrollsak.id);
     kontrollsak.enhet = "ky153k";
+    kontrollsak.saksbehandlere.eier = {
+      navIdent: "Z999999",
+      navn: "Test Saksbehandler",
+      enhet: "4812",
+    };
     const eierFør = kontrollsak.saksbehandlere.eier;
 
     const formData = new FormData();
@@ -1642,10 +1664,7 @@ describe("SakDetaljSide tilgangskontroll", () => {
     expect(kontrollsak.saksbehandlere.eier).toEqual(eierFør);
   });
 
-  it.each([
-    ["UTREDES", "Z999999"],
-    ["UTREDES", "Z111111"],
-  ] as const)(
+  it.each([["UTREDES", "Z999999"]] as const)(
     "avviser videresending uten ny ansvarlig i %s med eier %s",
     async (steg, navIdent) => {
       const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
@@ -1677,11 +1696,13 @@ describe("SakDetaljSide tilgangskontroll", () => {
   it.each(
     ["send_til_annen_enhet", "videresend_seksjon"].flatMap((handling) =>
       [true, false].flatMap((erLeder) =>
-        ["Z999999", "Z111111", null].map((eier) => ({
-          handling,
-          erLeder,
-          eier,
-        })),
+        ["Z999999", "Z111111", null]
+          .filter((eier) => erLeder || eier === "Z999999")
+          .map((eier) => ({
+            handling,
+            erLeder,
+            eier,
+          })),
       ),
     ),
   )(

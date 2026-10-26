@@ -287,6 +287,8 @@ const eierEllerLederFeilmeldinger: Record<string, string> = {
   FRISTILL: "Du må være sakens saksbehandler eller leder for å fjerne saksbehandler",
   overfor_ansvarlig:
     "Du må være sakens saksbehandler eller leder for å endre ansvarlig saksbehandler",
+  send_til_annen_enhet: "Du må være sakens saksbehandler eller leder for å endre enhet",
+  videresend_seksjon: "Du må være sakens saksbehandler eller leder for å endre enhet",
 };
 
 export function krevEierEllerLeder(handling: string): boolean {
