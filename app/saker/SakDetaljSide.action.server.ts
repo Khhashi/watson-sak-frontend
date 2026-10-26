@@ -25,7 +25,7 @@ export async function action({ request, params }: Route.ActionArgs) {
       return await utfør();
     } catch (feil) {
       if (feil instanceof backendApi.BackendFeilException && feil.status === 409) {
-        return konfliktfeil(feil);
+        return konfliktfeil(feil, handling);
       }
       throw feil;
     }
@@ -37,8 +37,14 @@ export async function action({ request, params }: Route.ActionArgs) {
   }
 }
 
+const skjemahandlinger = new Set(["rediger_saksinformasjon", "koble_sak", "fjern_kobling"]);
+
 /** 409 er en avvist regel, ikke en serverfeil. Meldingen fra backend sier hva som er galt. */
-function konfliktfeil(feil: backendApi.BackendFeilException) {
+function konfliktfeil(feil: backendApi.BackendFeilException, handling: string) {
+  // Saksinformasjonsskjemaet leser feil som et kart fra felt til meldinger.
+  if (skjemahandlinger.has(handling)) {
+    return data({ ok: false, feil: { skjema: [feil.message] } }, { status: 409 });
+  }
   return data<SaksflytFeil>({ ok: false, feil: feil.message }, { status: 409 });
 }
 
@@ -50,7 +56,7 @@ type SaksflytFeil = { ok: false; feil: string };
 function saksflytfeil(feil: unknown) {
   if (feil instanceof Response) throw feil;
   if (feil instanceof backendApi.BackendFeilException) {
-    if (feil.status === 409) return konfliktfeil(feil);
+    if (feil.status === 409) return konfliktfeil(feil, "");
     return data<SaksflytFeil>(
       { ok: false, feil: "Kunne ikke lagre endringen. Last inn siden på nytt og prøv igjen." },
       { status: feil.status },
