@@ -271,9 +271,6 @@ const handlingstabell: Partial<Record<KontrollsakSteg, readonly Sakshandling[]>>
       ],
       innsending: { handling: "endre_steg_dialog", steg: "POLITI" },
     },
-    avsluttMedResultat("feilutbetalingssak", "Registrer feilutbetalingssak", {
-      "strafferettsligVurdering.type": "FEILUTBETALINGSSAK_ORDINAER",
-    }),
     henlegg("strafferettsligVurdering.henleggelsesarsak", {
       "strafferettsligVurdering.type": "HENLAGT",
     }),
