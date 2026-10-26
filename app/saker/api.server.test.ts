@@ -519,3 +519,43 @@ describe("mapper-adaptere", () => {
     expect((feil as InstanceType<typeof BackendFeilException>).status).toBe(status);
   });
 });
+
+describe("hentSaksbehandlere", () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+    vi.unstubAllGlobals();
+  });
+
+  it("beholder kontrollenhet og ekstraflagg fra backend", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: true,
+        status: 200,
+        json: async () => [
+          {
+            navIdent: "Z111111",
+            navn: "Nora Nord",
+            enhet: "Kontroll Nord",
+            kontrollEnhetId: "hu424t",
+          },
+          {
+            navIdent: "Z222222",
+            navn: "Ekstra Testesen",
+            enhet: "Team Holmes",
+            kontrollEnhetId: null,
+            erEkstraSaksbehandler: true,
+          },
+        ],
+      }),
+    );
+
+    const { hentSaksbehandlere } = await import("./api.server");
+    const resultat = await hentSaksbehandlere("token");
+
+    expect(resultat).toMatchObject([
+      { navIdent: "Z111111", kontrollEnhetId: "hu424t" },
+      { navIdent: "Z222222", kontrollEnhetId: null, erEkstraSaksbehandler: true },
+    ]);
+  });
+});

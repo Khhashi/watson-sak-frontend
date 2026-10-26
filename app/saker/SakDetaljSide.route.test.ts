@@ -753,7 +753,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
   });
 
   it.each(["send_til_annen_enhet", "videresend_seksjon"])(
-    "beholder valgt mottaksenhet ved %s selv om ny ansvarlig har en annen enhet",
+    "setter valgt mottaksenhet og ny ansvarlig ved %s",
     async (handling) => {
       const kontrollsak = hentFordelingssaker(state())[0];
       const kontrollsakRef = getSaksreferanse(kontrollsak.id);
@@ -773,7 +773,7 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
 
       const formData = new FormData();
       formData.set("handling", handling);
-      formData.set("seksjon", "NORD");
+      formData.set("seksjon", "hu424t");
       formData.set("ansvarligNavIdent", "Z123456");
 
       await action({
@@ -785,10 +785,9 @@ describe("SakDetaljSide kontrollsak-runtime", () => {
       } as Route.ActionArgs);
 
       expect(kontrollsak.saksbehandlere.eier?.navIdent).toBe("Z123456");
-      expect(kontrollsak.saksbehandlere.eier?.enhet).not.toBe("NORD");
-      expect(kontrollsak.enhet).toBe("NORD");
-      expect(getSaksenhet(kontrollsak)).toBe("NORD");
-      expect(kontrollsak.saksbehandlere.opprettetAv.enhet).toBe("NORD");
+      expect(kontrollsak.enhet).toBe("hu424t");
+      expect(getSaksenhet(kontrollsak)).toBe("hu424t");
+      expect(kontrollsak.saksbehandlere.opprettetAv.enhet).toBe("hu424t");
       expect(hentHistorikk(testRequest, String(kontrollsak.id))[0]?.hendelsesType).toBe(
         "MOTTAKSENHET_ENDRET",
       );
@@ -1593,6 +1592,7 @@ describe("SakDetaljSide tilgangskontroll", () => {
   it("tillater send_til_annen_enhet for ikke-eier", async () => {
     const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
     const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+    kontrollsak.enhet = "ky153k";
     kontrollsak.saksbehandlere.eier = {
       navIdent: "Z111111",
       navn: "Annen Saksbehandler",
@@ -1601,7 +1601,7 @@ describe("SakDetaljSide tilgangskontroll", () => {
 
     const formData = new FormData();
     formData.set("handling", "send_til_annen_enhet");
-    formData.set("seksjon", "NORD");
+    formData.set("seksjon", "hu424t");
     formData.set("ansvarligNavIdent", "Z123456");
 
     const resultat = await action({
@@ -1613,6 +1613,33 @@ describe("SakDetaljSide tilgangskontroll", () => {
     } as Route.ActionArgs);
 
     expect(resultat).toMatchObject({ ok: true });
+  });
+
+  it("returnerer avvisning til dialogen når ny ansvarlig tilhører en annen enhet", async () => {
+    const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
+    const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+    kontrollsak.enhet = "ky153k";
+    const eierFør = kontrollsak.saksbehandlere.eier;
+
+    const formData = new FormData();
+    formData.set("handling", "send_til_annen_enhet");
+    formData.set("seksjon", "gu301n");
+    formData.set("ansvarligNavIdent", "Z123456");
+
+    const resultat = await action({
+      request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+        method: "POST",
+        body: formData,
+      }),
+      params: { sakId: kontrollsakRef },
+    } as Route.ActionArgs);
+
+    expect(resultat).toMatchObject({
+      data: { ok: false, feil: "Ny ansvarlig saksbehandler må tilhøre enheten saken sendes til" },
+      init: { status: 409 },
+    });
+    expect(kontrollsak.enhet).toBe("ky153k");
+    expect(kontrollsak.saksbehandlere.eier).toEqual(eierFør);
   });
 
   it.each([

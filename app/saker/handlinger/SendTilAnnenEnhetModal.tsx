@@ -23,6 +23,7 @@ import { useKodeverk } from "~/kodeverk/useKodeverk";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
 import type { KontrollsakSaksbehandler, KontrollsakSteg } from "~/saker/types.backend";
+import { kanMottaSakFraEnhet } from "./mottaksenhet";
 
 interface SendTilAnnenEnhetModalProps {
   sakId: string;
@@ -58,7 +59,7 @@ export function SendTilAnnenEnhetModal({
   åpen,
   onClose,
 }: SendTilAnnenEnhetModalProps) {
-  const fetcher = useFetcher<{ ok: boolean }>();
+  const fetcher = useFetcher<{ ok: boolean; feil?: string }>();
   const navigate = useNavigate();
   const kodeverk = useKodeverk();
   const saksreferanse = getSaksreferanse(sakId);
@@ -71,9 +72,13 @@ export function SendTilAnnenEnhetModal({
   const [bekreftetEnhet, setBekreftetEnhet] = useState<string | null>(null);
   const [feilmelding, setFeilmelding] = useState<string | null>(null);
   const kreverNyAnsvarlig = sakSteg !== "OPPRETTET";
-  const valgbareSaksbehandlere = saksbehandlerDetaljer.filter(
-    (saksbehandler) => saksbehandler.navIdent !== ansvarligSaksbehandler?.navIdent,
-  );
+  const valgbareSaksbehandlere = valgtEnhet
+    ? saksbehandlerDetaljer.filter(
+        (saksbehandler) =>
+          saksbehandler.navIdent !== ansvarligSaksbehandler?.navIdent &&
+          kanMottaSakFraEnhet(saksbehandler, valgtEnhet),
+      )
+    : [];
   const sendTilAnnenEnhetSkjema = useMemo(
     () =>
       z
@@ -121,7 +126,7 @@ export function SendTilAnnenEnhetModal({
       setSteg("suksess");
     } else {
       sporHendelse("send til annen enhet sending feilet");
-      setFeilmelding("Kunne ikke sende saken til annen enhet. Prøv igjen.");
+      setFeilmelding(fetcher.data?.feil ?? "Kunne ikke sende saken til annen enhet. Prøv igjen.");
       setSteg("bekreft");
     }
     submitPågår.current = false;
@@ -215,7 +220,10 @@ export function SendTilAnnenEnhetModal({
                 name={fields.seksjon.name}
                 id={fields.seksjon.id}
                 value={valgtEnhet}
-                onChange={(event) => setValgtEnhet(event.target.value)}
+                onChange={(event) => {
+                  setValgtEnhet(event.target.value);
+                  ansvarligNavIdent.change("");
+                }}
                 label="Ny enhet"
                 error={fields.seksjon.errors?.[0]}
               >
@@ -246,7 +254,8 @@ export function SendTilAnnenEnhetModal({
                     ? undefined
                     : "Valgfritt. Uten ny ansvarlig blir saken ufordelt i mottaksenheten."
                 }
-                placeholder="Søk etter saksbehandler"
+                placeholder={valgtEnhet ? "Søk etter saksbehandler" : "Velg enhet først"}
+                disabled={!valgtEnhet}
                 options={valgbareSaksbehandlere.map((saksbehandler) => ({
                   value: saksbehandler.navIdent,
                   label: `${saksbehandler.navn} (${saksbehandler.navIdent})`,
