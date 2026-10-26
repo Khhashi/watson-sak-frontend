@@ -1,9 +1,10 @@
 import { getFormProps, useForm, useInputControl } from "@conform-to/react";
 import { getZodConstraint, parseWithZod } from "@conform-to/zod/v4";
 import { PersonPencilIcon } from "@navikt/aksel-icons";
-import { BodyShort, Button, Modal, UNSAFE_Combobox, VStack } from "@navikt/ds-react";
+import { Alert, BodyShort, Button, Modal, UNSAFE_Combobox, VStack } from "@navikt/ds-react";
 import { useFetcher } from "react-router";
 import { z } from "zod";
+import { useModalInnsending } from "~/saker/handlinger/useModalInnsending";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
 import type { KontrollsakSaksbehandler } from "~/saker/types.backend";
@@ -28,6 +29,10 @@ export function OverforAnsvarligModal({
   const fetcher = useFetcher();
   const saksreferanse = getSaksreferanse(sakId);
 
+  const innsending = useModalInnsending(fetcher, () => {
+    form.reset();
+    onClose();
+  });
   const erSubmitting = fetcher.state !== "idle";
   const actionPath = RouteConfig.SAKER_DETALJ.replace(":sakId", saksreferanse);
 
@@ -43,12 +48,12 @@ export function OverforAnsvarligModal({
       event.preventDefault();
       formData.set("handling", "overfor_ansvarlig");
       fetcher.submit(formData, { method: "post", action: actionPath });
-      form.reset();
-      onClose();
+      innsending.markerSendt();
     },
   });
 
   function handleClose() {
+    innsending.nullstillFeil();
     form.reset();
     onClose();
   }
@@ -97,6 +102,7 @@ export function OverforAnsvarligModal({
               }}
               error={fields.navIdent.errors?.[0]}
             />
+            {innsending.feilmelding && <Alert variant="error">{innsending.feilmelding}</Alert>}
           </VStack>
         </Modal.Body>
         <Modal.Footer>

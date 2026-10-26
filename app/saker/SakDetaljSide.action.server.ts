@@ -20,12 +20,32 @@ export async function action({ request, params }: Route.ActionArgs) {
       ? mockAction(request, sakId, handling, formData)
       : backendAction(request, sakId, handling, formData);
 
-  if (!saksflythandlinger.has(handling)) return utfør();
+  if (!saksflythandlinger.has(handling)) {
+    try {
+      return await utfør();
+    } catch (feil) {
+      if (feil instanceof backendApi.BackendFeilException && feil.status === 409) {
+        return konfliktfeil(feil, handling);
+      }
+      throw feil;
+    }
+  }
   try {
     return await utfør();
   } catch (feil) {
     return saksflytfeil(feil);
   }
+}
+
+const skjemahandlinger = new Set(["rediger_saksinformasjon", "koble_sak", "fjern_kobling"]);
+
+/** 409 er en avvist regel, ikke en serverfeil. Meldingen fra backend sier hva som er galt. */
+function konfliktfeil(feil: backendApi.BackendFeilException, handling: string) {
+  // Saksinformasjonsskjemaet leser feil som et kart fra felt til meldinger.
+  if (skjemahandlinger.has(handling)) {
+    return data({ ok: false, feil: { skjema: [feil.message] } }, { status: 409 });
+  }
+  return data<SaksflytFeil>({ ok: false, feil: feil.message }, { status: 409 });
 }
 
 /** Handlingene fra saksflyt-modalen. Feil returneres slik at modalen beholder verdiene. */
@@ -35,14 +55,12 @@ type SaksflytFeil = { ok: false; feil: string };
 
 function saksflytfeil(feil: unknown) {
   if (feil instanceof Response) throw feil;
-  const konflikt =
-    "Endringen ble avvist. Saken kan være endret av noen andre. Last inn siden på nytt og prøv igjen.";
   if (feil instanceof backendApi.BackendFeilException) {
-    const melding =
-      feil.status === 409
-        ? konflikt
-        : "Kunne ikke lagre endringen. Last inn siden på nytt og prøv igjen.";
-    return data<SaksflytFeil>({ ok: false, feil: melding }, { status: feil.status });
+    if (feil.status === 409) return konfliktfeil(feil, "");
+    return data<SaksflytFeil>(
+      { ok: false, feil: "Kunne ikke lagre endringen. Last inn siden på nytt og prøv igjen." },
+      { status: feil.status },
+    );
   }
   if (
     feil &&

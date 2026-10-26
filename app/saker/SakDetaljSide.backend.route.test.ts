@@ -18,6 +18,7 @@ const mockEndreSteg = vi.fn();
 const mockTildelKontrollsak = vi.fn();
 const mockFristillKontrollsak = vi.fn();
 const mockVideresend = vi.fn();
+const mockRedigerKontrollsak = vi.fn();
 const mockHentTillatteHandlinger = vi.fn().mockResolvedValue({
   versjon: 1,
   tilstand: { steg: "OPPRETTET", status: null, statusFørBero: null, resultat: null, ytelser: [] },
@@ -78,6 +79,7 @@ vi.mock("~/saker/api.server", () => ({
   tildelKontrollsak: mockTildelKontrollsak,
   fristillKontrollsak: mockFristillKontrollsak,
   videresend: mockVideresend,
+  redigerKontrollsak: mockRedigerKontrollsak,
   søkKontrollsaker: mockSøkKontrollsaker,
 }));
 
@@ -663,7 +665,76 @@ describe("SakDetaljSide loader — backend-sti", () => {
     } as Parameters<typeof action>[0]);
 
     expect(resultat).toMatchObject({
-      data: { ok: false, feil: expect.stringContaining("Last inn siden på nytt") },
+      data: { ok: false, feil: "Versjonskonflikt" },
+      init: { status: 409 },
+    });
+  });
+
+  it("returnerer 409 fra backend som feilmelding også utenfor saksflyt-modalen", async () => {
+    mockHentInnloggetBruker.mockResolvedValue({
+      preferredUsername: "z999999",
+      name: "Saks Behandlersen",
+      navIdent: "Z999999",
+      enhet: "4812",
+      erLeder: true,
+    });
+    mockHentKontrollsak.mockResolvedValue({
+      ...grunnleggendeSak,
+      saksbehandlere: {
+        ...grunnleggendeSak.saksbehandlere,
+        eier: { navIdent: "Z999999", navn: "Saksbehandler", enhet: "4812" },
+      },
+    });
+    mockVideresend.mockRejectedValueOnce(
+      new MockBackendFeilException(409, "Saken må tas ut av bero før stegbytte"),
+    );
+    const formData = new FormData();
+    formData.set("handling", "videresend_seksjon");
+    formData.set("seksjon", "NORD");
+    const { action } = await import("./SakDetaljSide.server");
+
+    const resultat = await action({
+      request: new Request("http://localhost/saker/1", { method: "POST", body: formData }),
+      params: { sakId: "1" },
+    } as Parameters<typeof action>[0]);
+
+    expect(resultat).toMatchObject({
+      data: { ok: false, feil: "Saken må tas ut av bero før stegbytte" },
+      init: { status: 409 },
+    });
+  });
+
+  it("returnerer 409 som skjemafeil for rediger_saksinformasjon", async () => {
+    mockHentInnloggetBruker.mockResolvedValue({
+      preferredUsername: "z999999",
+      name: "Saks Behandlersen",
+      navIdent: "Z999999",
+      enhet: "4812",
+      erLeder: true,
+    });
+    mockHentKontrollsak.mockResolvedValue({
+      ...grunnleggendeSak,
+      saksbehandlere: {
+        ...grunnleggendeSak.saksbehandlere,
+        eier: { navIdent: "Z999999", navn: "Saksbehandler", enhet: "4812" },
+      },
+    });
+    mockRedigerKontrollsak.mockRejectedValueOnce(
+      new MockBackendFeilException(409, "Avsluttet sak kan ikke endres"),
+    );
+    const formData = new FormData();
+    formData.set("handling", "rediger_saksinformasjon");
+    formData.set("kategori", "ANNET");
+    formData.set("kilde", "ANONYM_TIPS");
+    const { action } = await import("./SakDetaljSide.server");
+
+    const resultat = await action({
+      request: new Request("http://localhost/saker/1", { method: "POST", body: formData }),
+      params: { sakId: "1" },
+    } as Parameters<typeof action>[0]);
+
+    expect(resultat).toMatchObject({
+      data: { ok: false, feil: { skjema: ["Avsluttet sak kan ikke endres"] } },
       init: { status: 409 },
     });
   });
