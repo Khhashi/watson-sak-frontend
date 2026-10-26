@@ -78,6 +78,7 @@ export const henleggelsesarsakEtiketter = {
   IKKE_TILSTREKKELIG_SKYLD: "Ikke tilstrekkelig skyld",
   SAK_PABEGYNT_ELLER_OVERTATT_AV_ANDRE: "Sak påbegynt eller overtatt av andre",
   IKKE_PRIORITERT: "Ikke prioritert",
+  KONTROLLNOTAT: "Kontrollnotat",
   NAY_MANGLER_I_SAKSBEHANDLINGEN: "NAY: Mangler i saksbehandlingen",
   NFP_MANGLER_I_SAKSBEHANDLINGEN: "NFP: Mangler i saksbehandlingen",
   NAY_MANGLER_VED_BEREGNINGSSKJEMA: "NAY: Mangler ved beregningsskjema",
