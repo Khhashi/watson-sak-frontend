@@ -87,9 +87,8 @@ describe("ufordelte-saker", () => {
     ];
 
     expect(lagUfordelteOppsummering(saker, new Date("2026-03-23"))).toEqual({
-      antallTekst: "3 ufordelte saker",
-      eldsteTekst: "Eldste sak har ligget i 69 dager",
-      ytelserTekst: "Gjelder ytelsene Barnetrygd, Dagpenger og Sykepenger",
+      antallSaker: 3,
+      eldsteLiggetidDager: 69,
     });
   });
 

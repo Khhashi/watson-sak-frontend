@@ -1,7 +1,7 @@
-import { BodyShort, Box, Button, Detail, Heading, HGrid, HStack, VStack } from "@navikt/ds-react";
-import { ChevronRightCircleIcon } from "@navikt/aksel-icons";
+import { BodyShort, Box, Button, Heading, HGrid, HStack, VStack } from "@navikt/ds-react";
 import { useState, type ReactNode } from "react";
 import { Link as RouterLink } from "react-router";
+import { Nøkkeltallkort } from "~/komponenter/Nøkkeltallkort";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
 import { ALLE_STEG } from "~/saker/steg";
@@ -438,63 +438,21 @@ function NøkkeltallKort({
   tall: Statistikk["nøkkeltall"][number];
   data: Statistikk;
 }) {
-  const lenke = lenkeForNøkkeltall(tall, data);
   const farge =
     tall.label === "Venter på andre"
       ? "meta-purple"
       : tall.label === "Saksbehandlingstid"
         ? "info"
         : tall.tone;
-  const kort = (
-    <Box
-      background="default"
-      data-color={farge}
-      borderColor="neutral-subtle"
-      borderWidth="1"
-      borderRadius="8"
-      paddingInline="space-16"
-      paddingBlock="space-12"
-      style={{ borderTopColor: `var(--ax-border-${farge})` }}
-      className={`relative h-full border-t-4 ${
-        lenke ? "transition-colors hover:border-ax-border-accent" : ""
-      }`}
-    >
-      <VStack gap="space-12">
-        <Heading
-          as="p"
-          size="medium"
-          textColor="subtle"
-          data-color={farge}
-          style={lenke ? { maxWidth: "calc(100% - var(--ax-space-32))" } : undefined}
-        >
-          {tall.verdi}
-        </Heading>
-        <div>
-          <Detail weight="semibold" data-color="neutral">
-            {tall.label}
-          </Detail>
-          <Detail textColor="subtle" data-color="neutral">
-            {tall.forklaring}
-          </Detail>
-        </div>
-      </VStack>
-      {lenke && (
-        <span className="absolute top-[var(--ax-space-12)] right-[var(--ax-space-16)] text-ax-text-neutral">
-          <ChevronRightCircleIcon fontSize="1.5rem" aria-hidden="true" />
-        </span>
-      )}
-    </Box>
-  );
 
-  return lenke ? (
-    <RouterLink
-      to={lenke}
-      className="block h-full rounded-[var(--ax-radius-8)] text-ax-text-neutral no-underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-ax-border-focus"
-    >
-      {kort}
-    </RouterLink>
-  ) : (
-    kort
+  return (
+    <Nøkkeltallkort
+      verdi={tall.verdi}
+      etikett={tall.label}
+      forklaring={tall.forklaring}
+      farge={farge}
+      lenke={lenkeForNøkkeltall(tall, data)}
+    />
   );
 }
 

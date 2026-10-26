@@ -1,10 +1,11 @@
-import { BodyShort, Heading, HStack, LocalAlert, Pagination, VStack } from "@navikt/ds-react";
-import { useMemo, useState, type ReactNode } from "react";
+import { Heading, HGrid, HStack, LocalAlert, Pagination, VStack } from "@navikt/ds-react";
+import { useMemo, useState } from "react";
 import { useSearchParams } from "react-router";
 import { sporHendelse } from "~/analytics/analytics";
 import { ChipsFiltergruppe } from "~/filtre/ChipsFiltergruppe";
 import { Filterpanel } from "~/filtre/Filterpanel";
 import { useFilterParam } from "~/filtre/useFilterParam";
+import { Nøkkeltallkort } from "~/komponenter/Nøkkeltallkort";
 import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
 import { RouteConfig } from "~/routeConfig";
 import { TildelSaksbehandlerModal } from "~/saker/handlinger/TildelSaksbehandlerModal";
@@ -131,11 +132,20 @@ export function UfordelteSakerInnhold({
         </Heading>
 
         {harSaker && (
-          <div className="grid max-w-4xl gap-4 md:grid-cols-3">
-            <Oppsummeringskort tittel="Antall">{oppsummering.antallTekst}</Oppsummeringskort>
-            <Oppsummeringskort tittel="Liggetid">{oppsummering.eldsteTekst}</Oppsummeringskort>
-            <Oppsummeringskort tittel="Ytelser">{oppsummering.ytelserTekst}</Oppsummeringskort>
-          </div>
+          <HGrid columns={{ xs: 1, sm: "repeat(2, 15rem)" }} gap="space-12">
+            <Nøkkeltallkort
+              verdi={oppsummering.antallSaker}
+              etikett="Ikke fordelt"
+              forklaring="antall saker"
+              farge="accent"
+            />
+            <Nøkkeltallkort
+              verdi={oppsummering.eldsteLiggetidDager}
+              etikett="Liggetid for eldste sak"
+              forklaring="antall dager"
+              farge="warning"
+            />
+          </HGrid>
         )}
 
         {!harSaker ? (
@@ -257,17 +267,6 @@ export function UfordelteSakerInnhold({
         onClose={() => setSakSomTildeles(null)}
       />
     </section>
-  );
-}
-
-function Oppsummeringskort({ tittel, children }: { tittel: string; children: ReactNode }) {
-  return (
-    <div className="rounded-2xl border border-ax-border-neutral-subtle bg-ax-bg-default p-5">
-      <BodyShort size="small" className="mb-2 text-ax-text-neutral-subtle">
-        {tittel}
-      </BodyShort>
-      <BodyShort className="font-medium text-ax-text-neutral">{children}</BodyShort>
-    </div>
   );
 }
 

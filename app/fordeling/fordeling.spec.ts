@@ -11,13 +11,8 @@ test.describe("Ufordelte saker", () => {
 
   test("viser nytt hovedinnhold for ufordelte saker", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Ufordelte saker" })).toBeVisible();
-    await expect(page.getByText("13 ufordelte saker")).toBeVisible();
-    await expect(page.getByText(/Eldste sak har ligget i \d+ dager/)).toBeVisible();
-    await expect(
-      page.getByText(
-        "Gjelder ytelsene Arbeidsavklaringspenger, Barnetrygd, Dagpenger, Foreldrepenger og Sykepenger",
-      ),
-    ).toBeVisible();
+    await expect(page.getByText("Ikke fordelt")).toBeVisible();
+    await expect(page.getByText("Liggetid for eldste sak")).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Kategori" })).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Misbrukstype" })).toBeVisible();
     await expect(page.getByRole("columnheader", { name: "Opprettet" })).toBeVisible();
