@@ -78,10 +78,50 @@ describe("SaksinformasjonKort anmeldelsesfelter", () => {
 
     expect(screen.getByRole("heading", { name: "Anmeldelse" })).toBeDefined();
     expect((screen.getByLabelText("Anmeldt beløp (kr)") as HTMLInputElement).value).toBe("12 500");
-    const politidistrikt = screen.getByLabelText("Politidistrikt") as HTMLInputElement;
+    const politidistrikt = screen.getByLabelText("Politidistrikt") as HTMLSelectElement;
+    expect(politidistrikt.tagName).toBe("SELECT");
     expect(politidistrikt.value).toBe("Øst politidistrikt");
     const saksreferanse = screen.getByLabelText("Politiets saksreferanse") as HTMLInputElement;
     expect(saksreferanse.value).toBe("2026/12345");
+  });
+
+  it("beholder saksreferansen når politidistrikt og beløp endres", () => {
+    renderKort(lagKontrollsak());
+
+    fireEvent.click(screen.getByRole("button", { name: "Endre saksinformasjon" }));
+
+    fireEvent.change(screen.getByLabelText("Politidistrikt"), {
+      target: { value: "Oslo politidistrikt" },
+    });
+    fireEvent.change(screen.getByLabelText("Anmeldt beløp (kr)"), {
+      target: { value: "15000" },
+    });
+
+    expect((screen.getByLabelText("Politidistrikt") as HTMLSelectElement).value).toBe(
+      "Oslo politidistrikt",
+    );
+    expect((screen.getByLabelText("Politiets saksreferanse") as HTMLInputElement).value).toBe(
+      "2026/12345",
+    );
+  });
+
+  it("krever nytt valg når lagret politidistrikt ikke finnes i listen", () => {
+    renderKort(
+      lagKontrollsak({
+        resultat: {
+          strafferettsligVurdering: {
+            type: "ANMELDT",
+            anmeldtBelop: 12500,
+            politidistrikt: "Østlandet",
+          },
+        },
+      }),
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Endre saksinformasjon" }));
+
+    const politidistrikt = screen.getByLabelText("Politidistrikt") as HTMLSelectElement;
+    expect(politidistrikt.value).toBe("");
   });
 
   it.each([
