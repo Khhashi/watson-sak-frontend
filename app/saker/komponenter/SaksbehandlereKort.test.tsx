@@ -671,6 +671,27 @@ describe("SaksbehandlereKort", () => {
 
     expect(screen.queryByRole("button", { name: "Fjern" })).toBeNull();
     expect(screen.queryByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Endre enhet" })).toBeNull();
+  });
+
+  it("lar leder endre enhet uten å være ansvarlig", async () => {
+    useInnloggetBrukerMock.mockReturnValue({
+      navIdent: "Z999999",
+      name: "Leder Lederesen",
+      enhet: "4812",
+      erLeder: true,
+    });
+
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({ steg: "UTREDNING" })}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Endre enhet" })).toBeDefined();
   });
 
   it.each([false, true])("skjuler Fjern utenfor Opprettet når erLeder er %s", async (erLeder) => {

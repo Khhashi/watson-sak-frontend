@@ -107,7 +107,7 @@ export function SaksbehandlereKort({
     tildelMegFetcher.submit({ handling: "TILDEL_MEG" }, { method: "post", action: sakPath });
   }
 
-  // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler.
+  // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler og enhet.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
   const kanFristilleAnsvarlig = kanEndreAnsvarlig && sak.steg === "OPPRETTET";
   const kanEndreStatus =
@@ -209,7 +209,7 @@ export function SaksbehandlereKort({
                 {enhetsnavn || "Ingen"}
               </BodyShort>
 
-              {kanEndreTilgang && (
+              {kanEndreAnsvarlig && (
                 <ResponsivEndreKnapp
                   ariaLabel="Endre enhet"
                   onClick={() => setVisSendTilAnnenEnhetModal(true)}
