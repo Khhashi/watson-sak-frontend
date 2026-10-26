@@ -280,6 +280,8 @@ const kontrollsakSaksbehandlerSchema = z.object({
   navIdent: z.string(),
   navn: z.string(),
   enhet: z.string().nullable(),
+  kontrollEnhetId: z.string().nullable().optional(),
+  erEkstraSaksbehandler: z.boolean().optional(),
 });
 
 export const oppgaveKortSchema = z.object({

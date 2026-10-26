@@ -445,7 +445,12 @@ describe("SaksbehandlereKort", () => {
         })}
         saksbehandlerDetaljer={[
           lagSaksbehandler({ enhet: "NAV Øst" }),
-          lagSaksbehandler({ navIdent: "Z999999", navn: "Ny Saksbehandler", enhet: "NAV Vest" }),
+          lagSaksbehandler({
+            navIdent: "Z999999",
+            navn: "Ny Saksbehandler",
+            enhet: "NAV Vest",
+            kontrollEnhetId: "hu424t",
+          }),
         ]}
         ansvarligSaksbehandler={lagSaksbehandler({ enhet: "NAV Øst" })}
       />,
@@ -541,7 +546,11 @@ describe("SaksbehandlereKort", () => {
         sak={lagKontrollsak({ steg: "OPPRETTET" })}
         saksbehandlerDetaljer={[
           lagSaksbehandler(),
-          lagSaksbehandler({ navIdent: "Z888888", navn: "Ny Saksbehandler" }),
+          lagSaksbehandler({
+            navIdent: "Z888888",
+            navn: "Ny Saksbehandler",
+            kontrollEnhetId: "hu424t",
+          }),
         ]}
         ansvarligSaksbehandler={lagSaksbehandler({
           navIdent: "Z123456",

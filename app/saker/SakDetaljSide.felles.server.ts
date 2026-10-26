@@ -242,12 +242,16 @@ export function lagreMockResultat(sak: KontrollsakResponse, resultat: LagreResul
 export function finnSaksbehandlerDetalj(
   saksbehandlerDetaljer: KontrollsakSaksbehandler[],
   navIdent: string,
-) {
-  return (
-    saksbehandlerDetaljer.find(
-      (saksbehandler) => saksbehandler.navIdent === navIdent || saksbehandler.navn === navIdent,
-    ) ?? null
+): KontrollsakSaksbehandler | null {
+  const saksbehandler = saksbehandlerDetaljer.find(
+    (kandidat) => kandidat.navIdent === navIdent || kandidat.navn === navIdent,
   );
+  if (!saksbehandler) return null;
+  return {
+    navIdent: saksbehandler.navIdent,
+    navn: saksbehandler.navn,
+    enhet: saksbehandler.enhet,
+  };
 }
 
 export function lagTidspunktFraSkjema(dato: string, tid: string): string {

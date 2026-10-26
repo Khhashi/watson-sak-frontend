@@ -86,14 +86,16 @@ const saksbehandlerOverstyringer: Partial<
   },
 };
 
-export const mockSaksbehandlerDetaljer: KontrollsakSaksbehandler[] = saksbehandlerNavn.map(
-  (navn, indeks) =>
-    saksbehandlerOverstyringer[navn] ?? {
-      navn,
-      navIdent: `Z${String(indeks + 300000).padStart(6, "0")}`,
-      enhet: saksbehandlerEnheter[indeks % saksbehandlerEnheter.length],
-    },
-);
+export const mockSaksbehandlerDetaljer: KontrollsakSaksbehandler[] = saksbehandlerNavn
+  .map(
+    (navn, indeks) =>
+      saksbehandlerOverstyringer[navn] ?? {
+        navn,
+        navIdent: `Z${String(indeks + 300000).padStart(6, "0")}`,
+        enhet: saksbehandlerEnheter[indeks % saksbehandlerEnheter.length],
+      },
+  )
+  .map((saksbehandler) => ({ ...saksbehandler, kontrollEnhetId: saksbehandler.enhet }));
 
 export const mockSaksbehandlere = mockSaksbehandlerDetaljer.map(
   (saksbehandler) => saksbehandler.navn,

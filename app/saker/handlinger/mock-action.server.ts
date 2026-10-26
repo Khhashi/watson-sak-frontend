@@ -23,6 +23,7 @@ import { arkiverDokument } from "~/testing/mock-store/dokumenter.server";
 import { hentMockState } from "~/testing/mock-store/session.server";
 import { byggLagreResultatRequest, validerResultatFeltNavn } from "../handlinger/resultat-request";
 import { erAktivSakKontrollsak } from "../handlinger/tilgjengeligeHandlinger";
+import { kanMottaSakFraEnhet } from "./mottaksenhet";
 import {
   erGyldigMockStegovergang,
   hentMockTillatteHandlinger,
@@ -311,6 +312,18 @@ export async function mockAction(
       }
       if (nyAnsvarlig && nyAnsvarlig.navIdent === sak.saksbehandlere.eier?.navIdent) {
         throw data("Velg en annen ansvarlig saksbehandler", { status: 409 });
+      }
+      if (
+        ansvarligNavIdent &&
+        !mockSaksbehandlerDetaljer.some(
+          (saksbehandler) =>
+            saksbehandler.navIdent === nyAnsvarlig?.navIdent &&
+            kanMottaSakFraEnhet(saksbehandler, nySeksjon),
+        )
+      ) {
+        throw data("Ny ansvarlig saksbehandler må tilhøre enheten saken sendes til", {
+          status: 409,
+        });
       }
 
       sak.enhet = nySeksjon;
