@@ -275,10 +275,10 @@ describe("SaksflytModal", () => {
     expect(new Set(radionavn).size).toBe(1);
     klikk("Neste");
     expect(screen.getByText("Velg resultat")).toBeDefined();
-    fireEvent.click(screen.getByRole("radio", { name: "Domfellelse" }));
+    fireEvent.click(screen.getByRole("radio", { name: "Domfelt" }));
     klikk("Neste");
 
-    expect(await screen.findByRole("heading", { name: "Domfellelse" })).toBeDefined();
+    expect(await screen.findByRole("heading", { name: "Domfelt" })).toBeDefined();
     expect(screen.getByText("Tilgang til dokumenter og underlag")).toBeDefined();
     expect(screen.getByRole("radio", { name: "Nei" })).toHaveProperty("checked", true);
     expect(screen.getByRole("radio", { name: "Ingen strafferabatt" })).toHaveProperty(

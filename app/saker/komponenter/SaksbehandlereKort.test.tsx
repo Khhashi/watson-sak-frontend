@@ -231,7 +231,7 @@ describe("SaksbehandlereKort", () => {
     );
 
     expect(screen.getByText("Avsluttet")).toBeDefined();
-    expect(screen.getByText("Domfellelse")).toBeDefined();
+    expect(screen.getByText("Domfelt")).toBeDefined();
     expect(screen.getByText("Ubetinget fengsel")).toBeDefined();
     expect(screen.getByText("14 dager")).toBeDefined();
     expect(screen.getByText("Domfelt beløp")).toBeDefined();

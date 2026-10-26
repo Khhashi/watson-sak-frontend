@@ -68,7 +68,7 @@ export const resultatEtiketter: Record<ResultatType, string> = {
   BOT: "Bot",
   PATALEUNNLATELSE: "Påtaleunnlatelse",
   FRIFINNELSE: "Frifinnelse",
-  DOMFELLELSE: "Domfellelse",
+  DOMFELLELSE: "Domfelt",
 };
 
 export const henleggelsesarsakEtiketter = {
