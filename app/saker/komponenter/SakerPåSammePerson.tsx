@@ -43,9 +43,10 @@ import {
   formaterBelop,
   getPersonIdent,
   getKildeText,
-  getStegOgStatusTekst,
-  getYtelseTyper,
+  formaterSteg,
+  STEG_FARGE,
   hentStatusTag,
+  getYtelseTyper,
   formaterYtelsePeriode,
 } from "~/saker/visning";
 
@@ -253,7 +254,6 @@ function SakKort({
   const detaljerId = useId();
   const kodeverk = useKodeverk();
   const saksreferanse = getSaksreferanse(sak.id);
-  const stegOgStatusTekst = getStegOgStatusTekst(sak);
   const statusTag = hentStatusTag(sak);
   const enhetskode = getSaksenhet(sak);
   const enhet = enhetskode ? finnEnhetsnavn(kodeverk.enheter, enhetskode) : "Ukjent";
@@ -286,13 +286,13 @@ function SakKort({
               <BodyShort size="small">
                 Saksbehandler: <strong>{storFørsteBokstavPerOrd(saksbehandler)}</strong>
               </BodyShort>
-              {sak.status || sak.steg === "AVSLUTTET" ? (
+              {sak.steg === "AVSLUTTET" ? (
                 <AvkortetTag variant="moderate" data-color={statusTag.farge} size="small">
                   {statusTag.tekst}
                 </AvkortetTag>
               ) : (
-                <AvkortetTag variant="moderate" data-color="success" size="small">
-                  {stegOgStatusTekst}
+                <AvkortetTag variant="moderate" data-color={STEG_FARGE} size="small">
+                  {formaterSteg(sak.steg)}
                 </AvkortetTag>
               )}
             </HStack>

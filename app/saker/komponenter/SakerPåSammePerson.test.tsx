@@ -116,10 +116,13 @@ describe("SakerPåSammePerson", () => {
     expect(screen.getByRole("button", { name: "Gå til sak" })).toBeDefined();
   });
 
-  it("viser sammendrag for flere saker", async () => {
+  it("viser steget og ikke statusen for sakene", async () => {
     await renderMedRouter(
       <SakerPåSammePerson
-        saker={[lagKontrollsak("203"), lagKontrollsak("204", { status: "VENTER_PA_VEDTAK" })]}
+        saker={[
+          lagKontrollsak("203"),
+          lagKontrollsak("204", { steg: "STRAFFERETTSLIG_VURDERING", status: "VENTER_PA_VEDTAK" }),
+        ]}
         gjeldendeSak={lagKontrollsak("105")}
         innloggetNavIdent="Z999999"
       />,
@@ -127,7 +130,26 @@ describe("SakerPåSammePerson", () => {
 
     expect(screen.getByText((_, element) => element?.textContent === "Saksid: 203")).toBeDefined();
     expect(screen.getByText((_, element) => element?.textContent === "Saksid: 204")).toBeDefined();
-    expect(screen.getByText("Venter på vedtak")).toBeDefined();
+    expect(screen.getByText("Utredning")).toBeDefined();
+    expect(screen.queryByText("Venter på vedtak")).toBeNull();
+  });
+
+  it("viser resultatet for avsluttede saker", async () => {
+    await renderMedRouter(
+      <SakerPåSammePerson
+        saker={[
+          lagKontrollsak("203", {
+            steg: "AVSLUTTET",
+            resultat: { utredning: { type: "HENLAGT" } } as KontrollsakResponse["resultat"],
+          }),
+        ]}
+        gjeldendeSak={lagKontrollsak("105")}
+        innloggetNavIdent="Z999999"
+      />,
+    );
+
+    expect(screen.getByText("Henlagt")).toBeDefined();
+    expect(screen.queryByText("Avsluttet")).toBeNull();
   });
 
   it("viser saksfeltene i utvidet visning", async () => {
