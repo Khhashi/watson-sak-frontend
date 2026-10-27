@@ -11,7 +11,7 @@ import { SaksbehandlereKort } from "./SaksbehandlereKort";
 
 const submitMock = vi.fn();
 const navigateMock = vi.fn();
-let fetcherData: { ok: boolean } | undefined;
+let fetcherData: { ok: boolean; feil?: string } | undefined;
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
@@ -733,6 +733,28 @@ describe("SaksbehandlereKort", () => {
       );
     },
   );
+
+  it("viser feilmeldingen når backend avviser fristilling", async () => {
+    fetcherData = {
+      ok: false,
+      feil: "Ansvarlig saksbehandler kan bare fjernes i steget Opprettet eller Strafferettslig vurdering",
+    };
+
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={true}
+        sak={lagKontrollsak({ steg: "STRAFFERETTSLIG_VURDERING" })}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Ansvarlig saksbehandler kan bare fjernes i steget Opprettet eller Strafferettslig vurdering",
+      ),
+    ).toBeDefined();
+  });
 
   it("viser Tildel meg for ufordelt sak i bero", async () => {
     await renderMedRouter(

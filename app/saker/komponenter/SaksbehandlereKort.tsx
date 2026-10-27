@@ -1,5 +1,15 @@
 import { PersonPencilIcon, PersonPlusIcon, XMarkIcon } from "@navikt/aksel-icons";
-import { BodyShort, Box, Button, Detail, Heading, HStack, Tooltip, VStack } from "@navikt/ds-react";
+import {
+  Alert,
+  BodyShort,
+  Box,
+  Button,
+  Detail,
+  Heading,
+  HStack,
+  Tooltip,
+  VStack,
+} from "@navikt/ds-react";
 import { useState } from "react";
 import { useFetcher } from "react-router";
 import { useInnloggetBruker } from "~/auth/innlogget-bruker";
@@ -112,6 +122,13 @@ export function SaksbehandlereKort({
   // Fristilling er tillatt uansett arbeidsstatus, også når saken venter eller er i bero.
   const kanFristilleAnsvarlig =
     stegregler.kanFristilleAnsvarlig && (erEier || innloggetBruker.erLeder);
+  // Backend avviser fristilling med 409, og action returnerer { ok: false, feil } i stedet for å kaste.
+  const fristillFeil =
+    fristillFetcher.state === "idle" &&
+    fristillFetcher.data?.ok === false &&
+    typeof fristillFetcher.data.feil === "string"
+      ? fristillFetcher.data.feil
+      : null;
   const kanEndreStatus =
     erEier && tillatteHandlinger?.handlinger.some((handling) => handling.type === "ENDRE_STATUS");
   const kanEndreSteg =
@@ -263,6 +280,12 @@ export function SaksbehandlereKort({
               <BodyShort className="text-ax-text-neutral-subtle mb-2">
                 Ingen ansvarlig saksbehandler satt.
               </BodyShort>
+            )}
+
+            {fristillFeil && (
+              <Alert variant="error" size="small">
+                {fristillFeil}
+              </Alert>
             )}
 
             {/* En fristilt sak kan ligge i bero eller vente på informasjon og må likevel kunne tas. */}
