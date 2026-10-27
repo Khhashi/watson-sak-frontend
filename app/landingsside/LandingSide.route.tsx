@@ -9,6 +9,7 @@ import { useVarsler, useRefreshVarsler } from "~/varsler/bruk-varsler";
 import type { loader } from "./loader.server";
 import { SisteVarsler } from "./komponenter/SisteVarsler";
 import { FlyttFraAccessBanner } from "./komponenter/FlyttFraAccessBanner";
+import { BackendUtilgjengeligMelding } from "~/komponenter/BackendUtilgjengeligMelding";
 import { Velkomst } from "./komponenter/Velkomst";
 import { SistAktiveSakerOversikt } from "./komponenter/SistAktiveSakerOversikt";
 
@@ -35,6 +36,7 @@ export default function LandingSide() {
     <>
       <MiljøtilpassetTittel>Oversikt – Watson Sak</MiljøtilpassetTittel>
       <VStack gap="space-12" className="mt-4 mb-8">
+        {loaderData.saksdataUtilgjengelig && <BackendUtilgjengeligMelding />}
         {preferences.visVelkomstmelding ? (
           <Velkomst oppsummering={loaderData.velkomstOppsummering} />
         ) : null}
@@ -54,7 +56,7 @@ export default function LandingSide() {
 
         {loaderData.type === "leder" ? (
           <LederOversikt statistikk={loaderData.statistikk} />
-        ) : (
+        ) : loaderData.saksdataUtilgjengelig ? null : (
           <SistAktiveSakerOversikt saker={loaderData.mineSaker} />
         )}
       </VStack>

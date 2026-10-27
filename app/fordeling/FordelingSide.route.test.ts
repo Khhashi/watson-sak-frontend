@@ -265,6 +265,22 @@ describe("FordelingSide loader", () => {
     expect(resultat.saker.map((sak) => sak.stegKode)).toEqual(["OPPRETTET"]);
   });
 
+  it("returnerer utilgjengelig tilstand og ingen saker når tilgangssjekken feiler", async () => {
+    testState.skalBrukeMockdata = false;
+    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
+    vi.mocked(hentKontrollsakerForFordeling).mockRejectedValue(new BackendUtilgjengeligError());
+
+    const { loader } = await import("./FordelingSide.route");
+    const resultat = await loader({
+      request: new Request("http://localhost/fordeling"),
+      params: {},
+      context: {},
+    } as Route.LoaderArgs);
+
+    expect("saksdataUtilgjengelig" in resultat && resultat.saksdataUtilgjengelig).toBe(true);
+    expect(resultat.saker).toEqual([]);
+  });
+
   it("feiler tydelig når innlogget bruker ikke kan knyttes til en konfigurert enhet", async () => {
     testState.skalBrukeMockdata = false;
     hentInnloggetBrukerMock.mockResolvedValueOnce({

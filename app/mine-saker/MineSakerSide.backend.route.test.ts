@@ -133,6 +133,22 @@ describe("MineSakerSide loader — backend-sti", () => {
     expect(JSON.stringify(mockHentKontrollsaker.mock.calls)).not.toContain("Z999999");
   }, 15000);
 
+  it("returnerer utilgjengelig tilstand og ingen saker når tilgangssjekken feiler", async () => {
+    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
+    mockHentKontrollsaker.mockRejectedValue(new BackendUtilgjengeligError());
+    const { loader } = await import("./MineSakerSide.route");
+
+    const result = await loader({
+      request: new Request("http://localhost/mine-saker"),
+      params: {},
+      context: {},
+    } as Parameters<typeof loader>[0]);
+
+    expect(result.saksdataUtilgjengelig).toBe(true);
+    expect(result.saker).toEqual([]);
+    expect(result.deltMedSaker).toEqual([]);
+  });
+
   it("ekskluderer egne saker fra deltMedSaker", async () => {
     const lagSakMedEier = (id: number, eierNavIdent: string) => ({
       id,

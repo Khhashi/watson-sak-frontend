@@ -1,6 +1,7 @@
 import { Heading, HStack, Pagination, VStack } from "@navikt/ds-react";
 import { useMemo } from "react";
 import { useSearchParams } from "react-router";
+import { BackendUtilgjengeligMelding } from "~/komponenter/BackendUtilgjengeligMelding";
 import { sporHendelse } from "~/analytics/analytics";
 import { ChipsFiltergruppe } from "~/filtre/ChipsFiltergruppe";
 import { Filterpanel } from "~/filtre/Filterpanel";
@@ -42,6 +43,7 @@ type Props = {
     steg: KontrollsakSteg[];
     status: (KontrollsakStatus | "INGEN")[];
   };
+  saksdataUtilgjengelig?: boolean;
 };
 
 export function MineSakerInnhold({
@@ -50,6 +52,7 @@ export function MineSakerInnhold({
   detaljSti,
   filterAlternativer,
   aktivtFilter,
+  saksdataUtilgjengelig = false,
 }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -123,61 +126,65 @@ export function MineSakerInnhold({
           Mine saker
         </Heading>
 
-        <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
-          <div className="min-w-0 flex-1 xl:order-first">
-            <AntallTreffEtikett antall={sorterteSaker.length} />
-            <div className="overflow-x-auto [&_table]:w-full">
-              <Saksliste
-                rader={paginerteSaker.elementer.map((sak) =>
-                  mapKontrollsakTilSakslisteRad(sak, detaljSti),
-                )}
-                tomTekst={tomTekst}
-                tilbake={{ to: RouteConfig.MINE_SAKER, label: "Mine saker" }}
-                sortering={{
-                  kolonne: sorteringskolonne,
-                  retning: sorteringsretning === "asc" ? "stigende" : "synkende",
-                  onSort: (kolonne) => sorterPåKolonne(kolonne as AlleSakerKolonne),
-                  sorterbare: [...sorteringskolonner],
-                }}
-              />
+        {saksdataUtilgjengelig ? (
+          <BackendUtilgjengeligMelding />
+        ) : (
+          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
+            <div className="min-w-0 flex-1 xl:order-first">
+              <AntallTreffEtikett antall={sorterteSaker.length} />
+              <div className="overflow-x-auto [&_table]:w-full">
+                <Saksliste
+                  rader={paginerteSaker.elementer.map((sak) =>
+                    mapKontrollsakTilSakslisteRad(sak, detaljSti),
+                  )}
+                  tomTekst={tomTekst}
+                  tilbake={{ to: RouteConfig.MINE_SAKER, label: "Mine saker" }}
+                  sortering={{
+                    kolonne: sorteringskolonne,
+                    retning: sorteringsretning === "asc" ? "stigende" : "synkende",
+                    onSort: (kolonne) => sorterPåKolonne(kolonne as AlleSakerKolonne),
+                    sorterbare: [...sorteringskolonner],
+                  }}
+                />
+              </div>
+              {paginerteSaker.totalSider > 1 && (
+                <HStack justify="center" className="mt-6">
+                  <Pagination
+                    page={paginerteSaker.aktivSide}
+                    onPageChange={gåTilSide}
+                    count={paginerteSaker.totalSider}
+                    size="small"
+                  />
+                </HStack>
+              )}
             </div>
-            {paginerteSaker.totalSider > 1 && (
-              <HStack justify="center" className="mt-6">
-                <Pagination
-                  page={paginerteSaker.aktivSide}
-                  onPageChange={gåTilSide}
-                  count={paginerteSaker.totalSider}
+
+            <div
+              role="group"
+              aria-label="Filtrer saker"
+              className="xl:order-last xl:w-56 xl:shrink-0"
+            >
+              <Filterpanel>
+                <ChipsFiltergruppe
+                  tittel="Steg"
+                  alternativer={filterAlternativer.steg}
+                  valgteVerdier={aktivtFilter.steg}
+                  onToggle={(verdi) => toggleFilter("steg", verdi)}
                   size="small"
                 />
-              </HStack>
-            )}
+                <ChipsFiltergruppe
+                  tittel="Status"
+                  alternativer={filterAlternativer.status}
+                  valgteVerdier={aktivtFilter.status}
+                  onToggle={(verdi) => toggleFilter("status", verdi)}
+                  size="small"
+                />
+              </Filterpanel>
+            </div>
           </div>
-
-          <div
-            role="group"
-            aria-label="Filtrer saker"
-            className="xl:order-last xl:w-56 xl:shrink-0"
-          >
-            <Filterpanel>
-              <ChipsFiltergruppe
-                tittel="Steg"
-                alternativer={filterAlternativer.steg}
-                valgteVerdier={aktivtFilter.steg}
-                onToggle={(verdi) => toggleFilter("steg", verdi)}
-                size="small"
-              />
-              <ChipsFiltergruppe
-                tittel="Status"
-                alternativer={filterAlternativer.status}
-                valgteVerdier={aktivtFilter.status}
-                onToggle={(verdi) => toggleFilter("status", verdi)}
-                size="small"
-              />
-            </Filterpanel>
-          </div>
-        </div>
+        )}
       </VStack>
-      <DeltMedMegSeksjon saker={deltMedSaker} detaljSti={detaljSti} />
+      {!saksdataUtilgjengelig && <DeltMedMegSeksjon saker={deltMedSaker} detaljSti={detaljSti} />}
     </section>
   );
 }

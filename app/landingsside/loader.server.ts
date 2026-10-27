@@ -15,6 +15,7 @@ import { hentMineSaker } from "~/saker/mock-alle-saker.server";
 import { lagMockMineSakerOppsummering } from "~/saker/mock-oppsummering.server";
 import { getOpprettetDato } from "~/saker/selectors";
 import type { KontrollsakResponse } from "~/saker/types.backend";
+import { erBackendUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
 import { hentMineSakerOppsummering, type MineSakerOppsummering } from "./api.server";
 import { lagVelkomstOppsummering } from "./velkomst";
 
@@ -64,6 +65,7 @@ async function lastSaksbehandlerData(
   const sakerSomSkalFlyttes = harSakerSomSkalFlyttes(request, innloggetBruker.navIdent);
   let mineSakerHosInnloggetBruker: KontrollsakResponse[];
   let oppsummering: MineSakerOppsummering | null;
+  let saksdataUtilgjengelig = false;
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
@@ -73,6 +75,10 @@ async function lastSaksbehandlerData(
         page: 1,
         size: 200,
         ansvarlig: "MEG",
+      }).catch((feil: unknown) => {
+        if (!erBackendUtilgjengelig(feil)) throw feil;
+        saksdataUtilgjengelig = true;
+        return { items: [] };
       }),
       hentOppsummeringUtenAaFelleSiden(token),
     ]);
@@ -102,6 +108,7 @@ async function lastSaksbehandlerData(
     mineSaker,
     velkomstOppsummering,
     harSakerSomSkalFlyttes: await sakerSomSkalFlyttes,
+    saksdataUtilgjengelig,
   };
 }
 
@@ -117,6 +124,7 @@ async function lastLederData(
     velkomstOppsummering: lagLederVelkomstOppsummering(statistikk.enhet, statistikk.enhetNavn),
     statistikk,
     harSakerSomSkalFlyttes: await sakerSomSkalFlyttes,
+    saksdataUtilgjengelig: false,
   };
 }
 

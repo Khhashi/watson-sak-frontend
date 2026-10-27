@@ -2,6 +2,7 @@ import { getBackendOboToken } from "~/auth/access-token";
 import { kastHvisUtlogget } from "~/auth/session-utløpt.server";
 import { BACKEND_API_URL, skalBrukeMockdata } from "~/config/env.server";
 import { logger } from "~/logging/logging";
+import { BackendUtilgjengeligError } from "~/utils/backend-utilgjengelig.server";
 import { kontrollsakPageResponseSchema } from "~/saker/types.backend";
 import { ALLE_STEG } from "~/saker/steg";
 import { sti } from "~/saker/sti-param.server";
@@ -74,6 +75,9 @@ export async function hentKontrollsaker(
 
   if (!response.ok) {
     kastHvisUtlogget(response);
+    if (response.status === 503) {
+      throw new BackendUtilgjengeligError();
+    }
     logger.error("Kunne ikke hente kontrollsaker fra Watson Admin API", {
       status: response.status,
     });

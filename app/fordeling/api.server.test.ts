@@ -49,6 +49,24 @@ describe("Fordeling api.server", () => {
     );
   }, 15000);
 
+  it("behandler HTTP 503 som utilgjengelige saksdata", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 503,
+      }),
+    );
+
+    const { hentKontrollsaker } = await import("./api.server");
+
+    await expect(
+      hentKontrollsaker({ token: "token-123", page: 1, size: 20 }),
+    ).rejects.toMatchObject({
+      name: "BackendUtilgjengeligError",
+    });
+  });
+
   it("sender ansvarligNavIdent som query-parameter", async () => {
     const fetchMock = vi.fn().mockResolvedValue(tomSideSvar);
     vi.stubGlobal("fetch", fetchMock);

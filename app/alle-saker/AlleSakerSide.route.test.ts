@@ -123,6 +123,17 @@ describe("AlleSakerSide loader", () => {
     });
   }, 15000);
 
+  it("returnerer utilgjengelig tilstand uten saksrader ved HTTP 503", async () => {
+    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
+    hentKontrollsakerMock.mockRejectedValue(new BackendUtilgjengeligError());
+
+    const resultat = await kjørLoader(new URLSearchParams());
+
+    expect(resultat.saksdataUtilgjengelig).toBe(true);
+    expect(resultat.rader).toEqual([]);
+    expect(resultat.totalAntall).toBe(0);
+  });
+
   it.each([
     ["ukjent aldersvarsel", { aldersvarsel: "OVER_30_DAGER" }],
     ["ukjent ansvarlig", { ansvarlig: "Z123456" }],

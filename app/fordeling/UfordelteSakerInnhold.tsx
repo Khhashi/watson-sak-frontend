@@ -34,6 +34,7 @@ interface UfordelteSakerInnholdProps {
   saksbehandlere: string[];
   saksbehandlerDetaljer?: KontrollsakSaksbehandler[];
   submitPath?: string;
+  saksdataUtilgjengelig?: boolean;
 }
 
 export function UfordelteSakerInnhold({
@@ -42,6 +43,7 @@ export function UfordelteSakerInnhold({
   saksbehandlere,
   saksbehandlerDetaljer,
   submitPath = RouteConfig.FORDELING,
+  saksdataUtilgjengelig = false,
 }: UfordelteSakerInnholdProps) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [sakSomTildeles, setSakSomTildeles] = useState<FordelingSak | null>(null);
@@ -131,7 +133,7 @@ export function UfordelteSakerInnhold({
           {overskrift}
         </Heading>
 
-        {harSaker && (
+        {harSaker && !saksdataUtilgjengelig && (
           <HGrid columns={{ xs: 1, sm: "repeat(2, minmax(0, 15rem))" }} gap="space-12">
             <Nøkkeltallkort
               verdi={oppsummering.antallSaker}
@@ -148,7 +150,11 @@ export function UfordelteSakerInnhold({
           </HGrid>
         )}
 
-        {!harSaker ? (
+        {saksdataUtilgjengelig ? (
+          <LocalAlert status="error" size="small">
+            Vi får ikke hentet saksdata fra baksystemet nå. Prøv igjen om litt.
+          </LocalAlert>
+        ) : !harSaker ? (
           <LocalAlert status="announcement">
             <LocalAlert.Header>
               <LocalAlert.Title as="h2">Ingen ufordelte saker</LocalAlert.Title>
