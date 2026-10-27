@@ -2,6 +2,7 @@ import { useLoaderData } from "react-router";
 import { getBackendOboToken } from "~/auth/access-token";
 import { skalBrukeMockdata } from "~/config/env.server";
 import { RouteConfig } from "~/routeConfig";
+import { erBackendUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
 import * as backendApi from "~/saker/api.server";
 import { mockSaksbehandlere, mockSaksbehandlerDetaljer } from "~/saker/mock-saksbehandlere.server";
 import { action, loader as lastSakerForFordeling } from "./FordelingSide.server";
@@ -14,7 +15,20 @@ export { action };
 export const handle = { bredPageBlock: true };
 
 export async function loader(args: Parameters<typeof lastSakerForFordeling>[0]) {
-  const { saker, enhet } = await lastSakerForFordeling(args);
+  let saker: Awaited<ReturnType<typeof lastSakerForFordeling>>["saker"];
+  let enhet: string | null;
+  try {
+    ({ saker, enhet } = await lastSakerForFordeling(args));
+  } catch (feil) {
+    if (!erBackendUtilgjengelig(feil)) throw feil;
+    return {
+      saker: [],
+      enhet: null,
+      saksbehandlere: [],
+      saksbehandlerDetaljer: [],
+      saksdataUtilgjengelig: true,
+    };
+  }
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(args.request);
@@ -24,6 +38,7 @@ export async function loader(args: Parameters<typeof lastSakerForFordeling>[0]) 
       enhet,
       saksbehandlere: saksbehandlerDetaljer.map((sb) => sb.navn),
       saksbehandlerDetaljer,
+      saksdataUtilgjengelig: false,
     };
   }
 
@@ -32,11 +47,13 @@ export async function loader(args: Parameters<typeof lastSakerForFordeling>[0]) 
     enhet,
     saksbehandlere: mockSaksbehandlere,
     saksbehandlerDetaljer: mockSaksbehandlerDetaljer,
+    saksdataUtilgjengelig: false,
   };
 }
 
 export default function FordelingSide() {
-  const { saker, enhet, saksbehandlere, saksbehandlerDetaljer } = useLoaderData<typeof loader>();
+  const { saker, enhet, saksbehandlere, saksbehandlerDetaljer, saksdataUtilgjengelig } =
+    useLoaderData<typeof loader>();
 
   return (
     <UfordelteSakerInnhold
@@ -44,6 +61,7 @@ export default function FordelingSide() {
       enhet={enhet}
       saksbehandlere={saksbehandlere}
       saksbehandlerDetaljer={saksbehandlerDetaljer}
+      saksdataUtilgjengelig={saksdataUtilgjengelig}
       submitPath={RouteConfig.FORDELING}
     />
   );

@@ -9,6 +9,7 @@ import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
 import { mapKontrollsakTilSakslisteRad } from "~/saker/saksliste/adaptere";
 import { AntallTreffEtikett } from "~/saker/saksliste/AntallTreffEtikett";
 import { Saksliste } from "~/saker/saksliste/Saksliste";
+import { BackendUtilgjengeligMelding } from "~/komponenter/BackendUtilgjengeligMelding";
 import { RouteConfig } from "~/routeConfig";
 import { hentAlleSaker } from "~/saker/mock-alle-saker.server";
 import { ANTALL_PER_SIDE as RADER_PER_SIDE, paginerElementer } from "~/utils/paginering";
@@ -30,6 +31,7 @@ import {
 import { Filtre } from "./Filtre";
 import { ANSVARLIG_MEG, parseAlderOgAnsvarlig } from "./aldersfilter";
 import { parseStatusfilter, STATUSFILTER_VALG, tilBackendStatusfilter } from "./statusfilter";
+import { hentParEllerUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
 
 const STANDARD_KOLONNE: AlleSakerKolonne = "opprettet";
 const STANDARD_RETNING: Sorteringsretning = "desc";
@@ -80,7 +82,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
-    const [resultat, saksbehandlere] = await Promise.all([
+    const kallResultat = await hentParEllerUtilgjengelig(
       hentKontrollsaker({
         token,
         page: side,
@@ -97,19 +99,33 @@ export async function loader({ request }: Route.LoaderArgs) {
         sortering: lagSorteringParam(sorterKolonne, sorterRetning),
       }),
       backendApi.hentSaksbehandlere(token),
-    ]);
-
-    return {
-      rader: resultat.items.map((sak) => mapKontrollsakTilSakslisteRad(sak)),
-      aktivSide: resultat.page,
-      totalSider: resultat.totalPages,
-      totalAntall: resultat.totalItems,
-      sorteringskolonne: sorterKolonne,
-      sorteringsretning: sorterRetning,
-      filterAlternativer: {
-        saksbehandler: saksbehandlere.map((sb) => ({ label: sb.navn, value: sb.navIdent })),
-      },
-    };
+    );
+    if (kallResultat.saksdataUtilgjengelig) {
+      return {
+        rader: [],
+        aktivSide: side,
+        totalSider: 0,
+        totalAntall: 0,
+        sorteringskolonne: sorterKolonne,
+        sorteringsretning: sorterRetning,
+        filterAlternativer: { saksbehandler: [] },
+        saksdataUtilgjengelig: true,
+      };
+    } else {
+      const [resultat, saksbehandlere] = kallResultat.resultater;
+      return {
+        rader: resultat.items.map((sak) => mapKontrollsakTilSakslisteRad(sak)),
+        aktivSide: resultat.page,
+        totalSider: resultat.totalPages,
+        totalAntall: resultat.totalItems,
+        sorteringskolonne: sorterKolonne,
+        sorteringsretning: sorterRetning,
+        filterAlternativer: {
+          saksbehandler: saksbehandlere.map((sb) => ({ label: sb.navn, value: sb.navIdent })),
+        },
+        saksdataUtilgjengelig: false,
+      };
+    }
   }
 
   // Mock-sti: lokal filtrering, sortering og paginering
@@ -148,6 +164,7 @@ export async function loader({ request }: Route.LoaderArgs) {
         value: sb.navIdent,
       })),
     },
+    saksdataUtilgjengelig: false,
   };
 }
 
@@ -160,6 +177,7 @@ export default function AlleSakerSide() {
     sorteringskolonne,
     sorteringsretning,
     filterAlternativer,
+    saksdataUtilgjengelig,
   } = useLoaderData<typeof loader>();
   const { merker, kategorier, misbrukstyper, enheter } = useKodeverk();
 
@@ -221,74 +239,78 @@ export default function AlleSakerSide() {
           Alle saker
         </Heading>
 
-        <section aria-label="Saker">
-          <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
-            <div className="min-w-0 flex-1 xl:order-first">
-              <AntallTreffEtikett antall={totalAntall} />
-              <div className="overflow-x-auto [&_table]:w-full">
-                <Saksliste
-                  rader={rader}
-                  kolonner={[
-                    "saksid",
-                    "kategori",
-                    "misbrukstype",
-                    "steg",
-                    "status",
-                    "opprettet",
-                    "oppdatert",
-                    "saksbehandler",
-                  ]}
-                  tomTekst={tomTekst}
-                  tilbake={{ to: RouteConfig.ALLE_SAKER, label: "Alle saker" }}
-                  sortering={{
-                    kolonne: sorteringskolonne,
-                    retning: sorteringsretning === "asc" ? "stigende" : "synkende",
-                    onSort: (kolonne) => sorterPåKolonne(kolonne as AlleSakerKolonne),
-                    sorterbare: Object.keys(BACKEND_SORT_FELT) as AlleSakerKolonne[],
-                  }}
-                  kolonneHeaderProps={{
-                    saksid: { className: "min-w-[100px]" },
-                    kategori: { className: "min-w-[165px]" },
-                    misbrukstype: { className: "min-w-[210px]" },
-                    status: { className: "min-w-[200px]" },
-                    steg: { className: "min-w-[170px]" },
-                    opprettet: { className: "min-w-[140px]" },
-                    oppdatert: { className: "min-w-[140px]" },
-                    saksbehandler: { className: "min-w-[165px]" },
-                  }}
-                />
+        {saksdataUtilgjengelig ? (
+          <BackendUtilgjengeligMelding />
+        ) : (
+          <section aria-label="Saker">
+            <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
+              <div className="min-w-0 flex-1 xl:order-first">
+                <AntallTreffEtikett antall={totalAntall} />
+                <div className="overflow-x-auto [&_table]:w-full">
+                  <Saksliste
+                    rader={rader}
+                    kolonner={[
+                      "saksid",
+                      "kategori",
+                      "misbrukstype",
+                      "steg",
+                      "status",
+                      "opprettet",
+                      "oppdatert",
+                      "saksbehandler",
+                    ]}
+                    tomTekst={tomTekst}
+                    tilbake={{ to: RouteConfig.ALLE_SAKER, label: "Alle saker" }}
+                    sortering={{
+                      kolonne: sorteringskolonne,
+                      retning: sorteringsretning === "asc" ? "stigende" : "synkende",
+                      onSort: (kolonne) => sorterPåKolonne(kolonne as AlleSakerKolonne),
+                      sorterbare: Object.keys(BACKEND_SORT_FELT) as AlleSakerKolonne[],
+                    }}
+                    kolonneHeaderProps={{
+                      saksid: { className: "min-w-[100px]" },
+                      kategori: { className: "min-w-[165px]" },
+                      misbrukstype: { className: "min-w-[210px]" },
+                      status: { className: "min-w-[200px]" },
+                      steg: { className: "min-w-[170px]" },
+                      opprettet: { className: "min-w-[140px]" },
+                      oppdatert: { className: "min-w-[140px]" },
+                      saksbehandler: { className: "min-w-[165px]" },
+                    }}
+                  />
+                </div>
+
+                {totalSider > 1 && (
+                  <HStack justify="center" className="mt-6">
+                    <Pagination
+                      page={aktivSide}
+                      onPageChange={gåTilSide}
+                      count={totalSider}
+                      size="small"
+                    />
+                  </HStack>
+                )}
               </div>
 
-              {totalSider > 1 && (
-                <HStack justify="center" className="mt-6">
-                  <Pagination
-                    page={aktivSide}
-                    onPageChange={gåTilSide}
-                    count={totalSider}
-                    size="small"
-                  />
-                </HStack>
-              )}
+              <aside aria-label="Filtrer saker" className="xl:order-last xl:w-56 xl:shrink-0">
+                <Filtre
+                  alternativer={{
+                    ...filterAlternativer,
+                    enhet: enhetAlternativer,
+                    kategori: kategoriAlternativer,
+                    misbrukstype: misbrukstypeAlternativer,
+                    merking: merker,
+                    steg: [...ALLE_STEG, "AVSLUTTET" as const].map((s) => ({
+                      label: formaterSteg(s),
+                      value: s,
+                    })),
+                    status: STATUSFILTER_VALG,
+                  }}
+                />
+              </aside>
             </div>
-
-            <aside aria-label="Filtrer saker" className="xl:order-last xl:w-56 xl:shrink-0">
-              <Filtre
-                alternativer={{
-                  ...filterAlternativer,
-                  enhet: enhetAlternativer,
-                  kategori: kategoriAlternativer,
-                  misbrukstype: misbrukstypeAlternativer,
-                  merking: merker,
-                  steg: [...ALLE_STEG, "AVSLUTTET" as const].map((s) => ({
-                    label: formaterSteg(s),
-                    value: s,
-                  })),
-                  status: STATUSFILTER_VALG,
-                }}
-              />
-            </aside>
-          </div>
-        </section>
+          </section>
+        )}
       </VStack>
     </>
   );

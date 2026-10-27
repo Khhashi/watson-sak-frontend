@@ -15,12 +15,11 @@ vi.mock("~/auth/innlogget-bruker.server", () => ({
   }),
 }));
 vi.mock("~/logging/logging", () => ({ logger: { warn: vi.fn(), error: vi.fn() } }));
-vi.mock("~/fordeling/api.server", () => ({
-  hentKontrollsaker: vi.fn().mockResolvedValue({ items: [] }),
-}));
 
 const hentOppsummeringMock = vi.hoisted(() => vi.fn());
 vi.mock("./api.server", () => ({ hentMineSakerOppsummering: hentOppsummeringMock }));
+const hentKontrollsakerMock = vi.hoisted(() => vi.fn().mockResolvedValue({ items: [] }));
+vi.mock("~/fordeling/api.server", () => ({ hentKontrollsaker: hentKontrollsakerMock }));
 
 const args = {
   request: new Request("http://localhost/"),
@@ -32,6 +31,8 @@ describe("landingsside-loader mot backend", () => {
   afterEach(() => {
     hentOppsummeringMock.mockReset();
     hentMigreringslisteMock.mockReset();
+    hentKontrollsakerMock.mockReset();
+    hentKontrollsakerMock.mockResolvedValue({ items: [] });
     miljøMock.ENVIRONMENT = "prod";
   });
 
@@ -58,6 +59,19 @@ describe("landingsside-loader mot backend", () => {
     hentOppsummeringMock.mockRejectedValue(data("Sesjonen er utløpt.", { status: 401 }));
 
     await expect(loader(args)).rejects.toMatchObject({ init: { status: 401 } });
+  });
+
+  it("viser forsiden med driftsmelding, men uten saker når tilgangsmaskinen er utilgjengelig", async () => {
+    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
+    hentKontrollsakerMock.mockRejectedValue(new BackendUtilgjengeligError());
+    hentOppsummeringMock.mockResolvedValue({ nye: 0, aktive: 2, venter: 0, iBero: 0 });
+
+    const resultat = await loader(args);
+    if (resultat.type !== "saksbehandler") throw new Error("Forventet saksbehandler");
+
+    expect(resultat.saksdataUtilgjengelig).toBe(true);
+    expect(resultat.mineSaker).toEqual([]);
+    expect(resultat.velkomstOppsummering).toBe("Akkurat nå har du 2 aktive saker.");
   });
 
   describe("melding om saker som skal flyttes fra Access", () => {

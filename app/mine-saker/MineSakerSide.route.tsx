@@ -7,6 +7,7 @@ import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
 import { RouteConfig } from "~/routeConfig";
 import { hentMineSaker } from "~/saker/mock-alle-saker.server";
 import { formaterSteg } from "~/saker/visning";
+import { hentParEllerUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
 import type { KontrollsakResponse, KontrollsakStatus } from "~/saker/types.backend";
 import type { Route } from "./+types/MineSakerSide.route";
 import { MineSakerInnhold } from "./MineSakerInnhold";
@@ -40,6 +41,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   let saker: KontrollsakResponse[];
   let deltMedSaker: KontrollsakResponse[];
+  let saksdataUtilgjengelig = false;
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
     const felles = {
@@ -52,14 +54,21 @@ export async function loader({ request }: Route.LoaderArgs) {
       status: blokkerendeStatus.length > 0 ? blokkerendeStatus : undefined,
       utenStatus: harIngenStatus ? true : undefined,
     };
-    const [mineSakerResultat, tilknyttedeSakerResultat] = await Promise.all([
+    const resultat = await hentParEllerUtilgjengelig(
       hentKontrollsaker({ ...felles, ansvarlig: "MEG" }),
       hentKontrollsaker({ ...felles, tilknyttet: "MEG" }),
-    ]);
-    saker = mineSakerResultat.items;
-    deltMedSaker = tilknyttedeSakerResultat.items.filter(
-      (sak) => sak.saksbehandlere?.eier?.navIdent !== innloggetBruker.navIdent,
     );
+    if (resultat.saksdataUtilgjengelig) {
+      saker = [];
+      deltMedSaker = [];
+      saksdataUtilgjengelig = true;
+    } else {
+      const [mineSakerResultat, tilknyttedeSakerResultat] = resultat.resultater;
+      saker = mineSakerResultat.items;
+      deltMedSaker = tilknyttedeSakerResultat.items.filter(
+        (sak) => sak.saksbehandlere?.eier?.navIdent !== innloggetBruker.navIdent,
+      );
+    }
   } else {
     const alleSaker = hentMineSaker(request, innloggetBruker.navIdent, innloggetBruker.name);
     saker = filtrerMineSaker(alleSaker, stegFilter, statusFilter);
@@ -69,6 +78,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   return {
     saker,
     deltMedSaker,
+    saksdataUtilgjengelig,
     filterAlternativer: {
       steg: ALLE_STEG.map((s) => ({ verdi: s, etikett: formaterSteg(s) })),
       status: ALLE_VENTESTATUSER.map((v) => ({ verdi: v, etikett: formaterVentestatus(v) })),
@@ -81,7 +91,8 @@ export async function loader({ request }: Route.LoaderArgs) {
 }
 
 export default function MineSakerSide() {
-  const { saker, deltMedSaker, filterAlternativer, aktivtFilter } = useLoaderData<typeof loader>();
+  const { saker, deltMedSaker, filterAlternativer, aktivtFilter, saksdataUtilgjengelig } =
+    useLoaderData<typeof loader>();
 
   return (
     <>
@@ -89,6 +100,7 @@ export default function MineSakerSide() {
       <MineSakerInnhold
         saker={saker}
         deltMedSaker={deltMedSaker}
+        saksdataUtilgjengelig={saksdataUtilgjengelig}
         detaljSti={RouteConfig.SAKER_DETALJ.replace("/:sakId", "")}
         filterAlternativer={filterAlternativer}
         aktivtFilter={aktivtFilter}
