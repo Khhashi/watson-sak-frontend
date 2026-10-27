@@ -10,18 +10,32 @@ test.describe("Opprett sak", () => {
   });
 
   test("viser feilmelding ved ugyldig person", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("99999999999");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("99999999999");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
     await expect(page.getByText("Personen ble ikke funnet")).toBeVisible();
   });
 
-  test("viser personinfo og skjema etter vellykket oppslag", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+  test("viser personinfo og skjema etter vellykket oppslag", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("12345678901");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
     await expect(
-      page.getByLabel("Personinformasjon").getByText("Ola Testesen", { exact: true }),
+      page
+        .getByLabel("Personinformasjon")
+        .getByText("Ola Testesen", { exact: true }),
     ).toBeVisible();
     await expect(
       page.getByRole("heading", { name: "Grunnleggende saksinformasjon" }),
@@ -29,68 +43,113 @@ test.describe("Opprett sak", () => {
   });
 
   test("fyller ut en tilfeldig sak uten å opprette den", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("12345678901");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
-    await page.getByRole("button", { name: "Fyll ut en tilfeldig sak" }).click();
+    await page
+      .getByRole("button", { name: "Fyll ut en tilfeldig sak" })
+      .click();
 
     await expect(page.getByLabel("Kategori")).not.toHaveValue("");
     await expect(page.getByLabel("Kilde")).not.toHaveValue("");
     await expect(page.getByLabel("Enhet")).not.toHaveValue("");
-    await expect(page.getByRole("button", { name: "Opprett sak" })).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Opprett sak" }),
+    ).toBeVisible();
   });
 
   test("viser advarsel i personkortet om historisk ident og oppretter saken på gjeldende ident", async ({
     page,
   }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("10987654321");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("10987654321");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
     await expect(
       page
         .getByLabel("Personinformasjon")
-        .getByText("Fødsels- eller d-nummeret du søkte med er historisk."),
+        .getByText("Fødsels- eller D-nummeret du søkte med er historisk."),
     ).toBeVisible();
     await expect(
-      page.getByLabel("Personinformasjon").getByText("Ola Testesen", { exact: true }),
+      page
+        .getByLabel("Personinformasjon")
+        .getByText("Ola Testesen", { exact: true }),
     ).toBeVisible();
 
     // Skjult personIdent-input (brukes ved saksopprettelse) skal peke på gjeldende ident,
     // ikke den historiske identen det ble søkt med.
-    await expect(page.locator('input[name="personIdent"]')).toHaveValue("12345678901");
+    await expect(page.locator('input[name="personIdent"]')).toHaveValue(
+      "12345678901",
+    );
   });
 
   test("viser advarsel om eksisterende sak", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("12345678901");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
-    await expect(page.getByText("Det er allerede registrert en sak på personen")).toBeVisible();
-    const seSakKnapp = page.getByRole("button", { name: "Se sak (åpnes i ny fane)" });
+    await expect(
+      page.getByText("Det er allerede registrert en sak på personen"),
+    ).toBeVisible();
+    const seSakKnapp = page.getByRole("button", {
+      name: "Se sak (åpnes i ny fane)",
+    });
     await expect(seSakKnapp).toHaveAttribute("target", "_blank");
     await expect(seSakKnapp).toHaveAttribute("rel", "noopener noreferrer");
   });
 
-  test("sperrer skjemaet for skjermet person uten tilgang til å opprette sak", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("44556677001");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+  test("sperrer skjemaet for skjermet person uten tilgang til å opprette sak", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("44556677001");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
     await expect(
-      page.getByLabel("Personinformasjon").getByText("Skjermet Testesen", { exact: true }),
+      page
+        .getByLabel("Personinformasjon")
+        .getByText("Skjermet Testesen", { exact: true }),
     ).toBeVisible();
     await expect(page.getByText("Denne personen er skjermet.")).toBeVisible();
-    await expect(page.getByText("Du kan ikke opprette sak på denne personen")).toBeVisible();
+    await expect(
+      page.getByText("Du kan ikke opprette sak på denne personen"),
+    ).toBeVisible();
 
     // Skjemaet skal ikke rendres i det hele tatt — saksbehandler skal ikke kunne fylle
     // ut eller sende inn skjemaet, se RAILS-9.
-    await expect(page.getByRole("heading", { name: "Grunnleggende saksinformasjon" })).toHaveCount(
+    await expect(
+      page.getByRole("heading", { name: "Grunnleggende saksinformasjon" }),
+    ).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Opprett sak" })).toHaveCount(
       0,
     );
-    await expect(page.getByRole("button", { name: "Opprett sak" })).toHaveCount(0);
   });
 
   test("viser ErrorSummary når påkrevde felter mangler", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("12345678901");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
     await expect(
       page.getByRole("heading", { name: "Grunnleggende saksinformasjon" }),
@@ -98,31 +157,51 @@ test.describe("Opprett sak", () => {
 
     await page.getByRole("button", { name: "Opprett sak" }).click();
 
-    await expect(page.getByText("Du må rette disse feilene før du kan gå videre")).toBeVisible();
+    await expect(
+      page.getByText("Du må rette disse feilene før du kan gå videre"),
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: "Velg enhet" })).toBeVisible();
   });
 
-  test("kan endre kategori etter valideringsfeil på kategori og kilde", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+  test("kan endre kategori etter valideringsfeil på kategori og kilde", async ({
+    page,
+  }) => {
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("12345678901");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
     await page.getByRole("button", { name: "Opprett sak" }).click();
-    await expect(page.getByRole("link", { name: "Velg kategori" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Velg kategori" }),
+    ).toBeVisible();
     await expect(page.getByRole("link", { name: "Velg kilde" })).toBeVisible();
 
     const kategori = page.getByLabel("Kategori");
     await kategori.selectOption({ index: 1 });
 
     await expect(kategori).not.toHaveValue("");
-    await expect(page.getByRole("link", { name: "Velg kategori" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Velg kategori" })).toHaveCount(
+      0,
+    );
     await expect(page.getByRole("link", { name: "Velg kilde" })).toBeVisible();
   });
 
   test("kan legge til og fjerne ytelse-rader", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("12345678901");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
-    await expect(page.getByRole("heading", { name: "Ytelser med mulig misbruk" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Ytelser med mulig misbruk" }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Legg til ytelse" }).click();
     await expect(page.getByLabel("Ytelse")).toHaveCount(2);
@@ -132,14 +211,22 @@ test.describe("Opprett sak", () => {
   });
 
   test("Avbryt-knappen lenker til landingssiden", async ({ page }) => {
-    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
-    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await page
+      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
+      .fill("12345678901");
+    await page
+      .getByLabel("Søk etter person")
+      .getByRole("button", { name: "Søk" })
+      .click();
 
     await expect(
       page.getByRole("heading", { name: "Grunnleggende saksinformasjon" }),
     ).toBeVisible();
 
-    await expect(page.getByRole("button", { name: "Avbryt" })).toHaveAttribute("href", "/");
+    await expect(page.getByRole("button", { name: "Avbryt" })).toHaveAttribute(
+      "href",
+      "/",
+    );
   });
 
   test("er UU-compliant", async ({ page }) => {

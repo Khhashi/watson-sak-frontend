@@ -15,15 +15,17 @@ test.describe("Migreringsveileder med syntetiske saker", () => {
 
     await expect(page).toHaveURL(/\/saker\/1181$/);
     await expect(page.getByRole("heading", { name: "Filer" })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Notat fra opprettelse" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Notat fra opprettelse" }),
+    ).toBeVisible();
     await expect(
       page.getByText("Eksempelnotat for migrering. Kun syntetisk testinnhold."),
     ).toBeVisible();
     const bekreftelse = page.getByRole("status");
     await expect(bekreftelse).toContainText("Saken er ferdig flyttet");
-    await expect(page.getByRole("heading", { name: "Sjekkliste – flytt fra Access" })).toHaveCount(
-      0,
-    );
+    await expect(
+      page.getByRole("heading", { name: "Sjekkliste – flytt fra Access" }),
+    ).toHaveCount(0);
     await testInfo.attach("sak-ferdig-desktop", {
       body: await page.screenshot(),
       contentType: "image/png",
@@ -31,10 +33,14 @@ test.describe("Migreringsveileder med syntetiske saker", () => {
 
     await page.getByRole("button", { name: "Lukk bekreftelsen" }).click();
     await expect(bekreftelse).toHaveCount(0);
-    await expect(page.getByRole("link", { name: "Notat fra opprettelse" })).toBeVisible();
+    await expect(
+      page.getByRole("link", { name: "Notat fra opprettelse" }),
+    ).toBeVisible();
   });
 
-  test("uferdig eksempel viser sjekkliste uten grønn bekreftelse", async ({ page }) => {
+  test("uferdig eksempel viser sjekkliste uten grønn bekreftelse", async ({
+    page,
+  }) => {
     await page.goto("/migrering");
     await page.getByRole("link", { name: "100310" }).click();
 
@@ -48,15 +54,23 @@ test.describe("Migreringsveileder med syntetiske saker", () => {
     await expect(
       page.getByRole("button", { name: "Marker saken som ferdig flyttet" }),
     ).toBeDisabled();
-    await expect(page.getByText("Migreringsnotat (forhåndsvisning)")).toBeVisible();
+    await expect(
+      page.getByText("Migreringsnotat (forhåndsvisning)"),
+    ).toBeVisible();
   });
 
-  test("notatkort og melding er synlige på mobil", async ({ page }, testInfo) => {
+  test("notatkort og melding er synlige på mobil", async ({
+    page,
+  }, testInfo) => {
     await page.setViewportSize({ width: 375, height: 812 });
     await page.goto("/saker/1181");
 
-    await expect(page.getByRole("link", { name: "Notat fra opprettelse" })).toBeVisible();
-    await expect(page.getByRole("status")).toContainText("Saken er ferdig flyttet");
+    await expect(
+      page.getByRole("link", { name: "Notat fra opprettelse" }),
+    ).toBeVisible();
+    await expect(page.getByRole("status")).toContainText(
+      "Saken er ferdig flyttet",
+    );
     await testInfo.attach("sak-ferdig-mobil", {
       body: await page.screenshot(),
       contentType: "image/png",
@@ -69,15 +83,30 @@ test.describe("Flytt fra Access for saksbehandler", () => {
     await resetMockData(page);
   });
 
-  test("viser listen med norske datoer og uten lederkolonner", async ({ page }) => {
+  test("viser listen med norske datoer og uten lederkolonner", async ({
+    page,
+  }) => {
     await page.goto("/migrering");
 
-    await expect(page.getByRole("heading", { level: 1, name: "Flytt fra Access" })).toBeVisible();
-    for (const kolonne of ["PID", "Personnummer", "Opprettet i Access", "Status"]) {
-      await expect(page.getByRole("columnheader", { name: kolonne })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { level: 1, name: "Flytt fra Access" }),
+    ).toBeVisible();
+    for (const kolonne of [
+      "PID",
+      "Fødsels- eller D-nummer",
+      "Opprettet i Access",
+      "Status",
+    ]) {
+      await expect(
+        page.getByRole("columnheader", { name: kolonne }),
+      ).toBeVisible();
     }
-    await expect(page.getByRole("columnheader", { name: "Saksbehandler" })).toHaveCount(0);
-    await expect(page.getByRole("button", { name: /Endre tildeling/ })).toHaveCount(0);
+    await expect(
+      page.getByRole("columnheader", { name: "Saksbehandler" }),
+    ).toHaveCount(0);
+    await expect(
+      page.getByRole("button", { name: /Endre tildeling/ }),
+    ).toHaveCount(0);
     await expect(page.getByRole("cell", { name: "15.01.2023" })).toBeVisible();
     await expect(page.getByLabel("Avdeling")).toHaveCount(0);
   });
@@ -114,21 +143,33 @@ test.describe("Flytt fra Access for saksbehandler", () => {
   }) => {
     await page.goto("/migrering");
 
-    await page.getByRole("button", { name: "Flytt sak med PID 100388 fra Access" }).click();
+    await page
+      .getByRole("button", { name: "Flytt sak med PID 100388 fra Access" })
+      .click();
 
     await expect(page).toHaveURL(/\/registrer-sak/);
     await expect(page.getByText("PID: 100388")).toBeVisible();
     await expect(page.getByText("Du flytter en sak fra Access")).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Filer fra S-området" })).toBeVisible();
-    await expect(page.getByRole("button", { name: "Last opp filer fra S:" })).toBeVisible();
-    await expect(page.getByLabel(/Notat – informasjon fra Access/)).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Filer fra S-området" }),
+    ).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Last opp filer fra S:" }),
+    ).toBeVisible();
+    await expect(
+      page.getByLabel(/Notat – informasjon fra Access/),
+    ).toBeVisible();
   });
 
-  test("landingssiden viser banner som leder til Flytt fra Access", async ({ page }) => {
+  test("landingssiden viser banner som leder til Flytt fra Access", async ({
+    page,
+  }) => {
     await page.goto("/");
 
     await expect(
-      page.getByRole("heading", { name: "Du har saker i Access som skal flyttes!" }),
+      page.getByRole("heading", {
+        name: "Du har saker i Access som skal flyttes!",
+      }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Flytt fra Access" }).first().click();
 

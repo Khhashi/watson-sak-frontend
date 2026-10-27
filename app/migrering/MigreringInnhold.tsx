@@ -34,11 +34,12 @@ import {
   type MigreringSide,
 } from "./types";
 
-const STATUSFARGE: Record<Migreringsstatus, "neutral" | "warning" | "success"> = {
-  IKKE_PABEGYNT: "neutral",
-  UNDER_MIGRERING: "warning",
-  FULLSTENDIG: "success",
-};
+const STATUSFARGE: Record<Migreringsstatus, "neutral" | "warning" | "success"> =
+  {
+    IKKE_PABEGYNT: "neutral",
+    UNDER_MIGRERING: "warning",
+    FULLSTENDIG: "success",
+  };
 
 /** Hele raden er klikkbar. Lenken eller knappen i raden gjør jobben, så tastatur og skjermleser fungerer. */
 function formaterAccessDato(iso: string | null | undefined) {
@@ -50,20 +51,29 @@ function formaterAccessDato(iso: string | null | undefined) {
  * Backend legger lederens egne saker først. Hver gruppe får sin egen radgruppe (`tbody`), slik at overskriften
  * «Dine saker» eller «Andre saker» bare omfatter radene under seg i tabellsemantikken. Andre enn ledere får én gruppe uten overskrift.
  */
-function delIGrupper(kandidater: MigreringKandidat[], egenNavIdent: string | undefined) {
+function delIGrupper(
+  kandidater: MigreringKandidat[],
+  egenNavIdent: string | undefined,
+) {
   if (!egenNavIdent) return [{ overskrift: null, kandidater }];
   const egne = kandidater.filter((k) => k.ansvar.navIdent === egenNavIdent);
   const andres = kandidater.filter((k) => k.ansvar.navIdent !== egenNavIdent);
   return [
-    ...(egne.length > 0 ? [{ overskrift: "Dine saker", kandidater: egne }] : []),
-    ...(andres.length > 0 ? [{ overskrift: "Andre saker", kandidater: andres }] : []),
+    ...(egne.length > 0
+      ? [{ overskrift: "Dine saker", kandidater: egne }]
+      : []),
+    ...(andres.length > 0
+      ? [{ overskrift: "Andre saker", kandidater: andres }]
+      : []),
   ];
 }
 
 function klikkRad(event: MouseEvent<HTMLTableRowElement>) {
   if ((event.target as HTMLElement).closest("a, button, input, select")) return;
   event.currentTarget
-    .querySelector<HTMLElement>("a[href], button[type='submit'], button[data-rad-handling]")
+    .querySelector<HTMLElement>(
+      "a[href], button[type='submit'], button[data-rad-handling]",
+    )
     ?.click();
 }
 
@@ -82,7 +92,8 @@ export function MigreringInnhold({ lister }: { lister: MigreringLister }) {
         <div className="flex min-w-0 flex-col gap-6 lg:order-1 order-2">
           {lister.utilgjengelig && (
             <Alert variant="warning" size="small">
-              Vi fikk ikke hentet hele listen. Det kan mangle saker. Prøv igjen om litt.
+              Vi fikk ikke hentet hele listen. Det kan mangle saker. Prøv igjen
+              om litt.
             </Alert>
           )}
           <Box background="info-soft" borderRadius="8" padding="space-16">
@@ -91,8 +102,8 @@ export function MigreringInnhold({ lister }: { lister: MigreringLister }) {
                 Flytt saker fra Access til Watson Sak
               </Heading>
               <BodyShort size="small">
-                Opprett sak for hver person, og flytt over alle filer fra S: og all informasjon fra
-                Access.{" "}
+                Opprett sak for hver person, og flytt over alle filer fra S: og
+                all informasjon fra Access.{" "}
                 {erLeder
                   ? "Som leder kan du filtrere på avdeling, saksbehandler og status – og tildele saker til andre."
                   : "Her ser du dine egne saker."}
@@ -112,7 +123,11 @@ export function MigreringInnhold({ lister }: { lister: MigreringLister }) {
   );
 }
 
-function StatusTag({ kandidat }: { kandidat: Pick<MigreringKandidat, "migreringsstatus"> }) {
+function StatusTag({
+  kandidat,
+}: {
+  kandidat: Pick<MigreringKandidat, "migreringsstatus">;
+}) {
   const status = hentMigreringsstatus(kandidat);
   return (
     <Tag variant="moderate" data-color={STATUSFARGE[status]} size="small">
@@ -141,8 +156,12 @@ function Kandidatliste({
           <Table.Header>
             <Table.Row>
               <Table.HeaderCell scope="col">PID</Table.HeaderCell>
-              <Table.HeaderCell scope="col">Personnummer</Table.HeaderCell>
-              <Table.HeaderCell scope="col">Opprettet i Access</Table.HeaderCell>
+              <Table.HeaderCell scope="col">
+                Fødsels- eller D-nummer
+              </Table.HeaderCell>
+              <Table.HeaderCell scope="col">
+                Opprettet i Access
+              </Table.HeaderCell>
               <Table.HeaderCell scope="col">Status</Table.HeaderCell>
               {erLeder && (
                 <>
@@ -154,60 +173,70 @@ function Kandidatliste({
               )}
             </Table.Row>
           </Table.Header>
-          {delIGrupper(side.kandidater, erLeder ? egenNavIdent : undefined).map((gruppe) => (
-            <Table.Body key={gruppe.overskrift ?? "alle"}>
-              {gruppe.overskrift && (
-                <Table.Row>
-                  <Table.HeaderCell scope="rowgroup" colSpan={6} className="bg-ax-bg-neutral-soft">
-                    {gruppe.overskrift}
-                  </Table.HeaderCell>
-                </Table.Row>
-              )}
-              {gruppe.kandidater.map((k) => (
-                <Fragment key={`${k.kilde}:${k.legacyPid}`}>
-                  <Table.Row
-                    onClick={klikkRad}
-                    className="cursor-pointer hover:bg-ax-bg-neutral-soft"
-                  >
-                    <Table.DataCell>
-                      <KandidatLenke kandidat={k} />
-                    </Table.DataCell>
-                    <Table.DataCell>
-                      {k.ansvar.type === "BEKREFTET" && k.personIdent
-                        ? formaterFødselsnummer(k.personIdent)
-                        : "–"}
-                    </Table.DataCell>
-                    <Table.DataCell>{formaterAccessDato(k.referansedato)}</Table.DataCell>
-                    <Table.DataCell>
-                      <StatusTag kandidat={k} />
-                    </Table.DataCell>
-                    {erLeder && (
-                      <>
-                        <Table.DataCell>
-                          {k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}
-                        </Table.DataCell>
-                        <Table.DataCell>
-                          {hentMigreringsstatus(k) === "IKKE_PABEGYNT" &&
-                            ansatteValg.some((a) => a.navIdent !== k.ansvar.navIdent) && (
-                              <Button
-                                type="button"
-                                data-rad-handling
-                                variant="secondary"
-                                size="small"
-                                aria-label={`Endre tildeling for PID ${k.legacyPid}`}
-                                onClick={() => setEndrer(k)}
-                              >
-                                Endre tildeling
-                              </Button>
-                            )}
-                        </Table.DataCell>
-                      </>
-                    )}
+          {delIGrupper(side.kandidater, erLeder ? egenNavIdent : undefined).map(
+            (gruppe) => (
+              <Table.Body key={gruppe.overskrift ?? "alle"}>
+                {gruppe.overskrift && (
+                  <Table.Row>
+                    <Table.HeaderCell
+                      scope="rowgroup"
+                      colSpan={6}
+                      className="bg-ax-bg-neutral-soft"
+                    >
+                      {gruppe.overskrift}
+                    </Table.HeaderCell>
                   </Table.Row>
-                </Fragment>
-              ))}
-            </Table.Body>
-          ))}
+                )}
+                {gruppe.kandidater.map((k) => (
+                  <Fragment key={`${k.kilde}:${k.legacyPid}`}>
+                    <Table.Row
+                      onClick={klikkRad}
+                      className="cursor-pointer hover:bg-ax-bg-neutral-soft"
+                    >
+                      <Table.DataCell>
+                        <KandidatLenke kandidat={k} />
+                      </Table.DataCell>
+                      <Table.DataCell>
+                        {k.ansvar.type === "BEKREFTET" && k.personIdent
+                          ? formaterFødselsnummer(k.personIdent)
+                          : "–"}
+                      </Table.DataCell>
+                      <Table.DataCell>
+                        {formaterAccessDato(k.referansedato)}
+                      </Table.DataCell>
+                      <Table.DataCell>
+                        <StatusTag kandidat={k} />
+                      </Table.DataCell>
+                      {erLeder && (
+                        <>
+                          <Table.DataCell>
+                            {k.ansvarligNavn ?? k.ansvar.navIdent ?? "–"}
+                          </Table.DataCell>
+                          <Table.DataCell>
+                            {hentMigreringsstatus(k) === "IKKE_PABEGYNT" &&
+                              ansatteValg.some(
+                                (a) => a.navIdent !== k.ansvar.navIdent,
+                              ) && (
+                                <Button
+                                  type="button"
+                                  data-rad-handling
+                                  variant="secondary"
+                                  size="small"
+                                  aria-label={`Endre tildeling for PID ${k.legacyPid}`}
+                                  onClick={() => setEndrer(k)}
+                                >
+                                  Endre tildeling
+                                </Button>
+                              )}
+                          </Table.DataCell>
+                        </>
+                      )}
+                    </Table.Row>
+                  </Fragment>
+                ))}
+              </Table.Body>
+            ),
+          )}
         </Table>
       </div>
       {side.totalAntall === 0 && (
@@ -243,12 +272,15 @@ function KandidatLenke({ kandidat: k }: { kandidat: MigreringKandidat }) {
     );
   }
   // Andres saker har ikke personident, og lederen kan ikke starte flyttingen for dem.
-  if (k.ansvar.type !== "BEKREFTET" || !k.personIdent) return <span>{k.legacyPid}</span>;
+  if (k.ansvar.type !== "BEKREFTET" || !k.personIdent)
+    return <span>{k.legacyPid}</span>;
   return (
     <Form
       method="post"
       action={RouteConfig.API.FORHÅNDSUTFYLL_REGISTRER_SAK}
-      onSubmit={() => sporHendelse("migrering opprett sak klikket", { kategori: k.kategori })}
+      onSubmit={() =>
+        sporHendelse("migrering opprett sak klikket", { kategori: k.kategori })
+      }
     >
       <input type="hidden" name="legacyPid" value={k.legacyPid} />
       <input type="hidden" name="legacyKilde" value={k.legacyKilde} />
@@ -275,7 +307,9 @@ function EndreTildelingModal({
 }) {
   const fetcher = useFetcher<TildelingsSvar>();
   const ref = useRef<HTMLDialogElement>(null);
-  const valg = ansatteValg.filter((a) => a.navIdent !== kandidat.ansvar.navIdent);
+  const valg = ansatteValg.filter(
+    (a) => a.navIdent !== kandidat.ansvar.navIdent,
+  );
   const sender = fetcher.state !== "idle";
 
   useEffect(() => {
@@ -293,7 +327,11 @@ function EndreTildelingModal({
       <fetcher.Form method="post">
         <Modal.Body>
           <VStack gap="space-16">
-            <input type="hidden" name="kandidatId" value={kandidat.kandidatId} />
+            <input
+              type="hidden"
+              name="kandidatId"
+              value={kandidat.kandidatId}
+            />
             <Select label="Ny saksbehandler" name="navIdent" defaultValue="">
               <option value="" disabled>
                 Velg saksbehandler
@@ -346,14 +384,19 @@ function Filterpanel({ lister }: { lister: MigreringLister }) {
       if (valgt.has(status)) valgt.delete(status);
       else valgt.add(status);
       neste.delete("status");
-      for (const s of MIGRERINGSSTATUSER) if (valgt.has(s)) neste.append("status", s);
+      for (const s of MIGRERINGSSTATUSER)
+        if (valgt.has(s)) neste.append("status", s);
     });
   }
 
   const enheter = [
-    ...new Map(ansatteValg.map((a) => [a.enhetId, a.enhetNavn ?? a.enhetId])).entries(),
+    ...new Map(
+      ansatteValg.map((a) => [a.enhetId, a.enhetNavn ?? a.enhetId]),
+    ).entries(),
   ];
-  const saksbehandlere = ansatteValg.filter((a) => !filter.enhet || a.enhetId === filter.enhet);
+  const saksbehandlere = ansatteValg.filter(
+    (a) => !filter.enhet || a.enhetId === filter.enhet,
+  );
 
   return (
     <VStack gap="space-16" className="lg:order-2 order-1" align="stretch">

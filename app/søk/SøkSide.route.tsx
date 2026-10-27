@@ -1,13 +1,32 @@
 import { FileXMarkIcon, MagnifyingGlassIcon } from "@navikt/aksel-icons";
-import { BodyShort, Box, Button, Heading, HStack, Pagination, Tag, VStack } from "@navikt/ds-react";
+import {
+  BodyShort,
+  Box,
+  Button,
+  Heading,
+  HStack,
+  Pagination,
+  Tag,
+  VStack,
+} from "@navikt/ds-react";
 import { useRef } from "react";
-import { Form, Link, unstable_useRoute, useActionData, useFetcher } from "react-router";
+import {
+  Form,
+  Link,
+  unstable_useRoute,
+  useActionData,
+  useFetcher,
+} from "react-router";
 import { sporHendelse } from "~/analytics/analytics";
 import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
 import { RouteConfig } from "~/routeConfig";
 import { mapKontrollsakTilSakslisteRad } from "~/saker/saksliste/adaptere";
 import { Saksliste } from "~/saker/saksliste/Saksliste";
-import { formaterFødselsnummer, formaterOrganisasjonsnummer } from "~/utils/string-utils";
+import {
+  erDnummer,
+  formaterFødselsnummer,
+  formaterOrganisasjonsnummer,
+} from "~/utils/string-utils";
 import { hentValgfriTekst } from "~/utils/form-data";
 import { SøkSakOppsummering } from "./SøkSakOppsummering";
 import { søkSaker, type SøkeType } from "./søk.server";
@@ -33,7 +52,9 @@ export async function action({ request }: Route.ActionArgs) {
   return søkSaker(request, søketekst, side);
 }
 
-function hentResultatlenker(container: HTMLElement | null): HTMLAnchorElement[] {
+function hentResultatlenker(
+  container: HTMLElement | null,
+): HTMLAnchorElement[] {
   if (!container) return [];
   return Array.from(container.querySelectorAll<HTMLAnchorElement>("a"));
 }
@@ -52,14 +73,21 @@ function TomStatusboks({
   return (
     <Box background="neutral-soft" borderRadius="8" padding="space-40">
       <VStack gap="space-16" align="center">
-        <Box background="neutral-moderate" borderRadius="full" padding="space-16">
+        <Box
+          background="neutral-moderate"
+          borderRadius="full"
+          padding="space-16"
+        >
           {ikon}
         </Box>
         <VStack gap="space-4" align="center">
           <Heading level="2" size="small" align="center">
             {tittel}
           </Heading>
-          <BodyShort align="center" className="text-ax-text-neutral-subtle max-w-md">
+          <BodyShort
+            align="center"
+            className="text-ax-text-neutral-subtle max-w-md"
+          >
             {beskrivelse}
           </BodyShort>
         </VStack>
@@ -73,10 +101,14 @@ function SøkeVeiledning() {
   return (
     <TomStatusboks
       ikon={
-        <MagnifyingGlassIcon aria-hidden fontSize="2rem" className="text-ax-icon-neutral-subtle" />
+        <MagnifyingGlassIcon
+          aria-hidden
+          fontSize="2rem"
+          className="text-ax-icon-neutral-subtle"
+        />
       }
       tittel="Finn en sak"
-      beskrivelse="Bruk søkefeltet i toppmenyen for å søke etter saksnummer, PID, fødselsnummer eller organisasjonsnummer."
+      beskrivelse="Bruk søkefeltet i toppmenyen for å søke etter saksnummer, PID, fødsels- eller D-nummer eller organisasjonsnummer."
     >
       <HStack gap="space-8" justify="center" wrap>
         <Tag variant="neutral" size="small">
@@ -96,10 +128,22 @@ function SøkeVeiledning() {
   );
 }
 
-function IngenTreff({ tittel, beskrivelse }: { tittel: string; beskrivelse: string }) {
+function IngenTreff({
+  tittel,
+  beskrivelse,
+}: {
+  tittel: string;
+  beskrivelse: string;
+}) {
   return (
     <TomStatusboks
-      ikon={<FileXMarkIcon aria-hidden fontSize="2rem" className="text-ax-icon-neutral-subtle" />}
+      ikon={
+        <FileXMarkIcon
+          aria-hidden
+          fontSize="2rem"
+          className="text-ax-icon-neutral-subtle"
+        />
+      }
       tittel={tittel}
       beskrivelse={beskrivelse}
     >
@@ -125,23 +169,25 @@ function tomTreffTekst(
       return {
         tittel: `Fant ingen sak med saksnummer eller PID «${søketekst}»`,
         beskrivelse:
-          "Sjekk at saksnummeret eller PID-en er riktig, eller søk på fødselsnummer eller organisasjonsnummer.",
+          "Sjekk at saksnummeret eller PID-en er riktig, eller søk på fødsels- eller D-nummer eller organisasjonsnummer.",
       };
     case "organisasjonsnummer":
       return {
         tittel: `Ingen treff for organisasjonsnummer «${formaterOrganisasjonsnummer(søketekst)}»`,
-        beskrivelse: "Fant ingen kontrollsaker knyttet til dette organisasjonsnummeret.",
+        beskrivelse:
+          "Fant ingen kontrollsaker knyttet til dette organisasjonsnummeret.",
       };
     case "personIdent":
       return {
         tittel: `Ingen treff for «${søketekst}»`,
-        beskrivelse: "Fant ingen kontrollsaker for dette fødselsnummeret.",
+        beskrivelse:
+          "Fant ingen kontrollsaker for dette fødsels- eller D-nummeret.",
       };
     default:
       return {
         tittel: "Ugyldig søk",
         beskrivelse:
-          "Søket må være et fødselsnummer (11 sifre), organisasjonsnummer (9 sifre), saksnummer eller PID.",
+          "Søket må være et fødsels- eller D-nummer (11 sifre), organisasjonsnummer (9 sifre), saksnummer eller PID.",
       };
   }
 }
@@ -151,7 +197,9 @@ export default function SøkSide() {
   // Nøkkelen scoper fetcheren til gjeldende søketekst, slik at sidenavigering (paginering)
   // ikke lekker gamle resultater inn i et helt nytt søk (f.eks. hvis brukeren søker på
   // organisasjon A, blar til side 2, og deretter søker på personIdent B via hurtigsøket).
-  const fetcher = useFetcher<typeof action>({ key: `sok-side-${actionData?.søketekst ?? ""}` });
+  const fetcher = useFetcher<typeof action>({
+    key: `sok-side-${actionData?.søketekst ?? ""}`,
+  });
   const { loaderData } = unstable_useRoute("root");
   const watsonSokUrl = loaderData?.envs.watsonSokUrl ?? null;
 
@@ -164,7 +212,8 @@ export default function SøkSide() {
   const totalSider = visteData?.totalSider ?? 1;
   const totalAntall = visteData?.totalAntall ?? 0;
   const harSøkt = actionData !== undefined;
-  const harEttSaksnummerTreff = søketype === "saksnummer" && resultater?.length === 1;
+  const harEttSaksnummerTreff =
+    søketype === "saksnummer" && resultater?.length === 1;
 
   const resultatlisteRef = useRef<HTMLDivElement>(null);
 
@@ -233,7 +282,9 @@ export default function SøkSide() {
                   className="overflow-x-auto [&_table]:w-full"
                 >
                   <Saksliste
-                    rader={resultater.map((sak) => mapKontrollsakTilSakslisteRad(sak))}
+                    rader={resultater.map((sak) =>
+                      mapKontrollsakTilSakslisteRad(sak),
+                    )}
                     kolonner={[
                       "saksid",
                       "navn",
@@ -276,15 +327,19 @@ export default function SøkSide() {
                           Ser du etter en person?
                         </Heading>
                         <BodyShort>
-                          {formaterFødselsnummer(søketekst)} ser ut som et fødselsnummer. Hvis du
-                          vil, kan du opprette en sak, eller slå opp personen i Watson Søk.
+                          {formaterFødselsnummer(søketekst)} ser ut som et{" "}
+                          {erDnummer(søketekst) ? "D-nummer" : "fødselsnummer"}.
+                          Hvis du vil, kan du opprette en sak, eller slå opp
+                          personen i Watson Søk.
                         </BodyShort>
                       </VStack>
                       <HStack gap="space-4">
                         <Form
                           method="post"
                           action={RouteConfig.API.FORHÅNDSUTFYLL_REGISTRER_SAK}
-                          onSubmit={() => sporHendelse("søk opprett sak klikket")}
+                          onSubmit={() =>
+                            sporHendelse("søk opprett sak klikket")
+                          }
                         >
                           <input type="hidden" name="fnr" value={søketekst} />
                           <Button type="submit" variant="secondary">
@@ -297,9 +352,15 @@ export default function SøkSide() {
                             action={`${watsonSokUrl}/api/eksternt-søk`}
                             target="_blank"
                             rel="noopener noreferrer"
-                            onSubmit={() => sporHendelse("søk watson søk klikket")}
+                            onSubmit={() =>
+                              sporHendelse("søk watson søk klikket")
+                            }
                           >
-                            <input type="hidden" name="ident" value={søketekst} />
+                            <input
+                              type="hidden"
+                              name="ident"
+                              value={søketekst}
+                            />
                             <Button type="submit" variant="secondary">
                               Slå opp i Watson Søk
                             </Button>

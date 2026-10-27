@@ -16,6 +16,7 @@ import { AvkortetTag } from "~/komponenter/AvkortetTag";
 import { sporHendelse } from "~/analytics/analytics";
 import { Kort } from "~/komponenter/Kort";
 import { RouteConfig } from "~/routeConfig";
+import { identEtikett } from "~/utils/string-utils";
 import { getSaksreferanse } from "~/saker/id";
 import { getKategoriText, getOpprettetDato } from "~/saker/selectors";
 import type { KontrollsakResponse } from "~/saker/types.backend";
@@ -35,7 +36,13 @@ interface SøkSakOppsummeringProps {
   sak: KontrollsakResponse;
 }
 
-function Felt({ label, children }: { label: string; children: React.ReactNode }) {
+function Felt({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <VStack gap="space-1">
       <Detail className="text-ax-text-neutral-subtle" uppercase>
@@ -66,7 +73,10 @@ function TagListe({ tags }: { tags: string[] }) {
  * uten å måtte åpne den.
  */
 export function SøkSakOppsummering({ sak }: SøkSakOppsummeringProps) {
-  const detaljSti = RouteConfig.SAKER_DETALJ.replace(":sakId", getSaksreferanse(sak.id));
+  const detaljSti = RouteConfig.SAKER_DETALJ.replace(
+    ":sakId",
+    getSaksreferanse(sak.id),
+  );
   const saksreferanse = getSaksreferanse(sak.id);
   const tilbakeState = { tilbake: { to: RouteConfig.SØK, label: "Søk" } };
   const eier = sak.saksbehandlere.eier;
@@ -99,20 +109,33 @@ export function SøkSakOppsummering({ sak }: SøkSakOppsummeringProps) {
               </Heading>
             </Link>
             <HStack gap="space-2" align="center">
-              <CalendarIcon aria-hidden fontSize="1rem" className="text-ax-icon-neutral-subtle" />
+              <CalendarIcon
+                aria-hidden
+                fontSize="1rem"
+                className="text-ax-icon-neutral-subtle"
+              />
               <Detail className="text-ax-text-neutral-subtle">
-                Opprettet {formaterDato(getOpprettetDato(sak))} · {getKildeText(sak)}
+                Opprettet {formaterDato(getOpprettetDato(sak))} ·{" "}
+                {getKildeText(sak)}
               </Detail>
             </HStack>
           </VStack>
 
           <HStack gap="space-2" className="min-w-0">
             {(sak.status || sak.steg === "AVSLUTTET") && (
-              <AvkortetTag variant="outline" data-color={statusTag.farge} size="medium">
+              <AvkortetTag
+                variant="outline"
+                data-color={statusTag.farge}
+                size="medium"
+              >
                 {statusTag.tekst}
               </AvkortetTag>
             )}
-            <AvkortetTag variant="outline" data-color={STEG_FARGE} size="medium">
+            <AvkortetTag
+              variant="outline"
+              data-color={STEG_FARGE}
+              size="medium"
+            >
               {getStegOgStatusTekst(sak)}
             </AvkortetTag>
           </HStack>
@@ -122,7 +145,7 @@ export function SøkSakOppsummering({ sak }: SøkSakOppsummeringProps) {
 
         <HGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="space-16">
           <VStack gap="space-6">
-            <Felt label="Personnummer">
+            <Felt label={identEtikett(getPersonIdent(sak))}>
               <HStack gap="space-1" align="center">
                 <BodyShort>{getPersonIdent(sak)}</BodyShort>
                 <CopyButton size="xsmall" copyText={getPersonIdent(sak)} />

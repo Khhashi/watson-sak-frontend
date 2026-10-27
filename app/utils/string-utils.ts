@@ -75,7 +75,10 @@ export function snakeCaseTilSetning(snakeCaseStr: string | null) {
   }
 
   const [førsteOrd, ...restenAvOrdene] = snakeCaseStr.split("_");
-  return [storFørsteBokstav(førsteOrd), restenAvOrdene.map((s) => s.toLowerCase()).join(" ")]
+  return [
+    storFørsteBokstav(førsteOrd),
+    restenAvOrdene.map((s) => s.toLowerCase()).join(" "),
+  ]
     .join(" ")
     .trim();
 }
@@ -85,6 +88,17 @@ export function snakeCaseTilSetning(snakeCaseStr: string | null) {
  */
 export function erFnr(verdi: string): boolean {
   return /^\d{11}$/.test(verdi);
+}
+
+/**
+ * Et D-nummer har 4 lagt til første siffer, så første siffer er 4–7.
+ */
+export function erDnummer(verdi: string): boolean {
+  return /^[4-7]\d{10}$/.test(verdi.replace(/\s/g, ""));
+}
+
+export function identEtikett(ident: string): "Fødselsnummer" | "D-nummer" {
+  return erDnummer(ident) ? "D-nummer" : "Fødselsnummer";
 }
 
 /**
@@ -135,7 +149,9 @@ export function formaterFødselsnummer(fødselsnummer: string | null): string {
  * @param organisasjonsnummer - Organisasjonsnummer som skal formateres
  * @returns Formatert organisasjonsnummer, eller uendret verdi hvis lengden ikke er 9
  */
-export function formaterOrganisasjonsnummer(organisasjonsnummer: string | null): string {
+export function formaterOrganisasjonsnummer(
+  organisasjonsnummer: string | null,
+): string {
   if (!organisasjonsnummer || organisasjonsnummer.length !== 9) {
     return organisasjonsnummer ?? "";
   }

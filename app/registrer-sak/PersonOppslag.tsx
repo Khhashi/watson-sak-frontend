@@ -1,9 +1,17 @@
 import type { FetcherWithComponents } from "react-router";
-import { BodyShort, Button, HStack, LocalAlert, Loader, VStack } from "@navikt/ds-react";
+import {
+  BodyShort,
+  Button,
+  HStack,
+  LocalAlert,
+  Loader,
+  VStack,
+} from "@navikt/ds-react";
 import { MagnifyingGlassIcon } from "@navikt/aksel-icons";
 import { Link } from "react-router";
 import { FødselsnummerSøkefelt } from "~/formaterte-inputfelt/FormaterteInputfelt";
 import { RouteConfig } from "~/routeConfig";
+import { identEtikett } from "~/utils/string-utils";
 import { INGEN_TILGANG_TIL_Å_OPPRETTE_SAK_MELDING } from "./feilmeldinger";
 import type { PersonOppslagResultat } from "./person-oppslag.mock.server";
 
@@ -80,7 +88,7 @@ export function PersonOppslag({
         onSubmit={onPersonOppslag}
       >
         <FødselsnummerSøkefelt
-          label="Fødsels- eller d-nummer"
+          label="Fødsels- eller D-nummer"
           hideLabel={false}
           name="fnr"
           value={søkeFnr}
@@ -123,9 +131,13 @@ export function PersonOppslag({
       {harSøkt && !person && !oppslagFeil && (
         <LocalAlert status="announcement" className="max-w-xl">
           <LocalAlert.Header>
-            <LocalAlert.Title as="h2">Personen ble ikke funnet</LocalAlert.Title>
+            <LocalAlert.Title as="h2">
+              Personen ble ikke funnet
+            </LocalAlert.Title>
           </LocalAlert.Header>
-          <LocalAlert.Content>Sjekk at fødselsnummeret er riktig.</LocalAlert.Content>
+          <LocalAlert.Content>
+            Sjekk at fødsels- eller D-nummeret er riktig.
+          </LocalAlert.Content>
         </LocalAlert>
       )}
 
@@ -147,7 +159,8 @@ export function PersonOppslag({
                   {person.navn}
                 </BodyShort>
                 <BodyShort size="small" className="text-ax-text-neutral-subtle">
-                  Personnummer: {person.personnummer} · {person.alder} år
+                  {identEtikett(person.personnummer)}: {person.personnummer} ·{" "}
+                  {person.alder} år
                   {legacyPid && ` · PID: ${legacyPid}`}
                 </BodyShort>
               </VStack>
@@ -155,14 +168,17 @@ export function PersonOppslag({
             {søktMedHistoriskIdent && (
               <LocalAlert status="warning">
                 <LocalAlert.Content>
-                  Fødsels- eller d-nummeret du søkte med er historisk. Saken opprettes på gjeldende
-                  identifikator: <strong>{person.personnummer}</strong>.
+                  Fødsels- eller D-nummeret du søkte med er historisk. Saken
+                  opprettes på gjeldende identifikator:{" "}
+                  <strong>{person.personnummer}</strong>.
                 </LocalAlert.Content>
               </LocalAlert>
             )}
             {person.adresseskjermet && (
               <LocalAlert status="warning">
-                <LocalAlert.Content>Denne personen er skjermet.</LocalAlert.Content>
+                <LocalAlert.Content>
+                  Denne personen er skjermet.
+                </LocalAlert.Content>
               </LocalAlert>
             )}
           </VStack>
@@ -177,8 +193,8 @@ export function PersonOppslag({
                 </LocalAlert.Title>
               </LocalAlert.Header>
               <LocalAlert.Content>
-                {INGEN_TILGANG_TIL_Å_OPPRETTE_SAK_MELDING}. Ta kontakt dersom du mener dette er
-                feil.
+                {INGEN_TILGANG_TIL_Å_OPPRETTE_SAK_MELDING}. Ta kontakt dersom du
+                mener dette er feil.
               </LocalAlert.Content>
             </LocalAlert>
           )}
@@ -194,20 +210,25 @@ export function PersonOppslag({
               <LocalAlert.Content>
                 <VStack gap="space-12">
                   <BodyShort>
-                    {formaterDato(sisteSak.opprettetDato)} ble det opprettet en sak på{" "}
-                    {sisteSak.personNavn}. Kanskje gjelder dette samme sak?
+                    {formaterDato(sisteSak.opprettetDato)} ble det opprettet en
+                    sak på {sisteSak.personNavn}. Kanskje gjelder dette samme
+                    sak?
                   </BodyShort>
                   {sisteSak.sakId ? (
                     <HStack gap="space-8">
                       <Button
                         as={Link}
-                        to={RouteConfig.SAKER_DETALJ.replace(":sakId", sisteSak.sakId)}
+                        to={RouteConfig.SAKER_DETALJ.replace(
+                          ":sakId",
+                          sisteSak.sakId,
+                        )}
                         target="_blank"
                         rel="noopener noreferrer"
                         variant="secondary"
                         size="small"
                       >
-                        Se sak <span className="sr-only">(åpnes i ny fane)</span>
+                        Se sak{" "}
+                        <span className="sr-only">(åpnes i ny fane)</span>
                       </Button>
                     </HStack>
                   ) : null}
