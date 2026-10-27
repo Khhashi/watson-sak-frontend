@@ -247,6 +247,7 @@ describe("SakDetaljSide loader — backend-sti", () => {
       const eier = eierIdent ? { navIdent: eierIdent, navn: "Saksbehandler", enhet: "4812" } : null;
       mockHentKontrollsak.mockResolvedValue({
         ...grunnleggendeSak,
+        tilgang: { erLederForSakensEnhet: erLeder, ledetEnheter: erLeder ? ["ky153k"] : [] },
         saksbehandlere: { ...grunnleggendeSak.saksbehandlere, eier },
       });
       const formData = new FormData();
@@ -287,10 +288,56 @@ describe("SakDetaljSide loader — backend-sti", () => {
 
       await expect(
         action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
-      ).rejects.toMatchObject({ init: { status: 403 } });
+      ).resolves.toMatchObject({ data: { ok: false }, init: { status: 403 } });
       expect(mockVideresend).not.toHaveBeenCalled();
     },
   );
+
+  it("avviser videresending for leder i en annen enhet enn saken i backend-stien", async () => {
+    mockHentInnloggetBruker.mockResolvedValue({
+      preferredUsername: "z999999",
+      name: "Leder Lederesen",
+      navIdent: "Z999999",
+      enhet: "4812",
+      erLeder: true,
+    });
+    mockHentKontrollsak.mockResolvedValue({
+      ...grunnleggendeSak,
+      tilgang: { erLederForSakensEnhet: false, ledetEnheter: ["ky153k"] },
+      saksbehandlere: {
+        ...grunnleggendeSak.saksbehandlere,
+        eier: { navIdent: "Z111111", navn: "Saksbehandler", enhet: "4812" },
+      },
+    });
+    const formData = new FormData();
+    formData.set("handling", "send_til_annen_enhet");
+    formData.set("seksjon", "NORD");
+    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+    const { action } = await import("./SakDetaljSide.server");
+
+    await expect(
+      action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+    ).resolves.toMatchObject({ data: { ok: false }, init: { status: 403 } });
+    expect(mockVideresend).not.toHaveBeenCalled();
+  });
+
+  it("viser 403 fra backend som feilmelding i stedet for feilside", async () => {
+    mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);
+    mockFristillKontrollsak.mockRejectedValueOnce(
+      new MockBackendFeilException(403, "Tilgang avvist"),
+    );
+    const formData = new FormData();
+    formData.set("handling", "FRISTILL");
+    const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+    const { action } = await import("./SakDetaljSide.server");
+
+    await expect(
+      action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+    ).resolves.toMatchObject({
+      data: { ok: false, feil: "Du har ikke tilgang til å gjøre denne endringen på saken." },
+      init: { status: 403 },
+    });
+  });
 
   it("tillater FRISTILL av egen sak i Opprettet i backend-stien", async () => {
     mockHentKontrollsak.mockResolvedValue(grunnleggendeSak);

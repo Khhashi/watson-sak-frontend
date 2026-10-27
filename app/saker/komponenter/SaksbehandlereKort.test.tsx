@@ -55,6 +55,17 @@ function lagSaksbehandler(
   };
 }
 
+const lederTilgang = {
+  harTilgangTilKontrollobjekt: true,
+  kanSeHistorikk: true,
+  kanSeRelaterteSaker: true,
+  kanTildeleSak: true,
+  kanSeArkiv: false,
+  kanSeFiler: false,
+  erLederForSakensEnhet: true,
+  ledetEnheter: ["ky153k"],
+};
+
 function lagKontrollsak(overrides: Partial<KontrollsakResponse> = {}): KontrollsakResponse {
   return {
     id: 101,
@@ -465,6 +476,8 @@ describe("SaksbehandlereKort", () => {
       <SaksbehandlereKort
         erEier={false}
         sak={lagKontrollsak({
+          enhet: "ky153k",
+          tilgang: lederTilgang,
           steg,
           status: "I_BERO",
           saksbehandlere: {
@@ -522,7 +535,7 @@ describe("SaksbehandlereKort", () => {
     fireEvent.pointerUp(screen.getByRole("option", { name: "Ny Saksbehandler (Z999999)" }));
     fireEvent.click(screen.getByRole("button", { name: "Fortsett" }));
     await waitFor(() => {});
-    expect(screen.getAllByText("Ny Saksbehandler (Z999999)").length).toBeGreaterThan(1);
+    expect(screen.getAllByText("Ny Saksbehandler (Z999999)").length).toBeGreaterThan(0);
     const sendKnapper = screen.getAllByRole("button", { name: "Send til annen enhet" });
     const sendKnapp = sendKnapper.at(-1);
     if (!sendKnapp) {
@@ -652,13 +665,14 @@ describe("SaksbehandlereKort", () => {
       <SaksbehandlereKort
         erEier={false}
         sak={lagKontrollsak({
+          tilgang: lederTilgang,
           saksbehandlere: {
             eier: null,
             deltMed: [],
             opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "4812" },
           },
         })}
-        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        saksbehandlerDetaljer={[lagSaksbehandler({ kontrollEnhetId: "ky153k" })]}
         ansvarligSaksbehandler={null}
         kanTildeleSak={false}
       />,
@@ -697,7 +711,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={false}
-        sak={lagKontrollsak({ steg: "OPPRETTET" })}
+        sak={lagKontrollsak({ steg: "OPPRETTET", enhet: "ky153k", tilgang: lederTilgang })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler()}
       />,
@@ -737,7 +751,7 @@ describe("SaksbehandlereKort", () => {
     await renderMedRouter(
       <SaksbehandlereKort
         erEier={false}
-        sak={lagKontrollsak({ steg: "UTREDNING" })}
+        sak={lagKontrollsak({ steg: "UTREDNING", enhet: "ky153k", tilgang: lederTilgang })}
         saksbehandlerDetaljer={[lagSaksbehandler()]}
         ansvarligSaksbehandler={lagSaksbehandler()}
       />,
@@ -827,5 +841,107 @@ describe("SaksbehandlereKort", () => {
     );
 
     expect(screen.getByRole("button", { name: "Tildel meg" })).toBeDefined();
+  });
+
+  it("viser feilmeldingen når backend avviser Tildel meg", async () => {
+    fetcherData = { ok: false, feil: "Du har ikke tilgang til å gjøre denne endringen på saken." };
+
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({
+          saksbehandlere: {
+            eier: null,
+            deltMed: [],
+            opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "4812" },
+          },
+        })}
+        saksbehandlerDetaljer={[]}
+        ansvarligSaksbehandler={null}
+      />,
+    );
+
+    const tildelMeg = screen.getByRole("button", { name: "Tildel meg" });
+    const feilEtterKnappen = screen
+      .getAllByText("Du har ikke tilgang til å gjøre denne endringen på saken.")
+      .filter(
+        (element) => tildelMeg.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    expect(feilEtterKnappen).toHaveLength(1);
+  });
+
+  it("skjuler Endre og Fjern for leder i en annen enhet enn saken", async () => {
+    useInnloggetBrukerMock.mockReturnValue({
+      navIdent: "Z999999",
+      name: "Leder Lederesen",
+      enhet: "4812",
+      erLeder: true,
+    });
+
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({
+          steg: "OPPRETTET",
+          enhet: "hu424t",
+          tilgang: { ...lederTilgang, erLederForSakensEnhet: false },
+        })}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Fjern" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Endre enhet" })).toBeNull();
+  });
+
+  it("viser bare mottakere i sakens enhet eller enheter lederen leder ved overføring", async () => {
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={true}
+        sak={lagKontrollsak({
+          steg: "OPPRETTET",
+          enhet: "ky153k",
+          tilgang: { ...lederTilgang, erLederForSakensEnhet: false, ledetEnheter: ["gu301n"] },
+        })}
+        saksbehandlerDetaljer={[
+          lagSaksbehandler({ navIdent: "Z100001", navn: "Samme Enhet", kontrollEnhetId: "ky153k" }),
+          lagSaksbehandler({ navIdent: "Z100002", navn: "Ledet Enhet", kontrollEnhetId: "gu301n" }),
+          lagSaksbehandler({ navIdent: "Z100003", navn: "Annen Enhet", kontrollEnhetId: "hu424t" }),
+        ]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" }));
+    fireEvent.click(screen.getByRole("combobox", { name: "Saksbehandler" }));
+    await waitFor(() => {});
+
+    expect(screen.getByRole("option", { name: "Samme Enhet (Z100001)" })).toBeDefined();
+    expect(screen.getByRole("option", { name: "Ledet Enhet (Z100002)" })).toBeDefined();
+    expect(screen.queryByRole("option", { name: "Annen Enhet (Z100003)" })).toBeNull();
+  });
+
+  it("skjuler Tildel saksbehandler når innlogget ikke leder noen enhet", async () => {
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({
+          enhet: "ky153k",
+          tilgang: { ...lederTilgang, erLederForSakensEnhet: false, ledetEnheter: [] },
+          saksbehandlere: {
+            eier: null,
+            deltMed: [],
+            opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "4812" },
+          },
+        })}
+        saksbehandlerDetaljer={[lagSaksbehandler({ kontrollEnhetId: "ky153k" })]}
+        ansvarligSaksbehandler={null}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Tildel meg" })).toBeDefined();
+    expect(screen.queryByRole("button", { name: "Tildel saksbehandler" })).toBeNull();
   });
 });

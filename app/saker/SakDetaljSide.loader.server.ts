@@ -258,6 +258,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
   );
   // Backend setter `tilgang` på saken. Mocksakene mangler den, så vi speiler
   // backend sin arkivregel: den som kan lese saksinnholdet, kan se arkivet.
+  // Mock-ledere leder bare sin egen enhet.
+  const ledetEnheter = innlogget.erLeder && innlogget.enhetId ? [innlogget.enhetId] : [];
   const sakMedTilgang = {
     ...sak,
     tilgang: {
@@ -267,6 +269,8 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       kanTildeleSak: true,
       kanSeFiler: true,
       ...sak.tilgang,
+      erLederForSakensEnhet: !!sak.enhet && ledetEnheter.includes(sak.enhet),
+      ledetEnheter,
       kanSeArkiv: sak.tilgang?.kanSeArkiv ?? harDirekteTilgang,
     },
   };

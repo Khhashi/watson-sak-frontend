@@ -7,6 +7,7 @@ import type { Route } from "./+types/SakDetaljSide.route";
 import { backendAction } from "~/saker/handlinger/backend-action.server";
 import { mockAction } from "~/saker/handlinger/mock-action.server";
 import { parseSakId } from "~/saker/sti-param.server";
+import { erTildelingshandling } from "~/saker/SakDetaljSide.felles.server";
 
 // --- Action ---
 
@@ -27,6 +28,9 @@ export async function action({ request, params }: Route.ActionArgs) {
       if (feil instanceof backendApi.BackendFeilException && feil.status === 409) {
         return konfliktfeil(feil, handling);
       }
+      if (erTildelingshandling(handling) && erTilgangsfeil(feil)) {
+        return data<SaksflytFeil>({ ok: false, feil: tilgangsfeilmelding(feil) }, { status: 403 });
+      }
       throw feil;
     }
   }
@@ -38,6 +42,33 @@ export async function action({ request, params }: Route.ActionArgs) {
 }
 
 const skjemahandlinger = new Set(["rediger_saksinformasjon", "koble_sak", "fjern_kobling"]);
+
+const standardTilgangsfeil = "Du har ikke tilgang til å gjøre denne endringen på saken.";
+
+/** 403 fra backend eller fra tilgangssjekken i action. Vises i skjemaet i stedet for en feilside. */
+function erTilgangsfeil(feil: unknown): boolean {
+  if (feil instanceof backendApi.BackendFeilException) return feil.status === 403;
+  return (
+    !!feil &&
+    typeof feil === "object" &&
+    "init" in feil &&
+    (feil.init as ResponseInit | null)?.status === 403
+  );
+}
+
+function tilgangsfeilmelding(feil: unknown): string {
+  // Backend svarer bare «Tilgang avvist», så vi bruker en egen tekst for den.
+  if (
+    !(feil instanceof backendApi.BackendFeilException) &&
+    feil &&
+    typeof feil === "object" &&
+    "data" in feil &&
+    typeof feil.data === "string"
+  ) {
+    return feil.data;
+  }
+  return standardTilgangsfeil;
+}
 
 /** 409 er en avvist regel, ikke en serverfeil. Meldingen fra backend sier hva som er galt. */
 function konfliktfeil(feil: backendApi.BackendFeilException, handling: string) {

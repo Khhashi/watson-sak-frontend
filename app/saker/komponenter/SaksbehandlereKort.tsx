@@ -18,6 +18,7 @@ import { useKodeverk } from "~/kodeverk/useKodeverk";
 import { AvkortetTag } from "~/komponenter/AvkortetTag";
 import { RouteConfig } from "~/routeConfig";
 import { getSaksreferanse } from "~/saker/id";
+import { kanFordeleSak, kanOverføreTil, kanTildeleTil } from "~/saker/ledertilgang";
 import { getSaksenhet } from "~/saker/selectors";
 import { hentStegbaserteSaksregler } from "~/saker/stegregler";
 import type {
@@ -55,6 +56,14 @@ function hentInitialer(navn: string) {
     .slice(0, 2)
     .map((del) => del[0]?.toUpperCase() ?? "")
     .join("");
+}
+
+function hentFetcherFeil(fetcher: { state: string; data?: { ok?: boolean; feil?: unknown } }) {
+  return fetcher.state === "idle" &&
+    fetcher.data?.ok === false &&
+    typeof fetcher.data.feil === "string"
+    ? fetcher.data.feil
+    : null;
 }
 
 function SaksbehandlerRad({
@@ -117,24 +126,27 @@ export function SaksbehandlereKort({
     tildelMegFetcher.submit({ handling: "TILDEL_MEG" }, { method: "post", action: sakPath });
   }
 
-  // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler og enhet.
-  const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
+  // Kun sakens ansvarlige saksbehandler eller leder for sakens enhet kan endre ansvarlig saksbehandler og enhet.
+  const kanFordele = kanFordeleSak(sak, erEier);
+  const kanEndreAnsvarlig = kanEndreTilgang && kanFordele;
   // Ansvarlig eller leder kan endre enhet i alle aktive steg uansett status.
   // Ufordelte saker kan bare flyttes i Opprettet og Strafferettslig vurdering.
   const kanEndreEnhet =
     stegregler.erAktiv &&
-    (erEier || innloggetBruker.erLeder) &&
+    kanFordele &&
     (ansvarligSaksbehandler !== null || stegregler.kanEndreEnhetForUfordeltSak);
   // Fristilling er tillatt uansett arbeidsstatus, også når saken venter eller er i bero.
-  const kanFristilleAnsvarlig =
-    stegregler.kanFristilleAnsvarlig && (erEier || innloggetBruker.erLeder);
-  // Backend avviser fristilling med 409, og action returnerer { ok: false, feil } i stedet for å kaste.
-  const fristillFeil =
-    fristillFetcher.state === "idle" &&
-    fristillFetcher.data?.ok === false &&
-    typeof fristillFetcher.data.feil === "string"
-      ? fristillFetcher.data.feil
-      : null;
+  const kanFristilleAnsvarlig = stegregler.kanFristilleAnsvarlig && kanFordele;
+  const mottakereForOverføring = saksbehandlerDetaljer.filter((saksbehandler) =>
+    kanOverføreTil(sak, saksbehandler),
+  );
+  const mottakereForTildeling = saksbehandlerDetaljer.filter((saksbehandler) =>
+    kanTildeleTil(sak, saksbehandler),
+  );
+  const kanTildeleAndre = mottakereForTildeling.length > 0;
+  // Backend avviser fristilling og tildeling med 409 eller 403, og action returnerer { ok: false, feil } i stedet for å kaste.
+  const fristillFeil = hentFetcherFeil(fristillFetcher);
+  const tildelMegFeil = hentFetcherFeil(tildelMegFetcher);
   const kanEndreStatus =
     erEier && tillatteHandlinger?.handlinger.some((handling) => handling.type === "ENDRE_STATUS");
   const kanEndreSteg =
@@ -309,15 +321,22 @@ export function SaksbehandlereKort({
                     Tildel meg
                   </Button>
                 ) : null}
-                <Button
-                  type="button"
-                  variant="secondary"
-                  size="small"
-                  icon={<PersonPencilIcon aria-hidden />}
-                  onClick={() => setVisTildelModal(true)}
-                >
-                  Tildel saksbehandler
-                </Button>
+                {kanTildeleAndre && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="small"
+                    icon={<PersonPencilIcon aria-hidden />}
+                    onClick={() => setVisTildelModal(true)}
+                  >
+                    Tildel saksbehandler
+                  </Button>
+                )}
+                {tildelMegFeil && (
+                  <Alert variant="error" size="small">
+                    {tildelMegFeil}
+                  </Alert>
+                )}
               </VStack>
             )}
           </VStack>
@@ -402,14 +421,14 @@ export function SaksbehandlereKort({
       />
       <OverforAnsvarligModal
         sakId={String(sak.id)}
-        saksbehandlerDetaljer={saksbehandlerDetaljer}
+        saksbehandlerDetaljer={mottakereForOverføring}
         åpen={visOverforModal}
         onClose={() => setVisOverforModal(false)}
       />
       <TildelSaksbehandlerModal
         sakId={String(sak.id)}
         saksbehandlere={[]}
-        saksbehandlerDetaljer={saksbehandlerDetaljer}
+        saksbehandlerDetaljer={mottakereForTildeling}
         åpen={visTildelModal}
         onClose={() => setVisTildelModal(false)}
       />
