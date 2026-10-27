@@ -430,6 +430,22 @@ describe("SaksbehandlereKort", () => {
     expect(screen.queryByRole("button", { name: "Endre enhet" })).toBeNull();
   });
 
+  it.each(["OPPRETTET", "STRAFFERETTSLIG_VURDERING"] as const)(
+    "viser Endre enhet i %s selv om saken venter",
+    async (steg) => {
+      await renderMedRouter(
+        <SaksbehandlereKort
+          erEier={true}
+          sak={lagKontrollsak({ steg, status: "VENTER_PA_VEDTAK" })}
+          saksbehandlerDetaljer={[lagSaksbehandler()]}
+          ansvarligSaksbehandler={lagSaksbehandler()}
+        />,
+      );
+
+      expect(screen.getByRole("button", { name: "Endre enhet" })).toBeDefined();
+    },
+  );
+
   it("sender valgt enhet når saken sendes til annen enhet", async () => {
     await renderMedRouter(
       <SaksbehandlereKort

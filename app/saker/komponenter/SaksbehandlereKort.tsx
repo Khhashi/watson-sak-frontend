@@ -119,6 +119,9 @@ export function SaksbehandlereKort({
 
   // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler og enhet.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
+  const kanEndreEnhet =
+    (kanEndreTilgang || stegregler.kanEndreEnhetUansettStatus) &&
+    (erEier || innloggetBruker.erLeder);
   // Fristilling er tillatt uansett arbeidsstatus, også når saken venter eller er i bero.
   const kanFristilleAnsvarlig =
     stegregler.kanFristilleAnsvarlig && (erEier || innloggetBruker.erLeder);
@@ -228,7 +231,7 @@ export function SaksbehandlereKort({
                 {enhetsnavn || "Ingen"}
               </BodyShort>
 
-              {kanEndreAnsvarlig && (
+              {kanEndreEnhet && (
                 <ResponsivEndreKnapp
                   ariaLabel="Endre enhet"
                   onClick={() => setVisSendTilAnnenEnhetModal(true)}

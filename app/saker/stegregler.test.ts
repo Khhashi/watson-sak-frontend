@@ -12,6 +12,7 @@ describe("hentStegbaserteSaksregler", () => {
       kanLeggeTilHistorikk: false,
       kanEndreDeltTilgang: true,
       kanFristilleAnsvarlig: true,
+      kanEndreEnhetUansettStatus: true,
     });
   });
 
@@ -41,6 +42,17 @@ describe("hentStegbaserteSaksregler", () => {
     expect(hentStegbaserteSaksregler(steg).kanFristilleAnsvarlig).toBe(forventet);
   });
 
+  it.each<[KontrollsakSteg, boolean]>([
+    ["OPPRETTET", true],
+    ["UTREDNING", false],
+    ["FORVALTNING", false],
+    ["STRAFFERETTSLIG_VURDERING", true],
+    ["POLITI", false],
+    ["AVSLUTTET", false],
+  ])("tillater endring av enhet uansett status i %s: %s", (steg, forventet) => {
+    expect(hentStegbaserteSaksregler(steg).kanEndreEnhetUansettStatus).toBe(forventet);
+  });
+
   it("sperrer endringer for Avsluttet", () => {
     expect(hentStegbaserteSaksregler("AVSLUTTET")).toEqual({
       erAktiv: false,
@@ -50,6 +62,7 @@ describe("hentStegbaserteSaksregler", () => {
       kanLeggeTilHistorikk: false,
       kanEndreDeltTilgang: false,
       kanFristilleAnsvarlig: false,
+      kanEndreEnhetUansettStatus: false,
     });
   });
 });
