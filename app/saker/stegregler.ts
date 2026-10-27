@@ -8,11 +8,14 @@ export type StegbaserteSaksregler = {
   kanLeggeTilHistorikk: boolean;
   kanEndreDeltTilgang: boolean;
   kanFristilleAnsvarlig: boolean;
+  kanEndreEnhetForUfordeltSak: boolean;
 };
 
 export function hentStegbaserteSaksregler(steg: KontrollsakSteg): StegbaserteSaksregler {
   const erAktiv = steg !== "AVSLUTTET";
   const kanUtføreUtredningsarbeid = erAktiv && steg !== "OPPRETTET";
+  const erOpprettetEllerStrafferettslig =
+    steg === "OPPRETTET" || steg === "STRAFFERETTSLIG_VURDERING";
 
   return {
     erAktiv,
@@ -23,6 +26,8 @@ export function hentStegbaserteSaksregler(steg: KontrollsakSteg): StegbaserteSak
     // Deling krever en eier, som sjekkes der deling vises og i backend.
     kanEndreDeltTilgang: erAktiv,
     // Fristilling fjerner bare ansvarlig. Steg, status og deling beholdes.
-    kanFristilleAnsvarlig: steg === "OPPRETTET" || steg === "STRAFFERETTSLIG_VURDERING",
+    kanFristilleAnsvarlig: erOpprettetEllerStrafferettslig,
+    // Ufordelte saker kan bare flyttes til annen enhet i disse stegene.
+    kanEndreEnhetForUfordeltSak: erOpprettetEllerStrafferettslig,
   };
 }

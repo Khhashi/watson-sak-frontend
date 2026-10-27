@@ -5,6 +5,7 @@ import { mockKodeverk } from "~/testing/mock-store/kodeverk.server";
 import type {
   KontrollsakResponse,
   KontrollsakSaksbehandler,
+  KontrollsakSteg,
   TillatteHandlingerResponse,
 } from "~/saker/types.backend";
 import { SaksbehandlereKort } from "./SaksbehandlereKort";
@@ -427,7 +428,57 @@ describe("SaksbehandlereKort", () => {
     );
 
     expect(screen.queryByRole("button", { name: "Del tilgang" })).toBeNull();
-    expect(screen.queryByRole("button", { name: "Endre enhet" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Endre enhet" })).toBeDefined();
+  });
+
+  it.each(["UTREDNING", "STRAFFERETTSLIG_VURDERING", "POLITI"] as const)(
+    "lar ansvarlig endre enhet i %s selv om saken venter",
+    async (steg) => {
+      await renderMedRouter(
+        <SaksbehandlereKort
+          erEier={true}
+          sak={lagKontrollsak({ steg, status: "VENTER_PA_VEDTAK" })}
+          saksbehandlerDetaljer={[lagSaksbehandler()]}
+          ansvarligSaksbehandler={lagSaksbehandler()}
+        />,
+      );
+
+      expect(screen.getByRole("button", { name: "Endre enhet" })).toBeDefined();
+    },
+  );
+
+  it.each<[KontrollsakSteg, boolean]>([
+    ["OPPRETTET", true],
+    ["UTREDNING", false],
+    ["FORVALTNING", false],
+    ["STRAFFERETTSLIG_VURDERING", true],
+    ["POLITI", false],
+  ])("lar leder endre enhet for ufordelt sak i %s: %s", async (steg, forventet) => {
+    useInnloggetBrukerMock.mockReturnValue({
+      navIdent: "Z999999",
+      name: "Leder Lederesen",
+      enhet: "4812",
+      erLeder: true,
+    });
+
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({
+          steg,
+          status: "I_BERO",
+          saksbehandlere: {
+            eier: null,
+            deltMed: [],
+            opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "4812" },
+          },
+        })}
+        saksbehandlerDetaljer={[]}
+        ansvarligSaksbehandler={null}
+      />,
+    );
+
+    expect(screen.queryByRole("button", { name: "Endre enhet" }) !== null).toBe(forventet);
   });
 
   it("sender valgt enhet når saken sendes til annen enhet", async () => {
@@ -494,6 +545,7 @@ describe("SaksbehandlereKort", () => {
       <SaksbehandlereKort
         erEier={true}
         sak={lagKontrollsak({
+          steg: "OPPRETTET",
           saksbehandlere: {
             eier: null,
             deltMed: [],
