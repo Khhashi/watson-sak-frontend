@@ -9,7 +9,7 @@ import type { KontrollsakResponse, KontrollsakSaksbehandler } from "~/saker/type
  */
 
 /** Innlogget er leder for enheten saken ligger på. Backend regner med underenheter. */
-export function erLederForSakensEnhet(sak: KontrollsakResponse): boolean {
+function erLederForSakensEnhet(sak: KontrollsakResponse): boolean {
   return sak.tilgang?.erLederForSakensEnhet ?? false;
 }
 

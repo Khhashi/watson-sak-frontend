@@ -843,6 +843,33 @@ describe("SaksbehandlereKort", () => {
     expect(screen.getByRole("button", { name: "Tildel meg" })).toBeDefined();
   });
 
+  it("viser feilmeldingen når backend avviser Tildel meg", async () => {
+    fetcherData = { ok: false, feil: "Du har ikke tilgang til å gjøre denne endringen på saken." };
+
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({
+          saksbehandlere: {
+            eier: null,
+            deltMed: [],
+            opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "4812" },
+          },
+        })}
+        saksbehandlerDetaljer={[]}
+        ansvarligSaksbehandler={null}
+      />,
+    );
+
+    const tildelMeg = screen.getByRole("button", { name: "Tildel meg" });
+    const feilEtterKnappen = screen
+      .getAllByText("Du har ikke tilgang til å gjøre denne endringen på saken.")
+      .filter(
+        (element) => tildelMeg.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING,
+      );
+    expect(feilEtterKnappen).toHaveLength(1);
+  });
+
   it("skjuler Endre og Fjern for leder i en annen enhet enn saken", async () => {
     useInnloggetBrukerMock.mockReturnValue({
       navIdent: "Z999999",

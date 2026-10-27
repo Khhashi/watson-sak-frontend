@@ -58,6 +58,14 @@ function hentInitialer(navn: string) {
     .join("");
 }
 
+function hentFetcherFeil(fetcher: { state: string; data?: { ok?: boolean; feil?: unknown } }) {
+  return fetcher.state === "idle" &&
+    fetcher.data?.ok === false &&
+    typeof fetcher.data.feil === "string"
+    ? fetcher.data.feil
+    : null;
+}
+
 function SaksbehandlerRad({
   saksbehandler,
   handling,
@@ -136,13 +144,9 @@ export function SaksbehandlereKort({
     kanTildeleTil(sak, saksbehandler),
   );
   const kanTildeleAndre = mottakereForTildeling.length > 0;
-  // Backend avviser fristilling med 409, og action returnerer { ok: false, feil } i stedet for å kaste.
-  const fristillFeil =
-    fristillFetcher.state === "idle" &&
-    fristillFetcher.data?.ok === false &&
-    typeof fristillFetcher.data.feil === "string"
-      ? fristillFetcher.data.feil
-      : null;
+  // Backend avviser fristilling og tildeling med 409 eller 403, og action returnerer { ok: false, feil } i stedet for å kaste.
+  const fristillFeil = hentFetcherFeil(fristillFetcher);
+  const tildelMegFeil = hentFetcherFeil(tildelMegFetcher);
   const kanEndreStatus =
     erEier && tillatteHandlinger?.handlinger.some((handling) => handling.type === "ENDRE_STATUS");
   const kanEndreSteg =
@@ -327,6 +331,11 @@ export function SaksbehandlereKort({
                   >
                     Tildel saksbehandler
                   </Button>
+                )}
+                {tildelMegFeil && (
+                  <Alert variant="error" size="small">
+                    {tildelMegFeil}
+                  </Alert>
                 )}
               </VStack>
             )}
