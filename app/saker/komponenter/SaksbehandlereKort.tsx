@@ -109,7 +109,9 @@ export function SaksbehandlereKort({
 
   // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler og enhet.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
-  const kanFristilleAnsvarlig = kanEndreAnsvarlig && sak.steg === "OPPRETTET";
+  // Fristilling er tillatt uansett arbeidsstatus, også når saken venter eller er i bero.
+  const kanFristilleAnsvarlig =
+    stegregler.kanFristilleAnsvarlig && (erEier || innloggetBruker.erLeder);
   const kanEndreStatus =
     erEier && tillatteHandlinger?.handlinger.some((handling) => handling.type === "ENDRE_STATUS");
   const kanEndreSteg =
@@ -229,12 +231,14 @@ export function SaksbehandlereKort({
               <SaksbehandlerRad
                 saksbehandler={ansvarligSaksbehandler}
                 handling={
-                  kanEndreAnsvarlig ? (
+                  kanEndreAnsvarlig || kanFristilleAnsvarlig ? (
                     <HStack gap="space-2" align="center">
-                      <ResponsivEndreKnapp
-                        ariaLabel="Endre ansvarlig saksbehandler"
-                        onClick={() => setVisOverforModal(true)}
-                      />
+                      {kanEndreAnsvarlig && (
+                        <ResponsivEndreKnapp
+                          ariaLabel="Endre ansvarlig saksbehandler"
+                          onClick={() => setVisOverforModal(true)}
+                        />
+                      )}
                       {kanFristilleAnsvarlig && (
                         <Button
                           type="button"
@@ -261,7 +265,8 @@ export function SaksbehandlereKort({
               </BodyShort>
             )}
 
-            {kanEndreTilgang && !ansvarligSaksbehandler && (
+            {/* En fristilt sak kan ligge i bero eller vente på informasjon og må likevel kunne tas. */}
+            {stegregler.erAktiv && !ansvarligSaksbehandler && (
               <VStack gap="space-8">
                 {kanTildeleSak ? (
                   <Button

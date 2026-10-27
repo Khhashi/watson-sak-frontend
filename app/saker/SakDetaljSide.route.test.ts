@@ -1511,6 +1511,48 @@ describe("SakDetaljSide tilgangskontroll", () => {
     },
   );
 
+  it.each(["AKTIV", "VENTER_PA_INFORMASJON", "I_BERO"] as const)(
+    "fristiller i Strafferettslig vurdering og beholder status %s og deling",
+    async (status) => {
+      vi.mocked(hentInnloggetBruker).mockResolvedValue({
+        navIdent: "Z999999",
+        name: "Saksbehandler Saksbehandlersen",
+        preferredUsername: "saksbehandler@nav.no",
+        enhet: "4812",
+        enhetId: "by295h",
+        erLeder: false,
+      });
+
+      const kontrollsak = hentFordelingssaker(hentMockState(testRequest))[0];
+      const kontrollsakRef = getSaksreferanse(kontrollsak.id);
+      const deltMed = { navIdent: "Z222222", navn: "Delt Saksbehandler", enhet: "4812" };
+      kontrollsak.steg = "STRAFFERETTSLIG_VURDERING";
+      kontrollsak.status = status;
+      kontrollsak.saksbehandlere.eier = {
+        navIdent: "Z999999",
+        navn: "Saksbehandler Saksbehandlersen",
+        enhet: "4812",
+      };
+      kontrollsak.saksbehandlere.deltMed = [deltMed];
+
+      const formData = new FormData();
+      formData.set("handling", "FRISTILL");
+
+      const resultat = await action({
+        request: new Request(`http://localhost/saker/${kontrollsakRef}`, {
+          method: "POST",
+          body: formData,
+        }),
+        params: { sakId: kontrollsakRef },
+      } as Route.ActionArgs);
+      expect(resultat).toMatchObject({ ok: true });
+      expect(kontrollsak.saksbehandlere.eier).toBeNull();
+      expect(kontrollsak.steg).toBe("STRAFFERETTSLIG_VURDERING");
+      expect(kontrollsak.status).toBe(status);
+      expect(kontrollsak.saksbehandlere.deltMed).toEqual([deltMed]);
+    },
+  );
+
   it.each([false, true])(
     "avviser FRISTILL utenfor Opprettet for ansvarlig eller leder (%s)",
     async (erLeder) => {

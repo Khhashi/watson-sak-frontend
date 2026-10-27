@@ -713,4 +713,45 @@ describe("SaksbehandlereKort", () => {
     expect(screen.queryByRole("button", { name: "Fjern" })).toBeNull();
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
   });
+
+  it.each(["AKTIV", "VENTER_PA_INFORMASJON", "I_BERO"] as const)(
+    "lar ansvarlig fristille i Strafferettslig vurdering med status %s",
+    async (status) => {
+      await renderMedRouter(
+        <SaksbehandlereKort
+          erEier={true}
+          sak={lagKontrollsak({ steg: "STRAFFERETTSLIG_VURDERING", status })}
+          saksbehandlerDetaljer={[lagSaksbehandler()]}
+          ansvarligSaksbehandler={lagSaksbehandler()}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Fjern" }));
+      expect(submitMock).toHaveBeenCalledWith(
+        { handling: "FRISTILL" },
+        { method: "post", action: expect.any(String) },
+      );
+    },
+  );
+
+  it("viser Tildel meg for ufordelt sak i bero", async () => {
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({
+          steg: "STRAFFERETTSLIG_VURDERING",
+          status: "I_BERO",
+          saksbehandlere: {
+            eier: null,
+            deltMed: [],
+            opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "4812" },
+          },
+        })}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={null}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Tildel meg" })).toBeDefined();
+  });
 });
