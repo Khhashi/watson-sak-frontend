@@ -76,6 +76,9 @@ export async function hentKontrollsaker(
   if (!response.ok) {
     kastHvisUtlogget(response);
     if (response.status === 503) {
+      logger.warn("Watson Admin API kunne ikke hente kontrollsaker", {
+        status: response.status,
+      });
       throw new BackendUtilgjengeligError();
     }
     logger.error("Kunne ikke hente kontrollsaker fra Watson Admin API", {

@@ -50,6 +50,8 @@ describe("Fordeling api.server", () => {
   }, 15000);
 
   it("behandler HTTP 503 som utilgjengelige saksdata", async () => {
+    const logger = await import("~/logging/logging");
+    const warn = vi.spyOn(logger.logger, "warn");
     vi.stubGlobal(
       "fetch",
       vi.fn().mockResolvedValue({
@@ -64,6 +66,9 @@ describe("Fordeling api.server", () => {
       hentKontrollsaker({ token: "token-123", page: 1, size: 20 }),
     ).rejects.toMatchObject({
       name: "BackendUtilgjengeligError",
+    });
+    expect(warn).toHaveBeenCalledWith("Watson Admin API kunne ikke hente kontrollsaker", {
+      status: 503,
     });
   });
 

@@ -7,7 +7,7 @@ import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
 import { RouteConfig } from "~/routeConfig";
 import { hentMineSaker } from "~/saker/mock-alle-saker.server";
 import { formaterSteg } from "~/saker/visning";
-import { erBackendUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
+import { hentParEllerUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
 import type { KontrollsakResponse, KontrollsakStatus } from "~/saker/types.backend";
 import type { Route } from "./+types/MineSakerSide.route";
 import { MineSakerInnhold } from "./MineSakerInnhold";
@@ -54,20 +54,20 @@ export async function loader({ request }: Route.LoaderArgs) {
       status: blokkerendeStatus.length > 0 ? blokkerendeStatus : undefined,
       utenStatus: harIngenStatus ? true : undefined,
     };
-    try {
-      const [mineSakerResultat, tilknyttedeSakerResultat] = await Promise.all([
-        hentKontrollsaker({ ...felles, ansvarlig: "MEG" }),
-        hentKontrollsaker({ ...felles, tilknyttet: "MEG" }),
-      ]);
+    const resultat = await hentParEllerUtilgjengelig(
+      hentKontrollsaker({ ...felles, ansvarlig: "MEG" }),
+      hentKontrollsaker({ ...felles, tilknyttet: "MEG" }),
+    );
+    if (resultat.saksdataUtilgjengelig) {
+      saker = [];
+      deltMedSaker = [];
+      saksdataUtilgjengelig = true;
+    } else {
+      const [mineSakerResultat, tilknyttedeSakerResultat] = resultat.resultater;
       saker = mineSakerResultat.items;
       deltMedSaker = tilknyttedeSakerResultat.items.filter(
         (sak) => sak.saksbehandlere?.eier?.navIdent !== innloggetBruker.navIdent,
       );
-    } catch (feil) {
-      if (!erBackendUtilgjengelig(feil)) throw feil;
-      saker = [];
-      deltMedSaker = [];
-      saksdataUtilgjengelig = true;
     }
   } else {
     const alleSaker = hentMineSaker(request, innloggetBruker.navIdent, innloggetBruker.name);

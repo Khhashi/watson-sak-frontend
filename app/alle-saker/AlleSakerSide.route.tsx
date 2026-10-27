@@ -31,7 +31,7 @@ import {
 import { Filtre } from "./Filtre";
 import { ANSVARLIG_MEG, parseAlderOgAnsvarlig } from "./aldersfilter";
 import { parseStatusfilter, STATUSFILTER_VALG, tilBackendStatusfilter } from "./statusfilter";
-import { erBackendUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
+import { hentParEllerUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
 
 const STANDARD_KOLONNE: AlleSakerKolonne = "opprettet";
 const STANDARD_RETNING: Sorteringsretning = "desc";
@@ -82,26 +82,37 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
-    try {
-      const [resultat, saksbehandlere] = await Promise.all([
-        hentKontrollsaker({
-          token,
-          page: side,
-          size: RADER_PER_SIDE,
-          ansvarligNavIdent: filterSaksbehandler,
-          ansvarlig: ansvarligMeg ? ANSVARLIG_MEG : undefined,
-          aldersvarsel,
-          kategori: filterKategori.length > 0 ? filterKategori : undefined,
-          misbruktype: filterMisbrukstype.length > 0 ? filterMisbrukstype : undefined,
-          merking: filterMerking.length > 0 ? filterMerking : undefined,
-          enhet: filterEnhet.length > 0 ? filterEnhet : undefined,
-          steg: filterSteg.length > 0 ? filterSteg : undefined,
-          ...tilBackendStatusfilter(filterStatus),
-          sortering: lagSorteringParam(sorterKolonne, sorterRetning),
-        }),
-        backendApi.hentSaksbehandlere(token),
-      ]);
-
+    const kallResultat = await hentParEllerUtilgjengelig(
+      hentKontrollsaker({
+        token,
+        page: side,
+        size: RADER_PER_SIDE,
+        ansvarligNavIdent: filterSaksbehandler,
+        ansvarlig: ansvarligMeg ? ANSVARLIG_MEG : undefined,
+        aldersvarsel,
+        kategori: filterKategori.length > 0 ? filterKategori : undefined,
+        misbruktype: filterMisbrukstype.length > 0 ? filterMisbrukstype : undefined,
+        merking: filterMerking.length > 0 ? filterMerking : undefined,
+        enhet: filterEnhet.length > 0 ? filterEnhet : undefined,
+        steg: filterSteg.length > 0 ? filterSteg : undefined,
+        ...tilBackendStatusfilter(filterStatus),
+        sortering: lagSorteringParam(sorterKolonne, sorterRetning),
+      }),
+      backendApi.hentSaksbehandlere(token),
+    );
+    if (kallResultat.saksdataUtilgjengelig) {
+      return {
+        rader: [],
+        aktivSide: side,
+        totalSider: 0,
+        totalAntall: 0,
+        sorteringskolonne: sorterKolonne,
+        sorteringsretning: sorterRetning,
+        filterAlternativer: { saksbehandler: [] },
+        saksdataUtilgjengelig: true,
+      };
+    } else {
+      const [resultat, saksbehandlere] = kallResultat.resultater;
       return {
         rader: resultat.items.map((sak) => mapKontrollsakTilSakslisteRad(sak)),
         aktivSide: resultat.page,
@@ -113,18 +124,6 @@ export async function loader({ request }: Route.LoaderArgs) {
           saksbehandler: saksbehandlere.map((sb) => ({ label: sb.navn, value: sb.navIdent })),
         },
         saksdataUtilgjengelig: false,
-      };
-    } catch (feil) {
-      if (!erBackendUtilgjengelig(feil)) throw feil;
-      return {
-        rader: [],
-        aktivSide: side,
-        totalSider: 0,
-        totalAntall: 0,
-        sorteringskolonne: sorterKolonne,
-        sorteringsretning: sorterRetning,
-        filterAlternativer: { saksbehandler: [] },
-        saksdataUtilgjengelig: true,
       };
     }
   }

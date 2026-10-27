@@ -149,6 +149,23 @@ describe("MineSakerSide loader — backend-sti", () => {
     expect(result.deltMedSaker).toEqual([]);
   });
 
+  it("sender videre sesjonsfeil fra parallelt kall selv om det andre kallet gir 503", async () => {
+    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
+    const sesjonsfeil = new Response(null, { status: 401 });
+    mockHentKontrollsaker
+      .mockRejectedValueOnce(new BackendUtilgjengeligError())
+      .mockRejectedValueOnce(sesjonsfeil);
+    const { loader } = await import("./MineSakerSide.route");
+
+    await expect(
+      loader({
+        request: new Request("http://localhost/mine-saker"),
+        params: {},
+        context: {},
+      } as Parameters<typeof loader>[0]),
+    ).rejects.toBe(sesjonsfeil);
+  });
+
   it("ekskluderer egne saker fra deltMedSaker", async () => {
     const lagSakMedEier = (id: number, eierNavIdent: string) => ({
       id,

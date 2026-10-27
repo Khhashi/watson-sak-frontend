@@ -5,6 +5,7 @@ import { ALLE_STEG } from "~/saker/steg";
 const { hentKontrollsakerMock } = vi.hoisted(() => ({
   hentKontrollsakerMock: vi.fn(),
 }));
+const hentSaksbehandlereMock = vi.hoisted(() => vi.fn().mockResolvedValue([]));
 
 vi.mock("~/config/env.server", () => ({ skalBrukeMockdata: false }));
 vi.mock("~/auth/access-token", () => ({
@@ -14,11 +15,14 @@ vi.mock("~/fordeling/api.server", () => ({
   hentKontrollsaker: hentKontrollsakerMock,
 }));
 vi.mock("~/saker/api.server", () => ({
-  hentSaksbehandlere: vi.fn().mockResolvedValue([]),
+  hentSaksbehandlere: hentSaksbehandlereMock,
 }));
 
 describe("AlleSakerSide loader", () => {
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    hentSaksbehandlereMock.mockResolvedValue([]);
+  });
 
   it.each([
     {
@@ -132,6 +136,31 @@ describe("AlleSakerSide loader", () => {
     expect(resultat.saksdataUtilgjengelig).toBe(true);
     expect(resultat.rader).toEqual([]);
     expect(resultat.totalAntall).toBe(0);
+  });
+
+  it("sender videre sesjonsfeil fra saksbehandleroppslaget selv om kontrollsakkallet gir 503", async () => {
+    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
+    const sesjonsfeil = new Response(null, { status: 401 });
+    hentKontrollsakerMock.mockRejectedValue(new BackendUtilgjengeligError());
+    hentSaksbehandlereMock.mockRejectedValue(sesjonsfeil);
+
+    await expect(kjørLoader(new URLSearchParams())).rejects.toBe(sesjonsfeil);
+  });
+
+  it("behandler HTTP 503 fra saksbehandleroppslaget som utilgjengelige saksdata", async () => {
+    const { BackendFeilException } = await import("~/saker/api-core.server");
+    hentKontrollsakerMock.mockResolvedValue({
+      items: [],
+      page: 1,
+      totalPages: 0,
+      totalItems: 0,
+    });
+    hentSaksbehandlereMock.mockRejectedValue(new BackendFeilException(503, "utilgjengelig"));
+
+    const resultat = await kjørLoader(new URLSearchParams());
+
+    expect(resultat.saksdataUtilgjengelig).toBe(true);
+    expect(resultat.rader).toEqual([]);
   });
 
   it.each([
