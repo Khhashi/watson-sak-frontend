@@ -2,6 +2,11 @@ import { forskjellIDager } from "~/utils/date-utils";
 import { getSaksreferanse } from "~/saker/id";
 export { paginerElementer } from "~/utils/paginering";
 import type { FordelingSak } from "./typer";
+import { matcherSteg } from "~/saker/steg";
+import type { KontrollsakSteg } from "~/saker/types.backend";
+
+/** Ansvarlig kan bare fjernes i disse stegene, så bare de kan ha ufordelte saker. */
+export const UFORDELTE_STEG: KontrollsakSteg[] = ["OPPRETTET", "STRAFFERETTSLIG_VURDERING"];
 
 export const ufordelteSorteringskolonner = [
   "saksid",
@@ -19,6 +24,7 @@ interface UfordelteFiltre {
   kategorier: string[];
   misbrukstyper: string[];
   merkinger: string[];
+  steg: KontrollsakSteg[];
 }
 
 export function hentUfordelteFiltervalg(saker: FordelingSak[]) {
@@ -46,7 +52,9 @@ export function filtrerUfordelteSaker(
       filtre.merkinger.length === 0 ||
       sak.merking.some((merking) => filtre.merkinger.includes(merking));
 
-    return matcherKategori && matcherMisbrukstype && matcherMerking;
+    const matcherValgtSteg = matcherSteg(sak.stegKode, filtre.steg);
+
+    return matcherKategori && matcherMisbrukstype && matcherMerking && matcherValgtSteg;
   });
 }
 

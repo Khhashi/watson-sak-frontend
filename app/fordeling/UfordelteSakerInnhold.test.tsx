@@ -64,7 +64,7 @@ describe("UfordelteSakerInnhold", () => {
     );
   });
 
-  it("viser saker uavhengig av steg-parameter uten å vise steg-filter", () => {
+  it("ignorerer steg-parameter for steg som ikke kan være ufordelt", () => {
     render(
       <MemoryRouter initialEntries={["/?steg=UTREDES"]}>
         <UfordelteSakerInnhold
@@ -80,6 +80,33 @@ describe("UfordelteSakerInnhold", () => {
     expect(screen.getByRole("link", { name: "#301" })).toBeDefined();
     expect(screen.getByRole("link", { name: "#302" })).toBeDefined();
     expect(screen.queryByRole("button", { name: "Utredes" })).toBeNull();
+  });
+
+  it("filtrerer på Opprettet og Strafferettslig vurdering", () => {
+    render(
+      <MemoryRouter initialEntries={["/?steg=STRAFFERETTSLIG_VURDERING"]}>
+        <UfordelteSakerInnhold
+          saker={[
+            lagSak(),
+            lagSak({
+              id: 302,
+              steg: "Strafferettslig vurdering",
+              stegKode: "STRAFFERETTSLIG_VURDERING",
+            }),
+          ]}
+          enhet="Analyse"
+          saksbehandlere={["Kari Nordmann"]}
+          saksbehandlerDetaljer={mockSaksbehandlerDetaljer}
+          submitPath={RouteConfig.FORDELING}
+        />
+      </MemoryRouter>,
+    );
+
+    expect(screen.queryByRole("link", { name: "#301" })).toBeNull();
+    expect(screen.getByRole("link", { name: "#302" })).toBeDefined();
+    expect(screen.getByRole("heading", { level: 1 }).textContent).toBe(
+      "Ufordelte saker i Analyse – Strafferettslig vurdering",
+    );
   });
 
   it("bruker ikke ekstra section-landmarks for oppsummeringskortene", () => {

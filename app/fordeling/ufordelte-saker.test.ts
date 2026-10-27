@@ -53,6 +53,7 @@ describe("ufordelte-saker", () => {
       kategorier: ["Arbeid"],
       misbrukstyper: ["Svart arbeid"],
       merkinger: [],
+      steg: [],
     });
 
     expect(filtrerteSaker.map((sak) => sak.id)).toEqual([1, 3]);
@@ -62,6 +63,26 @@ describe("ufordelte-saker", () => {
       totalSider: 2,
       elementer: [filtrerteSaker[1]],
     });
+  });
+
+  it("filtrerer på steg", () => {
+    const saker = [
+      lagSak({ id: 1 }),
+      lagSak({
+        id: 2,
+        steg: "Strafferettslig vurdering",
+        stegKode: "STRAFFERETTSLIG_VURDERING",
+      }),
+    ];
+
+    const filtrerteSaker = filtrerUfordelteSaker(saker, {
+      kategorier: [],
+      misbrukstyper: [],
+      merkinger: [],
+      steg: ["STRAFFERETTSLIG_VURDERING"],
+    });
+
+    expect(filtrerteSaker.map((sak) => sak.id)).toEqual([2]);
   });
 
   it("lager oppsummering med antall saker, eldste liggetid og relevante ytelser", () => {
