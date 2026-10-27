@@ -1,12 +1,52 @@
-import { describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { lagInitialKontrollsaker } from "~/testing/mock-store/saker/fordeling.server";
+import { lagInitialMineKontrollsaker } from "~/testing/mock-store/saker/mine-saker.server";
 import { lagMockStatistikk } from "./mock.server";
 
+const INGEN_SAKER = { saker: [], navIdent: "Z123456" };
+
 describe("lagMockStatistikk", () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it.each(["2026-10-27T12:00:00Z", "2031-03-31T12:00:00Z"])(
+    "teller aldersvarsler fra mock-sakene, også %s",
+    (nå) => {
+      vi.useFakeTimers({ now: new Date(nå) });
+      const saker = [...lagInitialKontrollsaker(), ...lagInitialMineKontrollsaker()];
+
+      const resultat = lagMockStatistikk(
+        { nivaa: "underavdeling", fra: "2026-09-01", til: "2026-09-30" },
+        "Analyse",
+        "by295h",
+        { saker, navIdent: "L999999" },
+      );
+
+      expect(resultat.varsler.map((varsel) => [varsel.filter, varsel.tekst])).toEqual([
+        ["nærmer-seg-frist", "1 sak nærmer seg 12 måneders total behandlingstid"],
+        ["over-30-dager", "1 sak overskrider 30 dager fra opprettet"],
+      ]);
+    },
+  );
+
+  it("viser ingen aldersvarsler når ingen saker treffer", () => {
+    const resultat = lagMockStatistikk(
+      { nivaa: "underavdeling", fra: "2026-09-01", til: "2026-09-30" },
+      "Øst",
+      "ky153k",
+      INGEN_SAKER,
+    );
+
+    expect(resultat.varsler).toEqual([]);
+  });
+
   it("lager alle datasett som statistikksiden trenger", () => {
     const resultat = lagMockStatistikk(
       { nivaa: "underavdeling", fra: "2026-09-01", til: "2026-09-30" },
       "Øst",
       "ky153k",
+      INGEN_SAKER,
     );
 
     expect(resultat.valgtOmfang).toBe("enhet:ky153k");
@@ -41,6 +81,7 @@ describe("lagMockStatistikk", () => {
       { nivaa: "meg", fra: "2026-09-01", til: "2026-09-30" },
       "Øst",
       "ky153k",
+      INGEN_SAKER,
     );
 
     expect(resultat.omfangEnheter).toEqual([]);

@@ -14,6 +14,7 @@ function renderMedRouter(
       { nivaa: "underavdeling", fra: "2026-09-01", til: "2026-09-30" },
       "Øst",
       "ky153k",
+      { saker: [], navIdent: "Z123456" },
     ),
   );
   const router = createMemoryRouter(
@@ -111,9 +112,11 @@ describe("StatistikkDiagrammer", () => {
       ...data,
       omfangEnheter: ["ky153k", "je679z"],
       valgtOmfang: "meg",
-      varsler: data.varsler.slice(0, 2).map((varsel, index) => ({
-        ...varsel,
-        filter: index === 0 ? "nærmer-seg-frist" : "over-30-dager",
+      varsler: (["nærmer-seg-frist", "over-30-dager"] as const).map((filter) => ({
+        tone: "info" as const,
+        tekst: filter,
+        lenkeTekst: "Se aktive saker",
+        filter,
       })),
     }));
 

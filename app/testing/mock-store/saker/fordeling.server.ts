@@ -473,9 +473,31 @@ const initialeMockKontrollsaker = [
   },
 ];
 
-function lagMockKontrollsaker() {
+/**
+ * Åpne saker som skal treffe aldersvarselet «Nærmer seg 12 måneder». Faste datoer glir ut av
+ * vinduet etter en måned, så disse får opprettelsesdato regnet fra når mocktilstanden bygges.
+ */
+const SAKER_SOM_NÆRMER_SEG_12_MÅNEDER = new Set(["101", "102", "111"]);
+
+/** Elleve måneder og en uke tilbake, godt innenfor vinduet (nå − 12 mnd, nå − 11 mnd]. */
+function elleveMånederSiden(nå: Date): string {
+  const dato = new Date(nå);
+  dato.setUTCMonth(dato.getUTCMonth() - 11);
+  dato.setUTCDate(dato.getUTCDate() - 7);
+  return dato.toISOString();
+}
+
+function lagMockKontrollsaker(nå: Date = new Date()) {
   return initialeMockKontrollsaker.map((sak) =>
-    kontrollsakResponseSchema.parse(normaliserLegacyKontrollsak(berikLegacySakMedPerson(sak))),
+    kontrollsakResponseSchema.parse(
+      normaliserLegacyKontrollsak(
+        berikLegacySakMedPerson(
+          SAKER_SOM_NÆRMER_SEG_12_MÅNEDER.has(sak.id)
+            ? { ...sak, opprettet: elleveMånederSiden(nå) }
+            : sak,
+        ),
+      ),
+    ),
   );
 }
 
