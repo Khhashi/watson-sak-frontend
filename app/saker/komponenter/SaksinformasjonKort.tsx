@@ -15,7 +15,12 @@ import {
   VStack,
 } from "@navikt/ds-react";
 import { useEffect, useId, useMemo, useRef, useState } from "react";
-import { useBeforeUnload, useBlocker, useFetcher, useRevalidator } from "react-router";
+import {
+  useBeforeUnload,
+  useBlocker,
+  useFetcher,
+  useRevalidator,
+} from "react-router";
 import { sporHendelse } from "~/analytics/analytics";
 import { useKodeverk } from "~/kodeverk/useKodeverk";
 import { Kort } from "~/komponenter/Kort";
@@ -27,12 +32,19 @@ import {
 } from "~/registrer-sak/YtelseRadFelt";
 import type { YtelseRadVerdier } from "~/registrer-sak/skjema-helpers";
 import { kanRedigereAnmeldelse } from "~/saker/anmeldelse";
-import { erGyldigPolitidistrikt, POLITIDISTRIKTER } from "~/saker/politidistrikter";
+import {
+  erGyldigPolitidistrikt,
+  POLITIDISTRIKTER,
+} from "~/saker/politidistrikter";
 import { Beløpsfelt } from "~/formaterte-inputfelt/FormaterteInputfelt";
 import { merkingEtikett } from "~/saker/kategorier";
 import type { KontrollsakResponse } from "~/saker/types.backend";
 import { formaterIsoTilNorskDato, getPersonIdent } from "~/saker/visning";
-import { formaterOrganisasjonsnummer, parseOrganisasjonsnumre } from "~/utils/string-utils";
+import {
+  formaterOrganisasjonsnummer,
+  identEtikett,
+  parseOrganisasjonsnumre,
+} from "~/utils/string-utils";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
 import { ResponsivEndreKnapp } from "./ResponsivEndreKnapp";
 import { SakDetaljerFelter } from "./SakDetaljerFelter";
@@ -57,7 +69,10 @@ function lagYtelseRaderFraSak(sak: KontrollsakResponse): YtelseRadVerdier[] {
     type: ytelse.type || undefined,
     fraDato: formaterIsoTilNorskDato(ytelse.periodeFra) || undefined,
     tilDato: formaterIsoTilNorskDato(ytelse.periodeTil) || undefined,
-    beløp: ytelse.belop !== null && ytelse.belop !== undefined ? String(ytelse.belop) : undefined,
+    beløp:
+      ytelse.belop !== null && ytelse.belop !== undefined
+        ? String(ytelse.belop)
+        : undefined,
     endeligBeløp:
       ytelse.endeligBelop !== null && ytelse.endeligBelop !== undefined
         ? String(ytelse.endeligBelop)
@@ -70,12 +85,16 @@ function formaterAnmeldtBelop(belop: number | null | undefined): string {
 }
 
 /** Lagrede verdier som ikke finnes i listen (eldre fritekst) gir tomt valg, så brukeren må velge på nytt. */
-function forhåndsvalgtPolitidistrikt(politidistrikt: string | null | undefined): string {
+function forhåndsvalgtPolitidistrikt(
+  politidistrikt: string | null | undefined,
+): string {
   const verdi = politidistrikt?.trim() ?? "";
   return erGyldigPolitidistrikt(verdi) ? verdi : "";
 }
 
-function lagRedigeringsdata(sak: KontrollsakResponse): RedigerSaksinformasjonData {
+function lagRedigeringsdata(
+  sak: KontrollsakResponse,
+): RedigerSaksinformasjonData {
   return {
     kategori: sak.kategori,
     kilde: sak.kilde,
@@ -93,7 +112,8 @@ function lagRedigeringsdata(sak: KontrollsakResponse): RedigerSaksinformasjonDat
               sak.resultat?.strafferettsligVurdering?.politidistrikt,
             ),
             politietsSaksreferanse:
-              sak.resultat?.strafferettsligVurdering?.politietsSaksreferanse ?? "",
+              sak.resultat?.strafferettsligVurdering?.politietsSaksreferanse ??
+              "",
           },
         }
       : {}),
@@ -119,7 +139,10 @@ function erLikeYtelser(a: YtelseRadVerdier[], b: YtelseRadVerdier[]): boolean {
   );
 }
 
-function erLikeRedigeringsdata(a: RedigerSaksinformasjonData, b: RedigerSaksinformasjonData) {
+function erLikeRedigeringsdata(
+  a: RedigerSaksinformasjonData,
+  b: RedigerSaksinformasjonData,
+) {
   return (
     a.kategori === b.kategori &&
     a.kilde === b.kilde &&
@@ -129,7 +152,8 @@ function erLikeRedigeringsdata(a: RedigerSaksinformasjonData, b: RedigerSaksinfo
     erLikeYtelser(a.ytelser, b.ytelser) &&
     a.anmeldelse?.anmeldtBelop === b.anmeldelse?.anmeldtBelop &&
     a.anmeldelse?.politidistrikt === b.anmeldelse?.politidistrikt &&
-    a.anmeldelse?.politietsSaksreferanse === b.anmeldelse?.politietsSaksreferanse
+    a.anmeldelse?.politietsSaksreferanse ===
+      b.anmeldelse?.politietsSaksreferanse
   );
 }
 
@@ -158,21 +182,27 @@ export function SaksinformasjonKort({
   const [redigerer, setRedigerer] = useState(false);
   const [redigeringsøkt, setRedigeringsøkt] = useState(0);
   const [visFeil, setVisFeil] = useState(false);
-  const [lokaleVerdier, setLokaleVerdier] = useState<RedigerSaksinformasjonData>(() =>
-    lagRedigeringsdata(sak),
-  );
+  const [lokaleVerdier, setLokaleVerdier] =
+    useState<RedigerSaksinformasjonData>(() => lagRedigeringsdata(sak));
   const [organisasjonsnummerTekst, setOrganisasjonsnummerTekst] = useState(() =>
     (sak.arbeidsgivere ?? []).map(formaterOrganisasjonsnummer).join(", "),
   );
   const utgangspunkt = useMemo(() => lagRedigeringsdata(sak), [sak]);
   const ytelseAlternativer = useMemo(
-    () => kodeverk.ytelseTyper.map((ytelse) => ({ value: ytelse.kode, label: ytelse.beskrivelse })),
+    () =>
+      kodeverk.ytelseTyper.map((ytelse) => ({
+        value: ytelse.kode,
+        label: ytelse.beskrivelse,
+      })),
     [kodeverk.ytelseTyper],
   );
   const misbrukstypeBeskrivelseMap = useMemo(
     () =>
       new Map(
-        kodeverk.misbrukstyper.map((misbrukstype) => [misbrukstype.kode, misbrukstype.beskrivelse]),
+        kodeverk.misbrukstyper.map((misbrukstype) => [
+          misbrukstype.kode,
+          misbrukstype.beskrivelse,
+        ]),
       ),
     [kodeverk.misbrukstyper],
   );
@@ -180,12 +210,15 @@ export function SaksinformasjonKort({
     visFeil && fetcher.data && !fetcher.data.ok ? fetcher.data.feil : undefined;
   const feilElementer = samleFeilElementer(feil);
   const errorSummaryId = useId();
-  const harUlagredeEndringer = redigerer && !erLikeRedigeringsdata(lokaleVerdier, utgangspunkt);
+  const harUlagredeEndringer =
+    redigerer && !erLikeRedigeringsdata(lokaleVerdier, utgangspunkt);
   const blocker = useBlocker(harUlagredeEndringer);
   const sisteBehandledeData = useRef<typeof fetcher.data>(undefined);
   const personIdent = getPersonIdent(sak);
   const visPersonIdent = sak.gjeldendePersonIdent ?? personIdent;
-  const harHistoriskIdent = sak.historiskeIdenter.some((ident) => ident.historisk);
+  const harHistoriskIdent = sak.historiskeIdenter.some(
+    (ident) => ident.historisk,
+  );
   const misbrukstypeAlternativer = hentMisbrukstypeAlternativer(
     lokaleVerdier.kategori,
     kodeverk.misbrukstyper,
@@ -216,7 +249,11 @@ export function SaksinformasjonKort({
   useEffect(() => {
     if (blocker.state !== "blocked") return;
 
-    if (window.confirm("Du har ulagrede endringer. Er du sikker på at du vil forlate siden?")) {
+    if (
+      window.confirm(
+        "Du har ulagrede endringer. Er du sikker på at du vil forlate siden?",
+      )
+    ) {
       blocker.proceed();
       return;
     }
@@ -267,7 +304,10 @@ export function SaksinformasjonKort({
       const nyeYtelser = gjeldende.ytelser.filter(
         (_, gjeldendeIndeks) => gjeldendeIndeks !== indeks,
       );
-      return { ...gjeldende, ytelser: nyeYtelser.length > 0 ? nyeYtelser : [{}] };
+      return {
+        ...gjeldende,
+        ytelser: nyeYtelser.length > 0 ? nyeYtelser : [{}],
+      };
     });
   }
 
@@ -293,9 +333,15 @@ export function SaksinformasjonKort({
           <fetcher.Form
             method="post"
             key={redigeringsøkt}
-            onSubmit={() => sporHendelse("sak redigert", { kategori: lokaleVerdier.kategori })}
+            onSubmit={() =>
+              sporHendelse("sak redigert", { kategori: lokaleVerdier.kategori })
+            }
           >
-            <input type="hidden" name="handling" value="rediger_saksinformasjon" />
+            <input
+              type="hidden"
+              name="handling"
+              value="rediger_saksinformasjon"
+            />
 
             <VStack gap="space-6">
               {feilElementer.length > 0 && (
@@ -311,22 +357,25 @@ export function SaksinformasjonKort({
                 </ErrorSummary>
               )}
 
-              {feil?.skjema?.[0] && <Alert variant="error">{feil.skjema[0]}</Alert>}
+              {feil?.skjema?.[0] && (
+                <Alert variant="error">{feil.skjema[0]}</Alert>
+              )}
 
               <VStack gap="space-1">
                 <Detail className="text-ax-text-neutral-subtle" uppercase>
-                  Personnummer
+                  {identEtikett(visPersonIdent)}
                 </Detail>
                 <PersonIdentMedHistorikk
                   personIdent={visPersonIdent}
                   harHistorikk={harHistoriskIdent}
                   onVisHistorikk={onVisIdentHistorikk}
                 />
-                {sak.gjeldendePersonIdent && sak.gjeldendePersonIdent !== sak.personIdent && (
-                  <Detail className="text-ax-text-neutral-subtle">
-                    Saken ble opprettet under {personIdent}
-                  </Detail>
-                )}
+                {sak.gjeldendePersonIdent &&
+                  sak.gjeldendePersonIdent !== sak.personIdent && (
+                    <Detail className="text-ax-text-neutral-subtle">
+                      Saken ble opprettet under {personIdent}
+                    </Detail>
+                  )}
               </VStack>
 
               <HGrid columns={{ xs: 1, md: 2, xl: 3 }} gap="space-4">
@@ -370,7 +419,9 @@ export function SaksinformasjonKort({
                     size="small"
                     value={lokaleVerdier.kilde}
                     error={førsteFeilForFelt(feil, "kilde")}
-                    onChange={(event) => oppdaterLokaleVerdier("kilde", event.target.value)}
+                    onChange={(event) =>
+                      oppdaterLokaleVerdier("kilde", event.target.value)
+                    }
                   >
                     <option value="">Velg kilde</option>
                     {kodeverk.kilder.map((kilde) => (
@@ -409,7 +460,9 @@ export function SaksinformasjonKort({
                         if (!isSelected) {
                           return {
                             ...gjeldende,
-                            misbruktype: gjeldende.misbruktype.filter((verdi) => verdi !== option),
+                            misbruktype: gjeldende.misbruktype.filter(
+                              (verdi) => verdi !== option,
+                            ),
                           };
                         }
                         return gjeldende;
@@ -418,7 +471,12 @@ export function SaksinformasjonKort({
                     error={førsteFeilForFelt(feil, "misbruktype")}
                   />
                   {lokaleVerdier.misbruktype.map((type) => (
-                    <input key={type} type="hidden" name="misbruktype" value={type} />
+                    <input
+                      key={type}
+                      type="hidden"
+                      name="misbruktype"
+                      value={type}
+                    />
                   ))}
                 </div>
 
@@ -432,12 +490,20 @@ export function SaksinformasjonKort({
                     onChange={(event) => {
                       const tekst = event.target.value;
                       setOrganisasjonsnummerTekst(tekst);
-                      oppdaterLokaleVerdier("arbeidsgivere", parseOrganisasjonsnumre(tekst));
+                      oppdaterLokaleVerdier(
+                        "arbeidsgivere",
+                        parseOrganisasjonsnumre(tekst),
+                      );
                     }}
                     error={førsteFeilForFelt(feil, "arbeidsgivere")}
                   />
                   {lokaleVerdier.arbeidsgivere.map((orgnr) => (
-                    <input key={orgnr} type="hidden" name="arbeidsgivere" value={orgnr} />
+                    <input
+                      key={orgnr}
+                      type="hidden"
+                      name="arbeidsgivere"
+                      value={orgnr}
+                    />
                   ))}
                 </div>
 
@@ -462,12 +528,17 @@ export function SaksinformasjonKort({
                       setLokaleVerdier((gjeldende) => {
                         const finnes = gjeldende.merking.includes(option);
                         if (isSelected && !finnes) {
-                          return { ...gjeldende, merking: [...gjeldende.merking, option] };
+                          return {
+                            ...gjeldende,
+                            merking: [...gjeldende.merking, option],
+                          };
                         }
                         if (!isSelected) {
                           return {
                             ...gjeldende,
-                            merking: gjeldende.merking.filter((verdi) => verdi !== option),
+                            merking: gjeldende.merking.filter(
+                              (verdi) => verdi !== option,
+                            ),
                           };
                         }
                         return gjeldende;
@@ -476,7 +547,12 @@ export function SaksinformasjonKort({
                     error={førsteFeilForFelt(feil, "merking")}
                   />
                   {lokaleVerdier.merking.map((merking) => (
-                    <input key={merking} type="hidden" name="merking" value={merking} />
+                    <input
+                      key={merking}
+                      type="hidden"
+                      name="merking"
+                      value={merking}
+                    />
                   ))}
                 </div>
               </HGrid>
@@ -497,7 +573,9 @@ export function SaksinformasjonKort({
                     defaults={rad}
                     feil={feil}
                     size="small"
-                    endeligBeløpReadOnly={sak.steg !== "STRAFFERETTSLIG_VURDERING"}
+                    endeligBeløpReadOnly={
+                      sak.steg !== "STRAFFERETTSLIG_VURDERING"
+                    }
                   />
                 ))}
                 <div>
@@ -533,9 +611,11 @@ export function SaksinformasjonKort({
                             setLokaleVerdier((gjeldende) => ({
                               ...gjeldende,
                               anmeldelse: {
-                                politidistrikt: gjeldende.anmeldelse?.politidistrikt ?? "",
+                                politidistrikt:
+                                  gjeldende.anmeldelse?.politidistrikt ?? "",
                                 politietsSaksreferanse:
-                                  gjeldende.anmeldelse?.politietsSaksreferanse ?? "",
+                                  gjeldende.anmeldelse
+                                    ?.politietsSaksreferanse ?? "",
                                 anmeldtBelop,
                               },
                             }))
@@ -555,10 +635,12 @@ export function SaksinformasjonKort({
                           setLokaleVerdier((gjeldende) => ({
                             ...gjeldende,
                             anmeldelse: {
-                              anmeldtBelop: gjeldende.anmeldelse?.anmeldtBelop ?? "",
+                              anmeldtBelop:
+                                gjeldende.anmeldelse?.anmeldtBelop ?? "",
                               politidistrikt,
                               politietsSaksreferanse:
-                                gjeldende.anmeldelse?.politietsSaksreferanse ?? "",
+                                gjeldende.anmeldelse?.politietsSaksreferanse ??
+                                "",
                             },
                           }));
                         }}
@@ -579,14 +661,19 @@ export function SaksinformasjonKort({
                         maxLength={100}
                         autoComplete="off"
                         value={lokaleVerdier.anmeldelse.politietsSaksreferanse}
-                        error={førsteFeilForFelt(feil, "politietsSaksreferanse")}
+                        error={førsteFeilForFelt(
+                          feil,
+                          "politietsSaksreferanse",
+                        )}
                         onChange={(event) => {
                           const politietsSaksreferanse = event.target.value;
                           setLokaleVerdier((gjeldende) => ({
                             ...gjeldende,
                             anmeldelse: {
-                              anmeldtBelop: gjeldende.anmeldelse?.anmeldtBelop ?? "",
-                              politidistrikt: gjeldende.anmeldelse?.politidistrikt ?? "",
+                              anmeldtBelop:
+                                gjeldende.anmeldelse?.anmeldtBelop ?? "",
+                              politidistrikt:
+                                gjeldende.anmeldelse?.politidistrikt ?? "",
                               politietsSaksreferanse,
                             },
                           }));
@@ -598,10 +685,19 @@ export function SaksinformasjonKort({
               )}
 
               <HStack justify="end" gap="space-4">
-                <Button size="small" type="button" variant="secondary" onClick={avbrytRedigering}>
+                <Button
+                  size="small"
+                  type="button"
+                  variant="secondary"
+                  onClick={avbrytRedigering}
+                >
                   Avbryt
                 </Button>
-                <Button size="small" type="submit" loading={fetcher.state !== "idle"}>
+                <Button
+                  size="small"
+                  type="submit"
+                  loading={fetcher.state !== "idle"}
+                >
                   Lagre
                 </Button>
               </HStack>
@@ -609,10 +705,16 @@ export function SaksinformasjonKort({
           </fetcher.Form>
         ) : (
           <VStack gap="space-4">
-            <SakDetaljerFelter sak={sak} onVisIdentHistorikk={onVisIdentHistorikk} />
+            <SakDetaljerFelter
+              sak={sak}
+              onVisIdentHistorikk={onVisIdentHistorikk}
+            />
             {kanRedigere && (
               <HStack justify="end">
-                <ResponsivEndreKnapp ariaLabel="Endre saksinformasjon" onClick={startRedigering} />
+                <ResponsivEndreKnapp
+                  ariaLabel="Endre saksinformasjon"
+                  onClick={startRedigering}
+                />
               </HStack>
             )}
           </VStack>

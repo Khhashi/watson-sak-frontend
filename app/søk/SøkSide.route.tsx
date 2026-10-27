@@ -118,7 +118,7 @@ function SøkeVeiledning() {
           PID
         </Tag>
         <Tag variant="neutral" size="small">
-          Fødselsnummer
+          Fødsels- eller D-nummer
         </Tag>
         <Tag variant="neutral" size="small">
           Organisasjonsnummer
