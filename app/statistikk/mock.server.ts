@@ -1,9 +1,63 @@
+import type { Aldersvarsel } from "~/alle-saker/aldersfilter";
+import { filtrerSaker } from "~/alle-saker/saker-utils";
+import type { KontrollsakResponse } from "~/saker/types.backend";
 import type { Statistikk, StatistikkSpørring } from "./types";
+
+/** Mock-sakene varslene telles i, og innlogget bruker for «Meg selv»-omfanget. */
+type Aldersgrunnlag = { saker: KontrollsakResponse[]; navIdent: string };
+
+/**
+ * Teller med samme filter som «Alle saker» bruker i mockmodus, så tallet i varslet blir det
+ * samme som antall treff bak lenken. Speiler `lagVarsler` i watson-admin-api.
+ */
+function lagVarsler(
+  { saker, navIdent }: Aldersgrunnlag,
+  omfangEnheter: string[],
+  erMeg: boolean,
+): Statistikk["varsler"] {
+  const tell = (aldersvarsel: Aldersvarsel) =>
+    filtrerSaker(saker, {
+      enhet: omfangEnheter,
+      saksbehandler: erMeg ? [navIdent] : [],
+      kategori: [],
+      misbrukstype: [],
+      merking: [],
+      steg: [],
+      aldersvarsel,
+    }).length;
+  const antallSaker = (antall: number) => `${antall} ${antall === 1 ? "sak" : "saker"}`;
+  const nærmerSegTolvMåneder = tell("NAERMER_SEG_12_MAANEDER");
+  const fraTrettiDager = tell("FRA_30_DAGER");
+
+  return [
+    ...(nærmerSegTolvMåneder > 0
+      ? [
+          {
+            tone: "warning" as const,
+            tekst: `${antallSaker(nærmerSegTolvMåneder)} nærmer seg 12 måneders total behandlingstid`,
+            lenkeTekst: "Se aktive saker",
+            filter: "nærmer-seg-frist",
+          },
+        ]
+      : []),
+    ...(fraTrettiDager > 0
+      ? [
+          {
+            tone: "info" as const,
+            tekst: `${antallSaker(fraTrettiDager)} overskrider 30 dager fra opprettet`,
+            lenkeTekst: "Se aktive saker",
+            filter: "over-30-dager",
+          },
+        ]
+      : []),
+  ];
+}
 
 export function lagMockStatistikk(
   spørring: StatistikkSpørring,
   avdeling: string,
   avdelingId: string | null,
+  aldersgrunnlag: Aldersgrunnlag,
 ): Statistikk {
   const statuser = [
     ["Opprettet", "OPPRETTET"],
@@ -60,20 +114,7 @@ export function lagMockStatistikk(
       { verdi: "organisasjon", label: "Hele organisasjonen", type: "organisasjon" },
     ],
     periode: { fra: spørring.fra, til: spørring.til, label },
-    varsler: [
-      {
-        tone: "warning",
-        tekst: "7 saker nærmer seg 12 måneders total behandlingstid",
-        lenkeTekst: "Se aktive saker",
-        filter: "nærmer-seg-frist",
-      },
-      {
-        tone: "info",
-        tekst: "24 saker overskrider 30 dager fra opprettet",
-        lenkeTekst: "Se aktive saker",
-        filter: "over-30-dager",
-      },
-    ],
+    varsler: lagVarsler(aldersgrunnlag, omfangEnheter, spørring.nivaa === "meg"),
     nøkkeltall: [
       { label: "Totalt", verdi: "87", forklaring: "Antall åpne saker", tone: "accent" },
       {

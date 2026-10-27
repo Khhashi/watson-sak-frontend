@@ -24,10 +24,15 @@ describe("statistikk api.server", () => {
       ...(nivaa === "underavdeling" ? { enhetId: "ky153k" } : {}),
     };
     const fetchMock = vi.fn().mockResolvedValue(
-      new Response(JSON.stringify(lagMockStatistikk(spørring, "Øst", "ky153k")), {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }),
+      new Response(
+        JSON.stringify(
+          lagMockStatistikk(spørring, "Øst", "ky153k", { saker: [], navIdent: "Z123456" }),
+        ),
+        {
+          status: 200,
+          headers: { "Content-Type": "application/json" },
+        },
+      ),
     );
     vi.stubGlobal("fetch", fetchMock);
 
