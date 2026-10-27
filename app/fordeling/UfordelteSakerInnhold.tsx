@@ -22,7 +22,10 @@ import {
   ufordelteSorteringskolonner,
   type UfordeltSorteringskolonne,
   type UfordeltSorteringsretning,
+  UFORDELTE_STEG,
 } from "./ufordelte-saker";
+import { parseSteg } from "~/saker/steg";
+import { formaterSteg } from "~/saker/visning";
 import type { KontrollsakSaksbehandler } from "~/saker/types.backend";
 import { ANTALL_PER_SIDE } from "~/utils/paginering";
 import type { FordelingSak } from "./typer";
@@ -52,16 +55,22 @@ export function UfordelteSakerInnhold({
   const kategoriFilter = useFilterParam("kategori", { resetKeys: RESET_KEYS });
   const misbrukstypeFilter = useFilterParam("misbrukstype", { resetKeys: RESET_KEYS });
   const merkingFilter = useFilterParam("merking", { resetKeys: RESET_KEYS });
+  const stegFilter = useFilterParam("steg", { resetKeys: RESET_KEYS });
 
   const valgtSide = Number.parseInt(searchParams.get("side") ?? "1", 10) || 1;
   const sorteringskolonne = hentSorteringskolonne(searchParams.get("sorter"));
   const sorteringsretning = hentSorteringsretning(searchParams.get("retning"));
 
   const filtervalg = useMemo(() => hentUfordelteFiltervalg(saker), [saker]);
+  const gyldigSteg = useMemo(
+    () => parseSteg(stegFilter.valgteVerdier).filter((steg) => UFORDELTE_STEG.includes(steg)),
+    [stegFilter.valgteVerdier],
+  );
   const aktiveFiltreVerdier = [
     ...kategoriFilter.valgteVerdier,
     ...misbrukstypeFilter.valgteVerdier,
     ...merkingFilter.valgteVerdier,
+    ...gyldigSteg.map((steg) => formaterSteg(steg)),
   ];
   const filterTekst = aktiveFiltreVerdier.length > 0 ? aktiveFiltreVerdier.join(", ") : null;
   const overskriftUtenFilter = enhet ? `Ufordelte saker i ${enhet}` : "Ufordelte saker";
@@ -74,12 +83,14 @@ export function UfordelteSakerInnhold({
         kategorier: kategoriFilter.valgteVerdier,
         misbrukstyper: misbrukstypeFilter.valgteVerdier,
         merkinger: merkingFilter.valgteVerdier,
+        steg: gyldigSteg,
       }),
     [
       saker,
       kategoriFilter.valgteVerdier,
       misbrukstypeFilter.valgteVerdier,
       merkingFilter.valgteVerdier,
+      gyldigSteg,
     ],
   );
   const sorterteSaker = useMemo(() => {
@@ -219,6 +230,16 @@ export function UfordelteSakerInnhold({
             </div>
 
             <Filterpanel>
+              <ChipsFiltergruppe
+                tittel="Steg"
+                alternativer={UFORDELTE_STEG.map((s) => ({ verdi: s, etikett: formaterSteg(s) }))}
+                valgteVerdier={stegFilter.valgteVerdier}
+                onToggle={(verdi) => {
+                  sporHendelse("filter brukt", { filtergruppe: "steg", side: "fordeling" });
+                  stegFilter.toggle(verdi);
+                }}
+                size="small"
+              />
               {filtervalg.kategorier.length > 0 && (
                 <ChipsFiltergruppe
                   tittel="Kategori"
