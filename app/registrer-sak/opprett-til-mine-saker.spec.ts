@@ -3,21 +3,14 @@ import { expect, test } from "@playwright/test";
 import { resetMockData } from "~/test/reset-mock-data";
 
 test.describe("Oppretting og tildeling av sak", () => {
-  test("opprettet sak kan fordeles og vises under mine saker", async ({
-    page,
-  }) => {
+  test("opprettet sak kan fordeles og vises under mine saker", async ({ page }) => {
     test.setTimeout(60_000);
     await resetMockData(page);
 
     await page.goto("/registrer-sak", { waitUntil: "networkidle" });
 
-    await page
-      .getByRole("searchbox", { name: "Fødsels- eller D-nummer" })
-      .fill("12345678901");
-    await page
-      .getByLabel("Søk etter person")
-      .getByRole("button", { name: "Søk" })
-      .click();
+    await page.getByRole("searchbox", { name: "Fødsels- eller D-nummer" }).fill("12345678901");
+    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
     await expect(
       page.getByRole("heading", { name: "Grunnleggende saksinformasjon" }),
     ).toBeVisible();
@@ -29,19 +22,13 @@ test.describe("Oppretting og tildeling av sak", () => {
 
     const bekreftelseDialog = page.getByRole("dialog", { name: "Opprett sak" });
     await expect(bekreftelseDialog).toBeVisible();
-    await bekreftelseDialog
-      .getByRole("button", { name: "Opprett sak" })
-      .click();
+    await bekreftelseDialog.getByRole("button", { name: "Opprett sak" }).click();
 
-    await expect(
-      page.getByRole("button", { name: "Gå til saken" }),
-    ).toBeVisible();
+    await expect(page.getByRole("button", { name: "Gå til saken" })).toBeVisible();
     await page.getByRole("button", { name: "Gå til saken" }).click();
 
     await expect(page).toHaveURL(/\/saker\/10000$/);
-    await expect(
-      page.getByRole("heading", { name: /^Sak 10000/ }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Sak 10000/ })).toBeVisible();
 
     await page.goto("/fordeling", { waitUntil: "networkidle" });
 
@@ -56,9 +43,7 @@ test.describe("Oppretting og tildeling av sak", () => {
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     await dialog.getByLabel("Saksbehandler").fill("Saks Behandlersen");
-    await dialog
-      .getByRole("option", { name: "Saks Behandlersen (Z999999)" })
-      .click();
+    await dialog.getByRole("option", { name: "Saks Behandlersen (Z999999)" }).click();
 
     const tildelKnapp = dialog.getByRole("button", { name: "Tildel" });
     await expect(tildelKnapp).toBeEnabled();
@@ -70,15 +55,11 @@ test.describe("Oppretting og tildeling av sak", () => {
 
     await page.goto("/mine-saker", { waitUntil: "networkidle" });
 
-    const minSakLenke = page
-      .locator("#maincontent")
-      .getByRole("link", { name: "10000" });
+    const minSakLenke = page.locator("#maincontent").getByRole("link", { name: "10000" });
     await expect(minSakLenke).toBeVisible();
 
     await minSakLenke.click();
     await expect(page).toHaveURL(/\/saker\/10000$/);
-    await expect(
-      page.getByRole("heading", { name: /^Sak 10000/ }),
-    ).toBeVisible();
+    await expect(page.getByRole("heading", { name: /^Sak 10000/ })).toBeVisible();
   });
 });

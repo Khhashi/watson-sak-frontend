@@ -1,12 +1,4 @@
-import {
-  BodyShort,
-  Detail,
-  HGrid,
-  HStack,
-  Table,
-  Tag,
-  VStack,
-} from "@navikt/ds-react";
+import { BodyShort, Detail, HGrid, HStack, Table, Tag, VStack } from "@navikt/ds-react";
 import { hentAnmeldelseForVisning } from "~/saker/anmeldelse";
 import { merkingEtikett } from "~/saker/kategorier";
 import { getKategoriText, getMisbrukstyper, getTags } from "~/saker/selectors";
@@ -18,10 +10,7 @@ import {
   getKildeText,
   getPersonIdent,
 } from "~/saker/visning";
-import {
-  formaterOrganisasjonsnummer,
-  identEtikett,
-} from "~/utils/string-utils";
+import { formaterOrganisasjonsnummer, identEtikett } from "~/utils/string-utils";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
 
 interface SakDetaljerFelterProps {
@@ -29,13 +18,7 @@ interface SakDetaljerFelterProps {
   onVisIdentHistorikk: () => void;
 }
 
-function Felt({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Felt({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <VStack gap="space-2">
       <Detail className="text-ax-text-neutral-subtle" uppercase>
@@ -46,15 +29,10 @@ function Felt({
   );
 }
 
-export function SakDetaljerFelter({
-  sak,
-  onVisIdentHistorikk,
-}: SakDetaljerFelterProps) {
+export function SakDetaljerFelter({ sak, onVisIdentHistorikk }: SakDetaljerFelterProps) {
   const personIdent = getPersonIdent(sak);
   const visPersonIdent = sak.gjeldendePersonIdent ?? personIdent;
-  const harHistoriskIdent = sak.historiskeIdenter.some(
-    (ident) => ident.historisk,
-  );
+  const harHistoriskIdent = sak.historiskeIdenter.some((ident) => ident.historisk);
   const kategoriText = getKategoriText(sak);
   const misbrukstyper = getMisbrukstyper(sak);
   const tags = getTags(sak);
@@ -74,12 +52,11 @@ export function SakDetaljerFelter({
               harHistorikk={harHistoriskIdent}
               onVisHistorikk={onVisIdentHistorikk}
             />
-            {sak.gjeldendePersonIdent &&
-              sak.gjeldendePersonIdent !== sak.personIdent && (
-                <Detail className="text-ax-text-neutral-subtle">
-                  Saken ble opprettet under {personIdent}
-                </Detail>
-              )}
+            {sak.gjeldendePersonIdent && sak.gjeldendePersonIdent !== sak.personIdent && (
+              <Detail className="text-ax-text-neutral-subtle">
+                Saken ble opprettet under {personIdent}
+              </Detail>
+            )}
           </VStack>
           {sak.legacyPid && <Felt label="PID">{sak.legacyPid}</Felt>}
         </HStack>
@@ -104,12 +81,7 @@ export function SakDetaljerFelter({
             </Detail>
             <HStack gap="space-2" wrap>
               {misbrukstyper.map((type) => (
-                <Tag
-                  key={type}
-                  variant="outline"
-                  data-color="info"
-                  size="small"
-                >
+                <Tag key={type} variant="outline" data-color="info" size="small">
                   {type}
                 </Tag>
               ))}
@@ -134,9 +106,7 @@ export function SakDetaljerFelter({
 
         {sak.arbeidsgivere && sak.arbeidsgivere.length > 0 && (
           <Felt label="Organisasjonsnummer">
-            {sak.arbeidsgivere
-              .map((orgnr) => formaterOrganisasjonsnummer(orgnr))
-              .join(", ")}
+            {sak.arbeidsgivere.map((orgnr) => formaterOrganisasjonsnummer(orgnr)).join(", ")}
           </Felt>
         )}
       </VStack>
@@ -145,12 +115,7 @@ export function SakDetaljerFelter({
         {sak.ytelser.length === 0 ? (
           <BodyShort size="small">–</BodyShort>
         ) : (
-          <div
-            className="overflow-x-auto"
-            tabIndex={0}
-            role="region"
-            aria-label="Ytelser"
-          >
+          <div className="overflow-x-auto" tabIndex={0} role="region" aria-label="Ytelser">
             <Table size="small" className="[&_td]:py-1 [&_th]:py-1 text-sm">
               <Table.Header>
                 <Table.Row>
@@ -160,39 +125,24 @@ export function SakDetaljerFelter({
                   <Table.HeaderCell scope="col" className="text-sm">
                     Periode
                   </Table.HeaderCell>
-                  <Table.HeaderCell
-                    scope="col"
-                    className="text-sm whitespace-nowrap"
-                  >
+                  <Table.HeaderCell scope="col" className="text-sm whitespace-nowrap">
                     Antatt beløp
                   </Table.HeaderCell>
-                  <Table.HeaderCell
-                    scope="col"
-                    className="text-sm whitespace-nowrap"
-                  >
+                  <Table.HeaderCell scope="col" className="text-sm whitespace-nowrap">
                     Endelig beløp
                   </Table.HeaderCell>
                 </Table.Row>
               </Table.Header>
               <Table.Body>
                 {sak.ytelser.map((ytelse, indeks) => (
-                  <Table.Row
-                    key={`${ytelse.type}-${ytelse.periodeFra}-${indeks}`}
-                  >
+                  <Table.Row key={`${ytelse.type}-${ytelse.periodeFra}-${indeks}`}>
                     <Table.DataCell>
-                      <Tag
-                        variant="outline"
-                        data-color="brand-beige"
-                        size="small"
-                      >
+                      <Tag variant="outline" data-color="brand-beige" size="small">
                         {formaterYtelseType(ytelse.type)}
                       </Tag>
                     </Table.DataCell>
                     <Table.DataCell className="text-sm whitespace-nowrap">
-                      {formaterYtelsePeriode(
-                        ytelse.periodeFra,
-                        ytelse.periodeTil,
-                      )}
+                      {formaterYtelsePeriode(ytelse.periodeFra, ytelse.periodeTil)}
                     </Table.DataCell>
                     <Table.DataCell className="text-sm">
                       {ytelse.belop !== null && ytelse.belop !== undefined
@@ -200,8 +150,7 @@ export function SakDetaljerFelter({
                         : "–"}
                     </Table.DataCell>
                     <Table.DataCell className="text-sm">
-                      {ytelse.endeligBelop !== null &&
-                      ytelse.endeligBelop !== undefined
+                      {ytelse.endeligBelop !== null && ytelse.endeligBelop !== undefined
                         ? formaterBelop(ytelse.endeligBelop)
                         : "–"}
                     </Table.DataCell>
@@ -216,12 +165,8 @@ export function SakDetaljerFelter({
 
         {anmeldelse && (
           <>
-            <Felt label="Anmeldt beløp">
-              {formaterBelop(anmeldelse.anmeldtBelop)}
-            </Felt>
-            <Felt label="Politidistrikt">
-              {anmeldelse.politidistrikt ?? "Ikke oppgitt"}
-            </Felt>
+            <Felt label="Anmeldt beløp">{formaterBelop(anmeldelse.anmeldtBelop)}</Felt>
+            <Felt label="Politidistrikt">{anmeldelse.politidistrikt ?? "Ikke oppgitt"}</Felt>
             <Felt label="Politiets saksreferanse">
               {anmeldelse.politietsSaksreferanse ?? "Ikke oppgitt"}
             </Felt>

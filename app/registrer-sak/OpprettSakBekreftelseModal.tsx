@@ -85,13 +85,7 @@ export function byggOpprettSakSammendrag(
   };
 }
 
-function SammendragRad({
-  label,
-  verdi,
-}: {
-  label: string;
-  verdi: React.ReactNode;
-}) {
+function SammendragRad({ label, verdi }: { label: string; verdi: React.ReactNode }) {
   return (
     <>
       <BodyShort size="small" textColor="subtle">
@@ -164,31 +158,17 @@ export function OpprettSakBekreftelseModal({
       <Modal.Body>
         {steg === "bekreft" && sammendrag && (
           <VStack gap="space-16">
-            <BodyShort>
-              Se over at informasjonen stemmer før saken opprettes:
-            </BodyShort>
+            <BodyShort>Se over at informasjonen stemmer før saken opprettes:</BodyShort>
             <div className="rounded-md bg-ax-bg-neutral-soft px-5 py-4">
               <HGrid columns="auto 1fr" gap="space-4 space-16">
-                <SammendragRad
-                  label="Person"
-                  verdi={`${personNavn} (${alder})`}
-                />
-                <SammendragRad
-                  label={identEtikett(personnummer)}
-                  verdi={personnummer}
-                />
+                <SammendragRad label="Person" verdi={`${personNavn} (${alder})`} />
+                <SammendragRad label={identEtikett(personnummer)} verdi={personnummer} />
                 <SammendragRad label="Enhet" verdi={sammendrag.enhetLabel} />
                 {sammendrag.orgnumre.length > 0 && (
-                  <SammendragRad
-                    label="Orgnr"
-                    verdi={sammendrag.orgnumre.join(", ")}
-                  />
+                  <SammendragRad label="Orgnr" verdi={sammendrag.orgnumre.join(", ")} />
                 )}
                 <SammendragRad label="Kilde" verdi={sammendrag.kildeLabel} />
-                <SammendragRad
-                  label="Kategori"
-                  verdi={sammendrag.kategoriLabel}
-                />
+                <SammendragRad label="Kategori" verdi={sammendrag.kategoriLabel} />
                 {sammendrag.misbrukstypeLabels.length > 0 && (
                   <SammendragRad
                     label="Misbrukstype"
@@ -204,9 +184,7 @@ export function OpprettSakBekreftelseModal({
                           <span key={indeks}>
                             {ytelse.label}
                             {ytelse.periode ? ` — ${ytelse.periode}` : ""}
-                            {ytelse.beløp
-                              ? `, antatt beløp ${ytelse.beløp}`
-                              : ""}
+                            {ytelse.beløp ? `, antatt beløp ${ytelse.beløp}` : ""}
                           </span>
                         ))}
                       </VStack>
@@ -229,8 +207,8 @@ export function OpprettSakBekreftelseModal({
             <VStack gap="space-4" align="center">
               <BodyShort weight="semibold">Sak opprettet</BodyShort>
               <BodyShort textColor="subtle">
-                Saken er opprettet på {personNavn}. Saksnummer {sakId}. Du
-                finner den under Alle saker.
+                Saken er opprettet på {personNavn}. Saksnummer {sakId}. Du finner den under Alle
+                saker.
               </BodyShort>
             </VStack>
           </VStack>
@@ -239,12 +217,7 @@ export function OpprettSakBekreftelseModal({
       <Modal.Footer>
         {steg === "bekreft" && (
           <>
-            <Button
-              variant="primary"
-              onClick={onBekreft}
-              loading={senderInn}
-              disabled={senderInn}
-            >
+            <Button variant="primary" onClick={onBekreft} loading={senderInn} disabled={senderInn}>
               Opprett sak
             </Button>
             <Button variant="secondary" onClick={onAvbryt} disabled={senderInn}>

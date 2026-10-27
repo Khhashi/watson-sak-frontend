@@ -3,9 +3,7 @@ import { describe, expect, it, vi } from "vitest";
 import type { KontrollsakResponse } from "~/saker/types.backend";
 import { SakDetaljerFelter } from "./SakDetaljerFelter";
 
-function lagKontrollsak(
-  overrides: Partial<KontrollsakResponse> = {},
-): KontrollsakResponse {
+function lagKontrollsak(overrides: Partial<KontrollsakResponse> = {}): KontrollsakResponse {
   return {
     id: 105,
     personIdent: "12345678901",
@@ -46,12 +44,7 @@ function lagKontrollsak(
 
 describe("SakDetaljerFelter", () => {
   it("viser fødselsnummer, kategori og kilde", () => {
-    render(
-      <SakDetaljerFelter
-        sak={lagKontrollsak()}
-        onVisIdentHistorikk={vi.fn()}
-      />,
-    );
+    render(<SakDetaljerFelter sak={lagKontrollsak()} onVisIdentHistorikk={vi.fn()} />);
 
     expect(screen.getByText("123456 78901")).toBeDefined();
     expect(screen.getByText("SAMLIV", { exact: false })).toBeDefined();
@@ -59,12 +52,7 @@ describe("SakDetaljerFelter", () => {
   });
 
   it("viser etiketten Fødselsnummer for fødselsnummer", () => {
-    render(
-      <SakDetaljerFelter
-        sak={lagKontrollsak()}
-        onVisIdentHistorikk={vi.fn()}
-      />,
-    );
+    render(<SakDetaljerFelter sak={lagKontrollsak()} onVisIdentHistorikk={vi.fn()} />);
 
     expect(screen.getByText("Fødselsnummer")).toBeDefined();
     expect(screen.queryByText("Personnummer")).toBeNull();
@@ -85,12 +73,7 @@ describe("SakDetaljerFelter", () => {
   });
 
   it("viser ytelsestabell med ytelse, periode og beløp", () => {
-    render(
-      <SakDetaljerFelter
-        sak={lagKontrollsak()}
-        onVisIdentHistorikk={vi.fn()}
-      />,
-    );
+    render(<SakDetaljerFelter sak={lagKontrollsak()} onVisIdentHistorikk={vi.fn()} />);
 
     expect(screen.getByRole("table")).toBeDefined();
     expect(screen.getByText("Foreldrepenger", { exact: false })).toBeDefined();
@@ -123,21 +106,16 @@ describe("SakDetaljerFelter", () => {
       exact: true,
     });
     expect(
-      kilde.compareDocumentPosition(anmeldtBelop) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      kilde.compareDocumentPosition(anmeldtBelop) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      anmeldtBelop.compareDocumentPosition(politidistrikt) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      anmeldtBelop.compareDocumentPosition(politidistrikt) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      politidistrikt.compareDocumentPosition(saksreferanse) &
-        Node.DOCUMENT_POSITION_FOLLOWING,
+      politidistrikt.compareDocumentPosition(saksreferanse) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
     expect(
-      screen.getByText(
-        (tekst) => tekst.replaceAll("\u00a0", " ") === "12 500,5",
-      ),
+      screen.getByText((tekst) => tekst.replaceAll("\u00a0", " ") === "12 500,5"),
     ).toBeDefined();
     expect(screen.getByText("Øst")).toBeDefined();
     expect(screen.getByText("2026/12345")).toBeDefined();
@@ -157,39 +135,31 @@ describe("SakDetaljerFelter", () => {
     );
 
     expect(screen.getByText("Politidistrikt", { exact: true })).toBeDefined();
-    expect(
-      screen.getByText("Politiets saksreferanse", { exact: true }),
-    ).toBeDefined();
+    expect(screen.getByText("Politiets saksreferanse", { exact: true })).toBeDefined();
     expect(screen.getAllByText("Ikke oppgitt")).toHaveLength(2);
   });
 
   it.each([
     ["STRAFFERETTSLIG_VURDERING", "ANMELDT", 12500],
     ["POLITI", "ANMELDT", null],
-  ] as const)(
-    "viser ikke anmeldelse for steg %s med beløp %s",
-    (steg, type, anmeldtBelop) => {
-      render(
-        <SakDetaljerFelter
-          sak={lagKontrollsak({
-            steg,
-            resultat: { strafferettsligVurdering: { type, anmeldtBelop } },
-          })}
-          onVisIdentHistorikk={vi.fn()}
-        />,
-      );
+  ] as const)("viser ikke anmeldelse for steg %s med beløp %s", (steg, type, anmeldtBelop) => {
+    render(
+      <SakDetaljerFelter
+        sak={lagKontrollsak({
+          steg,
+          resultat: { strafferettsligVurdering: { type, anmeldtBelop } },
+        })}
+        onVisIdentHistorikk={vi.fn()}
+      />,
+    );
 
-      expect(screen.queryByText("Anmeldt beløp", { exact: true })).toBeNull();
-      expect(screen.queryByText("Politidistrikt", { exact: true })).toBeNull();
-    },
-  );
+    expect(screen.queryByText("Anmeldt beløp", { exact: true })).toBeNull();
+    expect(screen.queryByText("Politidistrikt", { exact: true })).toBeNull();
+  });
 
   it("viser bindestrek når saken ikke har ytelser", () => {
     render(
-      <SakDetaljerFelter
-        sak={lagKontrollsak({ ytelser: [] })}
-        onVisIdentHistorikk={vi.fn()}
-      />,
+      <SakDetaljerFelter sak={lagKontrollsak({ ytelser: [] })} onVisIdentHistorikk={vi.fn()} />,
     );
 
     expect(screen.queryByRole("table")).toBeNull();

@@ -64,25 +64,14 @@ interface SakKortProps {
   sak: KontrollsakResponse;
   erKoblet: boolean;
   kanEndreKobling: boolean;
-  onEndreKobling: (
-    sak: KontrollsakResponse,
-    handling: Koblingshandling,
-  ) => void;
+  onEndreKobling: (sak: KontrollsakResponse, handling: Koblingshandling) => void;
   onVisIdentHistorikk: (sak: KontrollsakResponse) => void;
 }
 
 type Koblingshandling = "koble" | "fjerne";
-type KobleSakActionResult =
-  | { ok: true }
-  | { ok: false; feil: { skjema?: string[] } };
+type KobleSakActionResult = { ok: true } | { ok: false; feil: { skjema?: string[] } };
 
-function SakDetaljfelt({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function SakDetaljfelt({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <VStack gap="space-8">
       <Detail className="text-ax-text-neutral-subtle" uppercase>
@@ -106,9 +95,7 @@ function SakPåSammePersonDetaljer({
   const ytelseTyper = getYtelseTyper(sak);
   const belop = getBelop(sak);
   const personIdent = getPersonIdent(sak);
-  const harHistoriskIdent = sak.historiskeIdenter.some(
-    (ident) => ident.historisk,
-  );
+  const harHistoriskIdent = sak.historiskeIdenter.some((ident) => ident.historisk);
   const endeligeBeløp = sak.ytelser.flatMap((ytelse) =>
     ytelse.endeligBelop === null ? [] : [formaterBelop(ytelse.endeligBelop)],
   );
@@ -116,9 +103,7 @@ function SakPåSammePersonDetaljer({
   const perioder = [
     ...new Set(
       sak.ytelser
-        .map((ytelse) =>
-          formaterYtelsePeriode(ytelse.periodeFra, ytelse.periodeTil),
-        )
+        .map((ytelse) => formaterYtelsePeriode(ytelse.periodeFra, ytelse.periodeTil))
         .filter((periode) => periode !== "–"),
     ),
   ];
@@ -147,12 +132,7 @@ function SakPåSammePersonDetaljer({
             {misbrukstyper.length > 0 ? (
               <HStack gap="space-8" wrap>
                 {misbrukstyper.map((type) => (
-                  <Tag
-                    key={type}
-                    variant="moderate"
-                    data-color="info"
-                    size="small"
-                  >
+                  <Tag key={type} variant="moderate" data-color="info" size="small">
                     {type}
                   </Tag>
                 ))}
@@ -165,12 +145,7 @@ function SakPåSammePersonDetaljer({
             {merkinger.length > 0 ? (
               <HStack gap="space-8" wrap>
                 {merkinger.map((merking) => (
-                  <Tag
-                    key={merking}
-                    variant="moderate"
-                    data-color="info"
-                    size="small"
-                  >
+                  <Tag key={merking} variant="moderate" data-color="info" size="small">
                     {merkingEtikett(merking)}
                   </Tag>
                 ))}
@@ -197,21 +172,14 @@ function SakPåSammePersonDetaljer({
               )}
             </SakDetaljfelt>
             <SakDetaljfelt label="Ca beløp">
-              <BodyShort size="medium">
-                {belop === null ? "–" : formaterBelop(belop)}
-              </BodyShort>
+              <BodyShort size="medium">{belop === null ? "–" : formaterBelop(belop)}</BodyShort>
             </SakDetaljfelt>
           </VStack>
           <SakDetaljfelt label="Ytelse">
             {ytelseTyper.length > 0 ? (
               <HStack gap="space-8" wrap>
                 {ytelseTyper.map((ytelse) => (
-                  <Tag
-                    key={ytelse}
-                    variant="moderate"
-                    data-color="brand-beige"
-                    size="small"
-                  >
+                  <Tag key={ytelse} variant="moderate" data-color="brand-beige" size="small">
                     {ytelse}
                   </Tag>
                 ))}
@@ -226,19 +194,16 @@ function SakPåSammePersonDetaljer({
         </VStack>
       </HGrid>
 
-      <SakDetaljfelt
-        label={identEtikett(sak.gjeldendePersonIdent ?? personIdent)}
-      >
+      <SakDetaljfelt label={identEtikett(sak.gjeldendePersonIdent ?? personIdent)}>
         <VStack gap="space-8" align="start">
           <PersonIdentMedHistorikk
             personIdent={sak.gjeldendePersonIdent ?? personIdent}
             harHistorikk={harHistoriskIdent}
             onVisHistorikk={onVisIdentHistorikk}
           />
-          {sak.gjeldendePersonIdent &&
-            sak.gjeldendePersonIdent !== sak.personIdent && (
-              <Detail>Saken ble opprettet under {personIdent}</Detail>
-            )}
+          {sak.gjeldendePersonIdent && sak.gjeldendePersonIdent !== sak.personIdent && (
+            <Detail>Saken ble opprettet under {personIdent}</Detail>
+          )}
         </VStack>
       </SakDetaljfelt>
 
@@ -256,9 +221,7 @@ function SakPåSammePersonDetaljer({
             <SakDetaljfelt label="Organisasjonsnummer">
               <BodyShort size="medium">
                 {sak.arbeidsgivere
-                  .map((organisasjonsnummer) =>
-                    formaterOrganisasjonsnummer(organisasjonsnummer),
-                  )
+                  .map((organisasjonsnummer) => formaterOrganisasjonsnummer(organisasjonsnummer))
                   .join(", ")}
               </BodyShort>
             </SakDetaljfelt>
@@ -271,14 +234,10 @@ function SakPåSammePersonDetaljer({
           {anmeldelse && (
             <>
               <SakDetaljfelt label="Anmeldt beløp">
-                <BodyShort size="medium">
-                  {formaterBelop(anmeldelse.anmeldtBelop)}
-                </BodyShort>
+                <BodyShort size="medium">{formaterBelop(anmeldelse.anmeldtBelop)}</BodyShort>
               </SakDetaljfelt>
               <SakDetaljfelt label="Politidistrikt">
-                <BodyShort size="medium">
-                  {anmeldelse.politidistrikt ?? "Ikke oppgitt"}
-                </BodyShort>
+                <BodyShort size="medium">{anmeldelse.politidistrikt ?? "Ikke oppgitt"}</BodyShort>
               </SakDetaljfelt>
             </>
           )}
@@ -301,11 +260,8 @@ function SakKort({
   const saksreferanse = getSaksreferanse(sak.id);
   const statusTag = hentStatusTag(sak);
   const enhetskode = getSaksenhet(sak);
-  const enhet = enhetskode
-    ? finnEnhetsnavn(kodeverk.enheter, enhetskode)
-    : "Ukjent";
-  const saksbehandler =
-    sak.saksbehandlere.eier?.navn ?? sak.saksbehandlere.opprettetAv.navn;
+  const enhet = enhetskode ? finnEnhetsnavn(kodeverk.enheter, enhetskode) : "Ukjent";
+  const saksbehandler = sak.saksbehandlere.eier?.navn ?? sak.saksbehandlere.opprettetAv.navn;
 
   return (
     <Box
@@ -332,23 +288,14 @@ function SakKort({
                 Enhet: <strong>{enhet}</strong>
               </BodyShort>
               <BodyShort size="small">
-                Saksbehandler:{" "}
-                <strong>{storFørsteBokstavPerOrd(saksbehandler)}</strong>
+                Saksbehandler: <strong>{storFørsteBokstavPerOrd(saksbehandler)}</strong>
               </BodyShort>
               {sak.steg === "AVSLUTTET" ? (
-                <AvkortetTag
-                  variant="moderate"
-                  data-color={statusTag.farge}
-                  size="small"
-                >
+                <AvkortetTag variant="moderate" data-color={statusTag.farge} size="small">
                   {statusTag.tekst}
                 </AvkortetTag>
               ) : (
-                <AvkortetTag
-                  variant="moderate"
-                  data-color={STEG_FARGE}
-                  size="small"
-                >
+                <AvkortetTag variant="moderate" data-color={STEG_FARGE} size="small">
                   {formaterSteg(sak.steg)}
                 </AvkortetTag>
               )}
@@ -367,13 +314,7 @@ function SakKort({
                 type="button"
                 variant="tertiary"
                 size="small"
-                icon={
-                  åpen ? (
-                    <ChevronUpIcon aria-hidden />
-                  ) : (
-                    <ChevronDownIcon aria-hidden />
-                  )
-                }
+                icon={åpen ? <ChevronUpIcon aria-hidden /> : <ChevronDownIcon aria-hidden />}
                 aria-label={`${åpen ? "Skjul" : "Vis"} detaljer for sak ${saksreferanse}`}
                 aria-expanded={åpen}
                 aria-controls={detaljerId}
@@ -396,17 +337,9 @@ function SakKort({
                     type="button"
                     variant={erKoblet ? "tertiary-neutral" : "secondary"}
                     size="small"
-                    icon={
-                      erKoblet ? (
-                        <LinkBrokenIcon aria-hidden />
-                      ) : (
-                        <LinkIcon aria-hidden />
-                      )
-                    }
+                    icon={erKoblet ? <LinkBrokenIcon aria-hidden /> : <LinkIcon aria-hidden />}
                     iconPosition="right"
-                    onClick={() =>
-                      onEndreKobling(sak, erKoblet ? "fjerne" : "koble")
-                    }
+                    onClick={() => onEndreKobling(sak, erKoblet ? "fjerne" : "koble")}
                   >
                     {erKoblet ? "Fjern kobling" : "Koble til sak"}
                   </Button>
@@ -426,8 +359,9 @@ export function SakerPåSammePerson({
   innloggetNavIdent,
 }: SakerPåSammePersonProps) {
   const [valgtSak, setValgtSak] = useState<KontrollsakResponse | null>(null);
-  const [sakMedIdentHistorikk, setSakMedIdentHistorikk] =
-    useState<KontrollsakResponse | null>(null);
+  const [sakMedIdentHistorikk, setSakMedIdentHistorikk] = useState<KontrollsakResponse | null>(
+    null,
+  );
   const [handling, setHandling] = useState<Koblingshandling>("koble");
   const [feilmelding, setFeilmelding] = useState<string>();
   const harSendt = useRef(false);
@@ -444,20 +378,14 @@ export function SakerPåSammePerson({
       setValgtSak(null);
       return;
     }
-    setFeilmelding(
-      fetcher.data?.feil.skjema?.[0] ??
-        "Kunne ikke endre koblingen. Prøv igjen.",
-    );
+    setFeilmelding(fetcher.data?.feil.skjema?.[0] ?? "Kunne ikke endre koblingen. Prøv igjen.");
   }, [fetcher.data, fetcher.state]);
 
   if (andreSaker.length === 0) {
     return null;
   }
 
-  function åpneKoblingsmodal(
-    sak: KontrollsakResponse,
-    nyHandling: Koblingshandling,
-  ) {
+  function åpneKoblingsmodal(sak: KontrollsakResponse, nyHandling: Koblingshandling) {
     setValgtSak(sak);
     setHandling(nyHandling);
     setFeilmelding(undefined);
@@ -479,12 +407,7 @@ export function SakerPåSammePerson({
 
   return (
     <>
-      <Box
-        borderWidth="1"
-        borderColor="neutral-subtle"
-        borderRadius="8"
-        background="raised"
-      >
+      <Box borderWidth="1" borderColor="neutral-subtle" borderRadius="8" background="raised">
         <VStack gap="space-8">
           <Box padding="space-16">
             <Heading level="2" size="small">
@@ -520,13 +443,12 @@ export function SakerPåSammePerson({
             <VStack gap="space-16">
               {erFrakobling ? (
                 <BodyShort>
-                  Vil du fjerne koblingen mellom sak {gjeldendeSaksreferanse} og
-                  sak {valgtSaksreferanse}?
+                  Vil du fjerne koblingen mellom sak {gjeldendeSaksreferanse} og sak{" "}
+                  {valgtSaksreferanse}?
                 </BodyShort>
               ) : (
                 <BodyShort>
-                  Vil du koble sak {gjeldendeSaksreferanse} til sak{" "}
-                  {valgtSaksreferanse}
+                  Vil du koble sak {gjeldendeSaksreferanse} til sak {valgtSaksreferanse}
                   {valgtKategori ? ` ${valgtKategori}` : ""}?
                 </BodyShort>
               )}
@@ -540,11 +462,7 @@ export function SakerPåSammePerson({
               name="handling"
               value={erFrakobling ? "fjern_kobling" : "koble_sak"}
             />
-            <input
-              type="hidden"
-              name="relatertSakId"
-              value={valgtSak?.id ?? ""}
-            />
+            <input type="hidden" name="relatertSakId" value={valgtSak?.id ?? ""} />
             <Button
               type="submit"
               variant={erFrakobling ? "danger" : "primary"}
@@ -552,11 +470,7 @@ export function SakerPåSammePerson({
             >
               {erFrakobling ? "Fjern kobling" : "Koble til sak"}
             </Button>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={lukkKoblingsmodal}
-            >
+            <Button type="button" variant="secondary" onClick={lukkKoblingsmodal}>
               Avbryt
             </Button>
           </Modal.Footer>
@@ -573,14 +487,9 @@ export function SakerPåSammePerson({
   );
 }
 
-function erSaksbehandlerPåSak(
-  sak: KontrollsakResponse,
-  navIdent: string,
-): boolean {
+function erSaksbehandlerPåSak(sak: KontrollsakResponse, navIdent: string): boolean {
   return (
     sak.saksbehandlere.eier?.navIdent === navIdent ||
-    sak.saksbehandlere.deltMed.some(
-      (saksbehandler) => saksbehandler.navIdent === navIdent,
-    )
+    sak.saksbehandlere.deltMed.some((saksbehandler) => saksbehandler.navIdent === navIdent)
   );
 }

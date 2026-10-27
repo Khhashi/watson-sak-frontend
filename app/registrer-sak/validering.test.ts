@@ -58,10 +58,7 @@ describe("opprettSakSchema", () => {
     });
     expect(resultat.success).toBe(true);
     if (resultat.success) {
-      expect(resultat.data.misbruktype).toEqual([
-        "INNENFOR_EOS",
-        "UTENFOR_EOS",
-      ]);
+      expect(resultat.data.misbruktype).toEqual(["INNENFOR_EOS", "UTENFOR_EOS"]);
     }
   });
 
@@ -278,10 +275,7 @@ describe("opprettSakSchema", () => {
     const submission = parseWithZod(formData, { schema: opprettSakSchema });
     expect(submission.status).toBe("success");
     if (submission.status === "success") {
-      expect(submission.value.arbeidsgivere).toEqual([
-        "123456789",
-        "987654321",
-      ]);
+      expect(submission.value.arbeidsgivere).toEqual(["123456789", "987654321"]);
     }
   });
 
@@ -356,9 +350,7 @@ describe("feilmeldinger ved manglende obligatoriske felter (via ekte skjemainnse
     const submission = parseWithZod(formData, { schema: opprettSakSchema });
     expect(submission.status).toBe("error");
     if (submission.status === "error") {
-      expect(submission.error?.personIdent).toEqual([
-        "Fødsels- eller D-nummer er påkrevd",
-      ]);
+      expect(submission.error?.personIdent).toEqual(["Fødsels- eller D-nummer er påkrevd"]);
     }
   });
 

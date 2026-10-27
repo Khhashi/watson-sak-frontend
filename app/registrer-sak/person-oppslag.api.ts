@@ -15,10 +15,7 @@ export async function action({ request }: { request: Request }) {
   const fnr = (hentValgfriTekst(formData, "fnr") ?? "").replace(/\s/g, "");
 
   if (!fnr || !/^\d{11}$/.test(fnr)) {
-    return Response.json(
-      { feil: "Ugyldig fødsels- eller D-nummer" },
-      { status: 400 },
-    );
+    return Response.json({ feil: "Ugyldig fødsels- eller D-nummer" }, { status: 400 });
   }
 
   if (skalBrukeMockdata) {
@@ -59,9 +56,7 @@ export async function action({ request }: { request: Request }) {
           sakId: getSaksreferanse(sak.id),
           opprettetDato: sak.opprettet.slice(0, 10),
           personNavn: sak.personNavn ?? resultat.person.navn,
-          saksbehandler:
-            sak.saksbehandlere.eier?.navn ??
-            sak.saksbehandlere.opprettetAv.navn,
+          saksbehandler: sak.saksbehandlere.eier?.navn ?? sak.saksbehandlere.opprettetAv.navn,
           enhet: getSaksenhet(sak) || "Ukjent",
           status: getStegOgStatusTekst(sak),
         }));
@@ -91,10 +86,7 @@ export async function action({ request }: { request: Request }) {
       return Response.json({ person: null, eksisterendeSaker: [] });
 
     case "ingen-tilgang":
-      return Response.json(
-        { feil: INGEN_TILGANG_TIL_Å_OPPRETTE_SAK_MELDING },
-        { status: 403 },
-      );
+      return Response.json({ feil: INGEN_TILGANG_TIL_Å_OPPRETTE_SAK_MELDING }, { status: 403 });
 
     case "feil":
       return Response.json({ feil: resultat.melding }, { status: 502 });

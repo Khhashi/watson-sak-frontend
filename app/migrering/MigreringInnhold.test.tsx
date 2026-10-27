@@ -1,10 +1,4 @@
-import {
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-  within,
-} from "@testing-library/react";
+import { fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { beforeAll, describe, expect, it, vi } from "vitest";
 import { createRoutesStub, useSearchParams } from "react-router";
 import { MigreringInnhold } from "./MigreringInnhold";
@@ -135,22 +129,11 @@ beforeAll(() => {
 
 describe("MigreringInnhold", () => {
   it("viser overskrift, infotekst og tabell med PID, Fødsels- eller D-nummer, Opprettet i Access og Status", () => {
-    renderSide(
-      lagLister({ liste: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }),
-    );
+    renderSide(lagLister({ liste: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }));
 
-    expect(
-      screen.getByRole("heading", { level: 1, name: "Flytt fra Access" }),
-    ).not.toBeNull();
-    expect(
-      screen.getByText("Her ser du dine egne saker.", { exact: false }),
-    ).not.toBeNull();
-    for (const navn of [
-      "PID",
-      "Fødsels- eller D-nummer",
-      "Opprettet i Access",
-      "Status",
-    ]) {
+    expect(screen.getByRole("heading", { level: 1, name: "Flytt fra Access" })).not.toBeNull();
+    expect(screen.getByText("Her ser du dine egne saker.", { exact: false })).not.toBeNull();
+    for (const navn of ["PID", "Fødsels- eller D-nummer", "Opprettet i Access", "Status"]) {
       expect(screen.getByRole("columnheader", { name: navn })).not.toBeNull();
     }
     expect(screen.getByText("112233 44556")).not.toBeNull();
@@ -170,9 +153,7 @@ describe("MigreringInnhold", () => {
     expect(form?.querySelector('input[name="legacyKilde"]')).not.toBeNull();
     expect(form?.querySelector('input[name="fnr"]')).not.toBeNull();
     expect(container.querySelectorAll("form")).toHaveLength(1);
-    expect(
-      within(nærmeste(knapp, "tr")).getByText("Ikke startet"),
-    ).not.toBeNull();
+    expect(within(nærmeste(knapp, "tr")).getByText("Ikke startet")).not.toBeNull();
   });
 
   it("lenker PID til saken og viser status når flyttingen er påbegynt eller ferdig", () => {
@@ -187,24 +168,16 @@ describe("MigreringInnhold", () => {
 
     const ferdig = screen.getByRole("link", { name: "100245" });
     expect(ferdig.getAttribute("href")).toBe("/saker/1181");
-    expect(
-      within(nærmeste(ferdig, "tr")).getByText("Ferdig flyttet"),
-    ).not.toBeNull();
+    expect(within(nærmeste(ferdig, "tr")).getByText("Ferdig flyttet")).not.toBeNull();
 
     const påbegynt = screen.getByRole("link", { name: "100246" });
     expect(påbegynt.getAttribute("href")).toBe("/saker/1182");
-    expect(
-      within(nærmeste(påbegynt, "tr")).getByText("Under flytting"),
-    ).not.toBeNull();
-    expect(
-      screen.queryByRole("button", { name: /Flytt sak med PID/ }),
-    ).toBeNull();
+    expect(within(nærmeste(påbegynt, "tr")).getByText("Under flytting")).not.toBeNull();
+    expect(screen.queryByRole("button", { name: /Flytt sak med PID/ })).toBeNull();
   });
 
   it("åpner saken når man klikker et annet sted i raden", async () => {
-    renderSide(
-      lagLister({ liste: lagSide([kandidat("100245", "FULLSTENDIG", 1181)]) }),
-    );
+    renderSide(lagLister({ liste: lagSide([kandidat("100245", "FULLSTENDIG", 1181)]) }));
 
     fireEvent.click(screen.getByText("01.01.2023"));
 
@@ -238,18 +211,14 @@ describe("MigreringInnhold", () => {
         liste: lagSide([kandidat("100245", "UNDER_MIGRERING", 1182)]),
       }),
     );
-    expect(
-      screen.queryByRole("button", { name: "Merk migrering fullstendig" }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: "Merk migrering fullstendig" })).toBeNull();
   });
 
   it("viser feilmelding når backend var utilgjengelig", () => {
     renderSide(lagLister({ utilgjengelig: true }));
 
     expect(screen.getByText(/Vi fikk ikke hentet hele listen/)).not.toBeNull();
-    expect(
-      screen.queryByRole("button", { name: /Flytt sak med PID/ }),
-    ).toBeNull();
+    expect(screen.queryByRole("button", { name: /Flytt sak med PID/ })).toBeNull();
   });
 
   it("viser tom-tekst uten saker", () => {
@@ -278,9 +247,7 @@ describe("MigreringInnhold", () => {
       const gruppe = screen.getByRole("group", { name: "Status" });
 
       fireEvent.click(within(gruppe).getByText("Under flytting"));
-      expect(screen.getByTestId("sok").textContent).toBe(
-        "status=UNDER_MIGRERING",
-      );
+      expect(screen.getByTestId("sok").textContent).toBe("status=UNDER_MIGRERING");
     });
 
     it("fjerner en valgt status når den klikkes igjen", () => {
@@ -292,18 +259,13 @@ describe("MigreringInnhold", () => {
       );
 
       fireEvent.click(
-        within(screen.getByRole("group", { name: "Status" })).getByText(
-          "Under flytting",
-        ),
+        within(screen.getByRole("group", { name: "Status" })).getByText("Under flytting"),
       );
       expect(screen.getByTestId("sok").textContent).toBe("");
     });
 
     it("gir ledere valg for avdeling og saksbehandler som oppdaterer URL-en", () => {
-      renderSide(
-        lagLister({ erLeder: true, ansatteValg }),
-        "/migrering?side=2",
-      );
+      renderSide(lagLister({ erLeder: true, ansatteValg }), "/migrering?side=2");
 
       fireEvent.change(screen.getByLabelText("Avdeling"), {
         target: { value: "4812" },
@@ -313,9 +275,7 @@ describe("MigreringInnhold", () => {
       fireEvent.change(screen.getByLabelText("Saksbehandler"), {
         target: { value: "Z999001" },
       });
-      expect(screen.getByTestId("sok").textContent).toBe(
-        "enhet=4812&ansvarlig=Z999001",
-      );
+      expect(screen.getByTestId("sok").textContent).toBe("enhet=4812&ansvarlig=Z999001");
 
       fireEvent.change(screen.getByLabelText("Saksbehandler"), {
         target: { value: "" },
@@ -341,9 +301,10 @@ describe("MigreringInnhold", () => {
         }),
       );
 
-      expect(
-        screen.getAllByRole("rowheader").map((e) => e.textContent),
-      ).toEqual(["Dine saker", "Andre saker"]);
+      expect(screen.getAllByRole("rowheader").map((e) => e.textContent)).toEqual([
+        "Dine saker",
+        "Andre saker",
+      ]);
 
       // thead er første radgruppe. Hver tbody har bare sin egen overskrift og sine egne kandidater.
       const [, dine, andre] = screen.getAllByRole("rowgroup");
@@ -378,15 +339,11 @@ describe("MigreringInnhold", () => {
         }),
       );
 
-      expect(
-        screen.getAllByRole("rowheader").map((e) => e.textContent),
-      ).toEqual(["Andre saker"]);
+      expect(screen.getAllByRole("rowheader").map((e) => e.textContent)).toEqual(["Andre saker"]);
     });
 
     it("viser ingen overskrifter for andre enn ledere", () => {
-      renderSide(
-        lagLister({ liste: lagSide([kandidat("1", "IKKE_PABEGYNT")]) }),
-      );
+      renderSide(lagLister({ liste: lagSide([kandidat("1", "IKKE_PABEGYNT")]) }));
 
       expect(screen.queryAllByRole("rowheader")).toEqual([]);
     });
@@ -400,9 +357,7 @@ describe("MigreringInnhold", () => {
         }),
       );
 
-      const valg = within(screen.getByLabelText("Saksbehandler")).getAllByRole(
-        "option",
-      );
+      const valg = within(screen.getByLabelText("Saksbehandler")).getAllByRole("option");
       expect(valg.map((o) => o.textContent)).toEqual(["Alle", "Bjørn Berg"]);
     });
   });
@@ -424,11 +379,7 @@ describe("MigreringInnhold", () => {
         lagLister({
           erLeder: true,
           ansatteValg,
-          liste: lagSide([
-            ansattSak,
-            ansattUnderFlytting,
-            kandidat("100245", "IKKE_PABEGYNT"),
-          ]),
+          liste: lagSide([ansattSak, ansattUnderFlytting, kandidat("100245", "IKKE_PABEGYNT")]),
         }),
         "/migrering",
         tildelingsSvar,
@@ -441,9 +392,7 @@ describe("MigreringInnhold", () => {
       renderLeder();
 
       const ansatte = ansatteTabell();
-      expect(
-        ansatte.getByRole("columnheader", { name: "Saksbehandler" }),
-      ).not.toBeNull();
+      expect(ansatte.getByRole("columnheader", { name: "Saksbehandler" })).not.toBeNull();
       expect(ansatte.getAllByText("Åse Hansen")).toHaveLength(2);
       expect(
         ansatte.queryByRole("button", {
@@ -474,9 +423,7 @@ describe("MigreringInnhold", () => {
     it("lar lederen velge en annen saksbehandler enn dagens, og sender valget", async () => {
       const { tildel } = renderLeder();
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Endre tildeling for PID 200001" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Endre tildeling for PID 200001" }));
       const dialog = await screen.findByRole("dialog");
       const valg = within(dialog).getByLabelText("Ny saksbehandler");
       expect(
@@ -489,9 +436,7 @@ describe("MigreringInnhold", () => {
       fireEvent.click(within(dialog).getByRole("button", { name: "Lagre" }));
 
       await waitFor(() => expect(tildel).toHaveBeenCalledTimes(1));
-      const kall = (
-        tildel.mock.calls[0] as unknown as [{ request: Request }]
-      )[0];
+      const kall = (tildel.mock.calls[0] as unknown as [{ request: Request }])[0];
       const skjema = await kall.request.formData();
       expect(skjema.get("kandidatId")).toBe("UTREDNING:200001");
       expect(skjema.get("navIdent")).toBe("Z999002");
@@ -504,27 +449,21 @@ describe("MigreringInnhold", () => {
         feil: "Saken er allerede påbegynt og kan ikke flyttes til en annen.",
       });
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Endre tildeling for PID 200001" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Endre tildeling for PID 200001" }));
       const dialog = await screen.findByRole("dialog");
       fireEvent.change(within(dialog).getByLabelText("Ny saksbehandler"), {
         target: { value: "Z999002" },
       });
       fireEvent.click(within(dialog).getByRole("button", { name: "Lagre" }));
 
-      expect(
-        await within(dialog).findByText(/allerede påbegynt/),
-      ).not.toBeNull();
+      expect(await within(dialog).findByText(/allerede påbegynt/)).not.toBeNull();
       expect(screen.getByRole("dialog")).not.toBeNull();
     });
 
     it("lukker dialogen uten å sende ved Avbryt", async () => {
       const { tildel } = renderLeder();
 
-      fireEvent.click(
-        screen.getByRole("button", { name: "Endre tildeling for PID 200001" }),
-      );
+      fireEvent.click(screen.getByRole("button", { name: "Endre tildeling for PID 200001" }));
       const dialog = await screen.findByRole("dialog");
       fireEvent.click(within(dialog).getByRole("button", { name: "Avbryt" }));
 
@@ -546,10 +485,7 @@ describe("MigreringInnhold", () => {
     });
 
     it("bytter side ved å sette side i URL-en, og fjerner den på side 1", () => {
-      renderSide(
-        lagLister({ liste: lagSide(tjue, 2, 3, 50) }),
-        "/migrering?side=2",
-      );
+      renderSide(lagLister({ liste: lagSide(tjue, 2, 3, 50) }), "/migrering?side=2");
 
       fireEvent.click(screen.getByRole("button", { name: /^3$/ }));
       expect(screen.getByTestId("sok").textContent).toBe("side=3");
@@ -565,9 +501,7 @@ describe("MigreringInnhold", () => {
       );
 
       fireEvent.click(screen.getByRole("button", { name: /^2$/ }));
-      expect(screen.getByTestId("sok").textContent).toBe(
-        "status=UNDER_MIGRERING&side=2",
-      );
+      expect(screen.getByTestId("sok").textContent).toBe("status=UNDER_MIGRERING&side=2");
     });
 
     it("viser antall, men ingen sidevelger når alt er på én side", () => {

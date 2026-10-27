@@ -55,10 +55,7 @@ function lagValgfrittDatofelt() {
     .string()
     .optional()
     .transform((dato) => (dato ? normaliserDato(dato) : undefined))
-    .refine(
-      (dato) => dato === undefined || erGyldigIsoDato(dato),
-      "Ugyldig dato",
-    )
+    .refine((dato) => dato === undefined || erGyldigIsoDato(dato), "Ugyldig dato")
     .refine(
       (dato) => dato === undefined || dato <= dagensDato(),
       "Datoen kan ikke være frem i tid",
@@ -111,13 +108,10 @@ const ytelseRadSchema = z
     beløp: valgfrittBeløpSchema,
     endeligBeløp: valgfrittEndeligBeløpSchema,
   })
-  .refine(
-    ({ fraDato, tilDato }) => !fraDato || !tilDato || fraDato <= tilDato,
-    {
-      message: "Til dato må være lik eller etter fra dato",
-      path: ["tilDato"],
-    },
-  );
+  .refine(({ fraDato, tilDato }) => !fraDato || !tilDato || fraDato <= tilDato, {
+    message: "Til dato må være lik eller etter fra dato",
+    path: ["tilDato"],
+  });
 
 function erUtfyltYtelseRad(rad: {
   type?: string;
@@ -128,9 +122,9 @@ function erUtfyltYtelseRad(rad: {
 }) {
   return Boolean(
     rad.type ??
-      rad.fraDato ??
-      rad.tilDato ??
-      (rad.beløp !== undefined || rad.endeligBeløp !== undefined),
+    rad.fraDato ??
+    rad.tilDato ??
+    (rad.beløp !== undefined || rad.endeligBeløp !== undefined),
   );
 }
 
@@ -160,9 +154,7 @@ export const opprettSakSchema = z
       .string()
       .regex(/^[0-9]{1,12}$/, "Ugyldig legacyPid")
       .optional(),
-    legacyKilde: z
-      .enum(["UTREDNING", "SV", "NKA_DAGPENGER", "NKA_AAP"])
-      .optional(),
+    legacyKilde: z.enum(["UTREDNING", "SV", "NKA_DAGPENGER", "NKA_AAP"]).optional(),
     /**
      * Internt notat om opprettelsen. Bare vist og brukt når skjemaet åpnes fra
      * migreringsveilederen (`legacyPid`/`legacyKilde` satt) — se
@@ -172,10 +164,7 @@ export const opprettSakSchema = z
     notat: z
       .string()
       .trim()
-      .max(
-        NOTAT_MAKS_TEGN,
-        `Notatet kan ikke være lengre enn ${NOTAT_MAKS_TEGN} tegn`,
-      )
+      .max(NOTAT_MAKS_TEGN, `Notatet kan ikke være lengre enn ${NOTAT_MAKS_TEGN} tegn`)
       .optional(),
   })
   .transform((data) => ({

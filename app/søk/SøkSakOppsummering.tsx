@@ -36,13 +36,7 @@ interface SøkSakOppsummeringProps {
   sak: KontrollsakResponse;
 }
 
-function Felt({
-  label,
-  children,
-}: {
-  label: string;
-  children: React.ReactNode;
-}) {
+function Felt({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <VStack gap="space-1">
       <Detail className="text-ax-text-neutral-subtle" uppercase>
@@ -73,10 +67,7 @@ function TagListe({ tags }: { tags: string[] }) {
  * uten å måtte åpne den.
  */
 export function SøkSakOppsummering({ sak }: SøkSakOppsummeringProps) {
-  const detaljSti = RouteConfig.SAKER_DETALJ.replace(
-    ":sakId",
-    getSaksreferanse(sak.id),
-  );
+  const detaljSti = RouteConfig.SAKER_DETALJ.replace(":sakId", getSaksreferanse(sak.id));
   const saksreferanse = getSaksreferanse(sak.id);
   const tilbakeState = { tilbake: { to: RouteConfig.SØK, label: "Søk" } };
   const eier = sak.saksbehandlere.eier;
@@ -109,33 +100,20 @@ export function SøkSakOppsummering({ sak }: SøkSakOppsummeringProps) {
               </Heading>
             </Link>
             <HStack gap="space-2" align="center">
-              <CalendarIcon
-                aria-hidden
-                fontSize="1rem"
-                className="text-ax-icon-neutral-subtle"
-              />
+              <CalendarIcon aria-hidden fontSize="1rem" className="text-ax-icon-neutral-subtle" />
               <Detail className="text-ax-text-neutral-subtle">
-                Opprettet {formaterDato(getOpprettetDato(sak))} ·{" "}
-                {getKildeText(sak)}
+                Opprettet {formaterDato(getOpprettetDato(sak))} · {getKildeText(sak)}
               </Detail>
             </HStack>
           </VStack>
 
           <HStack gap="space-2" className="min-w-0">
             {(sak.status || sak.steg === "AVSLUTTET") && (
-              <AvkortetTag
-                variant="outline"
-                data-color={statusTag.farge}
-                size="medium"
-              >
+              <AvkortetTag variant="outline" data-color={statusTag.farge} size="medium">
                 {statusTag.tekst}
               </AvkortetTag>
             )}
-            <AvkortetTag
-              variant="outline"
-              data-color={STEG_FARGE}
-              size="medium"
-            >
+            <AvkortetTag variant="outline" data-color={STEG_FARGE} size="medium">
               {getStegOgStatusTekst(sak)}
             </AvkortetTag>
           </HStack>
