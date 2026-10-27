@@ -1,5 +1,15 @@
 import { PersonPencilIcon, PersonPlusIcon, XMarkIcon } from "@navikt/aksel-icons";
-import { BodyShort, Box, Button, Detail, Heading, HStack, Tooltip, VStack } from "@navikt/ds-react";
+import {
+  Alert,
+  BodyShort,
+  Box,
+  Button,
+  Detail,
+  Heading,
+  HStack,
+  Tooltip,
+  VStack,
+} from "@navikt/ds-react";
 import { useState } from "react";
 import { useFetcher } from "react-router";
 import { useInnloggetBruker } from "~/auth/innlogget-bruker";
@@ -109,7 +119,16 @@ export function SaksbehandlereKort({
 
   // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler og enhet.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
-  const kanFristilleAnsvarlig = kanEndreAnsvarlig && sak.steg === "OPPRETTET";
+  // Fristilling er tillatt uansett arbeidsstatus, også når saken venter eller er i bero.
+  const kanFristilleAnsvarlig =
+    stegregler.kanFristilleAnsvarlig && (erEier || innloggetBruker.erLeder);
+  // Backend avviser fristilling med 409, og action returnerer { ok: false, feil } i stedet for å kaste.
+  const fristillFeil =
+    fristillFetcher.state === "idle" &&
+    fristillFetcher.data?.ok === false &&
+    typeof fristillFetcher.data.feil === "string"
+      ? fristillFetcher.data.feil
+      : null;
   const kanEndreStatus =
     erEier && tillatteHandlinger?.handlinger.some((handling) => handling.type === "ENDRE_STATUS");
   const kanEndreSteg =
@@ -229,12 +248,14 @@ export function SaksbehandlereKort({
               <SaksbehandlerRad
                 saksbehandler={ansvarligSaksbehandler}
                 handling={
-                  kanEndreAnsvarlig ? (
+                  kanEndreAnsvarlig || kanFristilleAnsvarlig ? (
                     <HStack gap="space-2" align="center">
-                      <ResponsivEndreKnapp
-                        ariaLabel="Endre ansvarlig saksbehandler"
-                        onClick={() => setVisOverforModal(true)}
-                      />
+                      {kanEndreAnsvarlig && (
+                        <ResponsivEndreKnapp
+                          ariaLabel="Endre ansvarlig saksbehandler"
+                          onClick={() => setVisOverforModal(true)}
+                        />
+                      )}
                       {kanFristilleAnsvarlig && (
                         <Button
                           type="button"
@@ -261,7 +282,14 @@ export function SaksbehandlereKort({
               </BodyShort>
             )}
 
-            {kanEndreTilgang && !ansvarligSaksbehandler && (
+            {fristillFeil && (
+              <Alert variant="error" size="small">
+                {fristillFeil}
+              </Alert>
+            )}
+
+            {/* En fristilt sak kan ligge i bero eller vente på informasjon og må likevel kunne tas. */}
+            {stegregler.erAktiv && !ansvarligSaksbehandler && (
               <VStack gap="space-8">
                 {kanTildeleSak ? (
                   <Button

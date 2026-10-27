@@ -11,7 +11,7 @@ import { SaksbehandlereKort } from "./SaksbehandlereKort";
 
 const submitMock = vi.fn();
 const navigateMock = vi.fn();
-let fetcherData: { ok: boolean } | undefined;
+let fetcherData: { ok: boolean; feil?: string } | undefined;
 
 vi.mock("react-router", async () => {
   const actual = await vi.importActual<typeof import("react-router")>("react-router");
@@ -712,5 +712,68 @@ describe("SaksbehandlereKort", () => {
 
     expect(screen.queryByRole("button", { name: "Fjern" })).toBeNull();
     expect(screen.getByRole("button", { name: "Endre ansvarlig saksbehandler" })).toBeDefined();
+  });
+
+  it.each(["AKTIV", "VENTER_PA_INFORMASJON", "I_BERO"] as const)(
+    "lar ansvarlig fristille i Strafferettslig vurdering med status %s",
+    async (status) => {
+      await renderMedRouter(
+        <SaksbehandlereKort
+          erEier={true}
+          sak={lagKontrollsak({ steg: "STRAFFERETTSLIG_VURDERING", status })}
+          saksbehandlerDetaljer={[lagSaksbehandler()]}
+          ansvarligSaksbehandler={lagSaksbehandler()}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Fjern" }));
+      expect(submitMock).toHaveBeenCalledWith(
+        { handling: "FRISTILL" },
+        { method: "post", action: expect.any(String) },
+      );
+    },
+  );
+
+  it("viser feilmeldingen når backend avviser fristilling", async () => {
+    fetcherData = {
+      ok: false,
+      feil: "Ansvarlig saksbehandler kan bare fjernes i steget Opprettet eller Strafferettslig vurdering",
+    };
+
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={true}
+        sak={lagKontrollsak({ steg: "STRAFFERETTSLIG_VURDERING" })}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={lagSaksbehandler()}
+      />,
+    );
+
+    expect(
+      screen.getByText(
+        "Ansvarlig saksbehandler kan bare fjernes i steget Opprettet eller Strafferettslig vurdering",
+      ),
+    ).toBeDefined();
+  });
+
+  it("viser Tildel meg for ufordelt sak i bero", async () => {
+    await renderMedRouter(
+      <SaksbehandlereKort
+        erEier={false}
+        sak={lagKontrollsak({
+          steg: "STRAFFERETTSLIG_VURDERING",
+          status: "I_BERO",
+          saksbehandlere: {
+            eier: null,
+            deltMed: [],
+            opprettetAv: { navIdent: "Z654321", navn: "Kari Oppretter", enhet: "4812" },
+          },
+        })}
+        saksbehandlerDetaljer={[lagSaksbehandler()]}
+        ansvarligSaksbehandler={null}
+      />,
+    );
+
+    expect(screen.getByRole("button", { name: "Tildel meg" })).toBeDefined();
   });
 });

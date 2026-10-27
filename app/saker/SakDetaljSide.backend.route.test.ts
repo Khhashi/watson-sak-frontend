@@ -309,6 +309,32 @@ describe("SakDetaljSide loader — backend-sti", () => {
     expect(mockFristillKontrollsak).toHaveBeenCalledWith("mock-token", "1");
   });
 
+  it.each(["AKTIV", "VENTER_PA_INFORMASJON", "I_BERO"] as const)(
+    "tillater FRISTILL i Strafferettslig vurdering med status %s i backend-stien",
+    async (status) => {
+      mockHentKontrollsak.mockResolvedValue({
+        ...grunnleggendeSak,
+        steg: "STRAFFERETTSLIG_VURDERING",
+        status,
+      });
+      mockFristillKontrollsak.mockResolvedValue({
+        ...grunnleggendeSak,
+        steg: "STRAFFERETTSLIG_VURDERING",
+        status,
+        saksbehandlere: { ...grunnleggendeSak.saksbehandlere, eier: null },
+      });
+      const formData = new FormData();
+      formData.set("handling", "FRISTILL");
+      const request = new Request("http://localhost/saker/1", { method: "POST", body: formData });
+      const { action } = await import("./SakDetaljSide.server");
+
+      expect(
+        await action({ request, params: { sakId: "1" } } as Parameters<typeof action>[0]),
+      ).toMatchObject({ ok: true });
+      expect(mockFristillKontrollsak).toHaveBeenCalledWith("mock-token", "1");
+    },
+  );
+
   it("avviser FRISTILL etter Opprettet uten å kalle backend", async () => {
     mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, steg: "UTREDNING" });
     const formData = new FormData();

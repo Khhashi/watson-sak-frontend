@@ -100,8 +100,14 @@ export async function backendAction(
       return { ok: true, sak };
     }
     case "FRISTILL": {
-      if (sakFraTilgangskontroll?.steg !== "OPPRETTET") {
-        throw data("Ansvarlig saksbehandler kan bare fjernes i steget Opprettet", { status: 409 });
+      if (
+        !sakFraTilgangskontroll ||
+        !hentStegbaserteSaksregler(sakFraTilgangskontroll.steg).kanFristilleAnsvarlig
+      ) {
+        throw data(
+          "Ansvarlig saksbehandler kan bare fjernes i steget Opprettet eller Strafferettslig vurdering",
+          { status: 409 },
+        );
       }
       const sak = await backendApi.fristillKontrollsak(token, sakId);
       return { ok: true, sak };

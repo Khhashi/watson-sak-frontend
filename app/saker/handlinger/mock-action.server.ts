@@ -149,8 +149,11 @@ export async function mockAction(
       break;
     }
     case "FRISTILL": {
-      if (sak.steg !== "OPPRETTET") {
-        throw data("Ansvarlig saksbehandler kan bare fjernes i steget Opprettet", { status: 409 });
+      if (!hentStegbaserteSaksregler(sak.steg).kanFristilleAnsvarlig) {
+        throw data(
+          "Ansvarlig saksbehandler kan bare fjernes i steget Opprettet eller Strafferettslig vurdering",
+          { status: 409 },
+        );
       }
       if (!sak.saksbehandlere.eier) {
         throw data("Saken har ingen ansvarlig saksbehandler å fjerne", { status: 409 });

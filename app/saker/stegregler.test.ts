@@ -11,6 +11,7 @@ describe("hentStegbaserteSaksregler", () => {
       kanRedigereDokumenter: false,
       kanLeggeTilHistorikk: false,
       kanEndreDeltTilgang: true,
+      kanFristilleAnsvarlig: true,
     });
   });
 
@@ -18,7 +19,7 @@ describe("hentStegbaserteSaksregler", () => {
     const aktiveSteg: KontrollsakSteg[] = ["UTREDES", "STRAFFERETTSLIG_VURDERING", "POLITI"];
 
     for (const steg of aktiveSteg) {
-      expect(hentStegbaserteSaksregler(steg)).toEqual({
+      expect(hentStegbaserteSaksregler(steg)).toMatchObject({
         erAktiv: true,
         kanUtføreUtredningsarbeid: true,
         kanLasteOppFiler: true,
@@ -29,6 +30,17 @@ describe("hentStegbaserteSaksregler", () => {
     }
   });
 
+  it.each<[KontrollsakSteg, boolean]>([
+    ["OPPRETTET", true],
+    ["UTREDNING", false],
+    ["FORVALTNING", false],
+    ["STRAFFERETTSLIG_VURDERING", true],
+    ["POLITI", false],
+    ["AVSLUTTET", false],
+  ])("tillater fristilling i %s: %s", (steg, forventet) => {
+    expect(hentStegbaserteSaksregler(steg).kanFristilleAnsvarlig).toBe(forventet);
+  });
+
   it("sperrer endringer for Avsluttet", () => {
     expect(hentStegbaserteSaksregler("AVSLUTTET")).toEqual({
       erAktiv: false,
@@ -37,6 +49,7 @@ describe("hentStegbaserteSaksregler", () => {
       kanRedigereDokumenter: false,
       kanLeggeTilHistorikk: false,
       kanEndreDeltTilgang: false,
+      kanFristilleAnsvarlig: false,
     });
   });
 });
