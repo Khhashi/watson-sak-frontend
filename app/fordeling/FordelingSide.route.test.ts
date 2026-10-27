@@ -5,6 +5,8 @@ import { RouteConfig } from "~/routeConfig";
 import { hentMockState, resetDefaultSession } from "~/testing/mock-store/session.server";
 import { hentFordelingssaker } from "~/testing/mock-store/alle-saker.server";
 import type { Route } from "./+types/FordelingSide.route";
+import { loader as routeLoader } from "./FordelingSide.route";
+import { BackendUtilgjengeligError } from "~/utils/backend-utilgjengelig.server";
 
 const testRequest = new Request("http://localhost");
 function state() {
@@ -267,11 +269,9 @@ describe("FordelingSide loader", () => {
 
   it("returnerer utilgjengelig tilstand og ingen saker når tilgangssjekken feiler", async () => {
     testState.skalBrukeMockdata = false;
-    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
     vi.mocked(hentKontrollsakerForFordeling).mockRejectedValue(new BackendUtilgjengeligError());
 
-    const { loader } = await import("./FordelingSide.route");
-    const resultat = await loader({
+    const resultat = await routeLoader({
       request: new Request("http://localhost/fordeling"),
       params: {},
       context: {},
