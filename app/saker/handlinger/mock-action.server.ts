@@ -87,7 +87,20 @@ export async function mockAction(
 
   if (krevEierEllerLeder(handling)) {
     const innlogget = await hentInnloggetBruker({ request });
-    sjekkEierEllerLeder(handling, sak, innlogget);
+    // Mocksakene mangler `tilgang`. Mock-ledere leder bare sin egen enhet, som i loaderen.
+    const erLederForSakensEnhet =
+      innlogget.erLeder && !!innlogget.enhetId && sak.enhet === innlogget.enhetId;
+    sjekkEierEllerLeder(
+      handling,
+      {
+        ...sak,
+        tilgang: {
+          ...sak.tilgang,
+          erLederForSakensEnhet,
+        } as NonNullable<typeof sak.tilgang>,
+      },
+      innlogget,
+    );
   }
 
   if (

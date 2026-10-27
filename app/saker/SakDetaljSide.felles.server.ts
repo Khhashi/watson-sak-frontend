@@ -14,6 +14,7 @@ import { lagIsoTidspunktFraNorskDatoTid } from "~/utils/date-utils";
 import { notatMalValg } from "./handlinger/notatValg";
 import { byggLagreResultatRequest } from "./handlinger/resultat-request";
 import { erHenlagtIGjeldendeSteg } from "./handlinger/tillatte-steg";
+import { kanFordeleSak } from "./ledertilgang";
 import type { Route } from "./+types/SakDetaljSide.route";
 import type { RedigerSaksinformasjonResultat } from "./komponenter/Saksinformasjon.types";
 
@@ -282,13 +283,16 @@ export const handlingerSomKreverUtredning = new Set([
   "legg_til_historikk",
 ]);
 
-/** Tildelingshandlinger som bare sakens eier eller en leder kan utføre */
+/** Tildelingshandlinger som bare sakens eier eller leder for sakens enhet kan utføre */
 const eierEllerLederFeilmeldinger: Record<string, string> = {
-  FRISTILL: "Du må være sakens saksbehandler eller leder for å fjerne saksbehandler",
+  FRISTILL:
+    "Du må være sakens saksbehandler eller leder for sakens enhet for å fjerne saksbehandler",
   overfor_ansvarlig:
-    "Du må være sakens saksbehandler eller leder for å endre ansvarlig saksbehandler",
-  send_til_annen_enhet: "Du må være sakens saksbehandler eller leder for å endre enhet",
-  videresend_seksjon: "Du må være sakens saksbehandler eller leder for å endre enhet",
+    "Du må være sakens saksbehandler eller leder for sakens enhet for å endre ansvarlig saksbehandler",
+  send_til_annen_enhet:
+    "Du må være sakens saksbehandler eller leder for sakens enhet for å endre enhet",
+  videresend_seksjon:
+    "Du må være sakens saksbehandler eller leder for sakens enhet for å endre enhet",
 };
 
 export function krevEierEllerLeder(handling: string): boolean {
@@ -298,10 +302,10 @@ export function krevEierEllerLeder(handling: string): boolean {
 export function sjekkEierEllerLeder(
   handling: string,
   sak: KontrollsakResponse,
-  innlogget: { navIdent: string; erLeder: boolean },
+  innlogget: { navIdent: string },
 ) {
   const erEier = sak.saksbehandlere.eier?.navIdent === innlogget.navIdent;
-  if (!erEier && !innlogget.erLeder) {
+  if (!kanFordeleSak(sak, erEier)) {
     throw data(eierEllerLederFeilmeldinger[handling], { status: 403 });
   }
 }

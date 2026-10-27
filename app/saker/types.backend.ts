@@ -333,6 +333,8 @@ const kontrollsakTilgangSchema = z.object({
   kanTildeleSak: z.boolean().default(true),
   kanSeArkiv: z.boolean().default(false),
   kanSeFiler: z.boolean().default(false),
+  erLederForSakensEnhet: z.boolean().default(false),
+  ledetEnheter: z.array(z.string()).default([]),
 });
 
 /**
