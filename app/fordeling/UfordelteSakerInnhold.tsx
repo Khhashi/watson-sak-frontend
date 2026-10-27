@@ -5,6 +5,7 @@ import { sporHendelse } from "~/analytics/analytics";
 import { ChipsFiltergruppe } from "~/filtre/ChipsFiltergruppe";
 import { Filterpanel } from "~/filtre/Filterpanel";
 import { useFilterParam } from "~/filtre/useFilterParam";
+import { BackendUtilgjengeligMelding } from "~/komponenter/BackendUtilgjengeligMelding";
 import { Nøkkeltallkort } from "~/komponenter/Nøkkeltallkort";
 import { MiljøtilpassetTittel } from "~/layout/MiljøtilpassetTittel";
 import { RouteConfig } from "~/routeConfig";
@@ -151,9 +152,7 @@ export function UfordelteSakerInnhold({
         )}
 
         {saksdataUtilgjengelig ? (
-          <LocalAlert status="error" size="small">
-            Vi får ikke hentet saksdata fra baksystemet nå. Prøv igjen om litt.
-          </LocalAlert>
+          <BackendUtilgjengeligMelding />
         ) : !harSaker ? (
           <LocalAlert status="announcement">
             <LocalAlert.Header>
