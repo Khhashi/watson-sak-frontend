@@ -8,7 +8,7 @@ export type StegbaserteSaksregler = {
   kanLeggeTilHistorikk: boolean;
   kanEndreDeltTilgang: boolean;
   kanFristilleAnsvarlig: boolean;
-  kanEndreEnhetUansettStatus: boolean;
+  kanEndreEnhetForUfordeltSak: boolean;
 };
 
 export function hentStegbaserteSaksregler(steg: KontrollsakSteg): StegbaserteSaksregler {
@@ -27,7 +27,7 @@ export function hentStegbaserteSaksregler(steg: KontrollsakSteg): StegbaserteSak
     kanEndreDeltTilgang: erAktiv,
     // Fristilling fjerner bare ansvarlig. Steg, status og deling beholdes.
     kanFristilleAnsvarlig: erOpprettetEllerStrafferettslig,
-    // Enhet kan endres i disse stegene selv om saken venter eller er i bero.
-    kanEndreEnhetUansettStatus: erOpprettetEllerStrafferettslig,
+    // Ufordelte saker kan bare flyttes til annen enhet i disse stegene.
+    kanEndreEnhetForUfordeltSak: erOpprettetEllerStrafferettslig,
   };
 }

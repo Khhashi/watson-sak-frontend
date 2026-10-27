@@ -119,9 +119,12 @@ export function SaksbehandlereKort({
 
   // Kun sakens ansvarlige saksbehandler eller en leder kan endre ansvarlig saksbehandler og enhet.
   const kanEndreAnsvarlig = kanEndreTilgang && (erEier || innloggetBruker.erLeder);
+  // Ansvarlig eller leder kan endre enhet i alle aktive steg uansett status.
+  // Ufordelte saker kan bare flyttes i Opprettet og Strafferettslig vurdering.
   const kanEndreEnhet =
-    (kanEndreTilgang || stegregler.kanEndreEnhetUansettStatus) &&
-    (erEier || innloggetBruker.erLeder);
+    stegregler.erAktiv &&
+    (erEier || innloggetBruker.erLeder) &&
+    (ansvarligSaksbehandler !== null || stegregler.kanEndreEnhetForUfordeltSak);
   // Fristilling er tillatt uansett arbeidsstatus, også når saken venter eller er i bero.
   const kanFristilleAnsvarlig =
     stegregler.kanFristilleAnsvarlig && (erEier || innloggetBruker.erLeder);

@@ -12,7 +12,7 @@ describe("hentStegbaserteSaksregler", () => {
       kanLeggeTilHistorikk: false,
       kanEndreDeltTilgang: true,
       kanFristilleAnsvarlig: true,
-      kanEndreEnhetUansettStatus: true,
+      kanEndreEnhetForUfordeltSak: true,
     });
   });
 
@@ -49,8 +49,8 @@ describe("hentStegbaserteSaksregler", () => {
     ["STRAFFERETTSLIG_VURDERING", true],
     ["POLITI", false],
     ["AVSLUTTET", false],
-  ])("tillater endring av enhet uansett status i %s: %s", (steg, forventet) => {
-    expect(hentStegbaserteSaksregler(steg).kanEndreEnhetUansettStatus).toBe(forventet);
+  ])("tillater endring av enhet for ufordelt sak i %s: %s", (steg, forventet) => {
+    expect(hentStegbaserteSaksregler(steg).kanEndreEnhetForUfordeltSak).toBe(forventet);
   });
 
   it("sperrer endringer for Avsluttet", () => {
@@ -62,7 +62,7 @@ describe("hentStegbaserteSaksregler", () => {
       kanLeggeTilHistorikk: false,
       kanEndreDeltTilgang: false,
       kanFristilleAnsvarlig: false,
-      kanEndreEnhetUansettStatus: false,
+      kanEndreEnhetForUfordeltSak: false,
     });
   });
 });
