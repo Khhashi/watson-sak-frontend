@@ -1,3 +1,6 @@
+import { render, screen } from "@testing-library/react";
+import { createElement } from "react";
+import { createRoutesStub, useSearchParams } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { hentJournalposterForSak } from "~/testing/mock-store/journalposter.server";
 import { hentMockState, resetDefaultSession } from "~/testing/mock-store/session.server";
@@ -15,6 +18,9 @@ import { action, loader } from "./SakDetaljSide.server";
 import { hentMockTillatteHandlinger } from "./mock-tillatte-handlinger.server";
 import { hentInnloggetBruker } from "~/auth/innlogget-bruker.server";
 import { getSaksenhet } from "./selectors";
+import { SakerPåSammePerson } from "./komponenter/SakerPåSammePerson";
+
+vi.mock("~/kodeverk/useKodeverk", () => ({ useKodeverk: () => ({ enheter: [] }) }));
 
 vi.mock("~/config/env.server", () => ({
   skalBrukeMockdata: true,
@@ -36,6 +42,51 @@ const testRequest = new Request("http://localhost");
 function state() {
   return hentMockState(testRequest);
 }
+
+function renderSakerPåSammePerson(totalSider: number) {
+  const sak = required(hentAlleSaker(testRequest).find((sak) => sak.id === 201));
+  const annenSak = { ...sak, id: 9999 };
+
+  function Søkeparametere() {
+    const [params] = useSearchParams();
+    return createElement("output", { "data-testid": "sok" }, params.toString());
+  }
+
+  const Stub = createRoutesStub([
+    {
+      path: "/saker/:sakId",
+      Component: () =>
+        createElement(
+          "div",
+          null,
+          createElement(SakerPåSammePerson, {
+            saker: [annenSak],
+            side: 1,
+            totalSider,
+            gjeldendeSak: sak,
+            innloggetNavIdent: "Z999999",
+          }),
+          createElement(Søkeparametere),
+        ),
+    },
+  ]);
+
+  return render(createElement(Stub, { initialEntries: ["/saker/201"] }));
+}
+
+describe("SakerPåSammePerson paginering", () => {
+  it("viser ikke sidevelger når det bare er én side", () => {
+    renderSakerPåSammePerson(1);
+
+    expect(screen.queryByRole("button", { name: /^2$/ })).toBeNull();
+  });
+
+  it("viser sidevelger når det finnes flere sider", () => {
+    renderSakerPåSammePerson(2);
+
+    expect(screen.getByRole("button", { name: /^2$/ })).not.toBeNull();
+  });
+});
 
 describe("SakDetaljSide action", () => {
   const utredningSakId = 113;

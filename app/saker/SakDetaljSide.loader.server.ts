@@ -26,6 +26,14 @@ import type { Route } from "./+types/SakDetaljSide.route";
 
 // --- Loader ---
 
+const RELATERTE_SAKER_SIDESTORRELSE = 10;
+
+function hentRelaterteSakerSide(request: Request): number {
+  const verdi = new URL(request.url).searchParams.get("relaterteSaker");
+  const side = Number.parseInt(verdi ?? "", 10);
+  return Number.isInteger(side) && side >= 1 ? side : 1;
+}
+
 /**
  * Henter filer for saken, men behandler manglende fil-tilgang som en gyldig tilstand
  * i stedet for en feil.
@@ -114,18 +122,30 @@ async function hentTillatteHandlingerMedTilgangskontroll(
 async function hentAndreSakerMedTilgangskontroll(
   token: string,
   sak: KontrollsakResponse,
-): Promise<KontrollsakResponse[]> {
+  side: number,
+): Promise<{
+  andreSaker: KontrollsakResponse[];
+  andreSakerSide: { side: number; totalSider: number };
+}> {
   if (!sak.personIdent || sak.tilgang?.kanSeRelaterteSaker === false) {
-    return [];
+    return { andreSaker: [], andreSakerSide: { side, totalSider: 0 } };
   }
 
   try {
-    const søkeresultat = await backendApi.søkKontrollsaker(token, sak.personIdent, 1, 100);
-    return søkeresultat.items.filter((annenSak) => annenSak.id !== sak.id);
+    const søkeresultat = await backendApi.søkKontrollsaker(
+      token,
+      sak.personIdent,
+      side,
+      RELATERTE_SAKER_SIDESTORRELSE,
+    );
+    return {
+      andreSaker: søkeresultat.items.filter((annenSak) => annenSak.id !== sak.id),
+      andreSakerSide: { side, totalSider: søkeresultat.totalPages },
+    };
   } catch (feil) {
     if (feil instanceof backendApi.BackendFeilException && feil.status === 403) {
       logger.warn("Mangler tilgang til å hente relaterte saker", { sakId: sak.id });
-      return [];
+      return { andreSaker: [], andreSakerSide: { side, totalSider: 0 } };
     }
     throw feil;
   }
@@ -133,6 +153,7 @@ async function hentAndreSakerMedTilgangskontroll(
 
 export async function loader({ request, params }: Route.LoaderArgs) {
   const sakId = parseSakId(params.sakId);
+  const relaterteSakerSide = hentRelaterteSakerSide(request);
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
     const sakPromise = backendApi.hentKontrollsak(token, sakId);
@@ -155,9 +176,11 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       hentMapperstier(token, sakId),
     ]);
 
-    // Henter kun første side (maks 100 saker) — visningen på sakdetaljsiden er en enkel
-    // liste over "andre saker for personen", ikke en fullstendig paginert visning.
-    const andreSaker = await hentAndreSakerMedTilgangskontroll(token, sak);
+    const { andreSaker, andreSakerSide } = await hentAndreSakerMedTilgangskontroll(
+      token,
+      sak,
+      relaterteSakerSide,
+    );
 
     // Dokumenter/filer skal kun eksponeres i loader-responsen (og dermed nås av klienten)
     // for saksbehandlere med lesetilgang — se `kanLeseSaksinnhold`, som også styrer
@@ -199,6 +222,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       mapper: kanSeFiler ? mapper : [],
       harFilTilgang: filerResultat.harFilTilgang,
       andreSaker,
+      andreSakerSide,
       saksbehandlere: saksbehandlerDetaljer.map((sb) => sb.navn),
       saksbehandlerDetaljer,
       seksjoner: mockSeksjoner,
@@ -253,9 +277,15 @@ export async function loader({ request, params }: Route.LoaderArgs) {
       : null;
   const filer = kanSeFiler ? hentFilerForSak(request, String(sak.id)) : [];
   const mapper = kanSeFiler ? hentMapperstierFraMock(request, String(sak.id)) : [];
-  const andreSaker = alleSaker.filter(
-    (annenSak) => annenSak.personIdent === sak.personIdent && annenSak.id !== sak.id,
-  );
+  const relaterteSaker =
+    !sak.personIdent || sak.tilgang?.kanSeRelaterteSaker === false
+      ? []
+      : alleSaker.filter(
+          (annenSak) => annenSak.personIdent === sak.personIdent && annenSak.id !== sak.id,
+        );
+  const totalSider = Math.ceil(relaterteSaker.length / RELATERTE_SAKER_SIDESTORRELSE);
+  const start = (relaterteSakerSide - 1) * RELATERTE_SAKER_SIDESTORRELSE;
+  const andreSaker = relaterteSaker.slice(start, start + RELATERTE_SAKER_SIDESTORRELSE);
   // Backend setter `tilgang` på saken. Mocksakene mangler den, så vi speiler
   // backend sin arkivregel: den som kan lese saksinnholdet, kan se arkivet.
   // Mock-ledere leder bare sin egen enhet.
@@ -285,6 +315,7 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     mapper,
     harFilTilgang,
     andreSaker,
+    andreSakerSide: { side: relaterteSakerSide, totalSider },
     saksbehandlere: mockSaksbehandlere,
     saksbehandlerDetaljer: mockSaksbehandlerDetaljer,
     seksjoner: mockSeksjoner,
