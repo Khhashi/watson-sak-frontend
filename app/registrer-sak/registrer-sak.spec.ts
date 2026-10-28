@@ -102,14 +102,20 @@ test.describe("Opprett sak", () => {
     await expect(page.getByRole("link", { name: "Velg enhet" })).toBeVisible();
   });
 
-  test("flytter fokus til ErrorSummary når innsending stoppes av valideringsfeil", async ({
-    page,
-  }) => {
+  // Feil på felt som sendes via skjult input (her organisasjonsnummer) kan ikke
+  // få fokus av Conform, så uten egen fokushåndtering skjer det tilsynelatende
+  // ingenting når saksbehandler trykker «Opprett sak» (TH-87).
+  test("flytter fokus til ErrorSummary ved feil i felt med skjult input", async ({ page }) => {
     await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
     await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
     await expect(
       page.getByRole("heading", { name: "Grunnleggende saksinformasjon" }),
     ).toBeVisible();
+
+    await page.getByLabel("Kategori").selectOption({ index: 1 });
+    await page.getByLabel("Kilde").selectOption({ index: 1 });
+    await page.getByLabel("Enhet").selectOption({ index: 1 });
+    await page.getByLabel("Organisasjonsnummer").fill("123");
 
     await page.getByRole("button", { name: "Opprett sak" }).click();
 
@@ -118,6 +124,11 @@ test.describe("Opprett sak", () => {
     });
     await expect(feiloppsummering).toBeFocused();
     await expect(feiloppsummering).toBeInViewport();
+    await expect(
+      page.getByRole("link", {
+        name: "Organisasjonsnummer må bestå av 9 siffer. Skill flere med komma.",
+      }),
+    ).toBeVisible();
   });
 
   test("kan endre kategori etter valideringsfeil på kategori og kilde", async ({ page }) => {
