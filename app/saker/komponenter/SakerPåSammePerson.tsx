@@ -16,11 +16,12 @@ import {
   HGrid,
   HStack,
   Modal,
+  Pagination,
   Tag,
   VStack,
 } from "@navikt/ds-react";
 import { useEffect, useId, useRef, useState } from "react";
-import { Link, useFetcher } from "react-router";
+import { Link, useFetcher, useSearchParams } from "react-router";
 import { finnEnhetsnavn } from "~/kodeverk/enheter";
 import { useKodeverk } from "~/kodeverk/useKodeverk";
 import { AvkortetTag } from "~/komponenter/AvkortetTag";
@@ -56,6 +57,8 @@ import {
 
 interface SakerPåSammePersonProps {
   saker: KontrollsakResponse[];
+  side?: number;
+  totalSider?: number;
   gjeldendeSak: KontrollsakResponse;
   innloggetNavIdent: string;
 }
@@ -355,6 +358,8 @@ function SakKort({
 
 export function SakerPåSammePerson({
   saker,
+  side = 1,
+  totalSider = 0,
   gjeldendeSak,
   innloggetNavIdent,
 }: SakerPåSammePersonProps) {
@@ -366,6 +371,7 @@ export function SakerPåSammePerson({
   const [feilmelding, setFeilmelding] = useState<string>();
   const harSendt = useRef(false);
   const fetcher = useFetcher<KobleSakActionResult>();
+  const [searchParams, setSearchParams] = useSearchParams();
   const andreSaker = saker.filter((sak) => sak.id !== gjeldendeSak.id);
   const erKoblingsmodalÅpen = valgtSak !== null;
   const erFrakobling = handling === "fjerne";
@@ -381,8 +387,18 @@ export function SakerPåSammePerson({
     setFeilmelding(fetcher.data?.feil.skjema?.[0] ?? "Kunne ikke endre koblingen. Prøv igjen.");
   }, [fetcher.data, fetcher.state]);
 
-  if (andreSaker.length === 0) {
+  if (andreSaker.length === 0 && totalSider <= 1) {
     return null;
+  }
+
+  function gåTilSide(ny: number) {
+    const neste = new URLSearchParams(searchParams);
+    if (ny <= 1) {
+      neste.delete("relaterteSaker");
+    } else {
+      neste.set("relaterteSaker", String(ny));
+    }
+    setSearchParams(neste, { preventScrollReset: true });
   }
 
   function åpneKoblingsmodal(sak: KontrollsakResponse, nyHandling: Koblingshandling) {
@@ -429,6 +445,11 @@ export function SakerPåSammePerson({
               />
             ))}
           </VStack>
+          {totalSider > 1 && (
+            <HStack justify="end">
+              <Pagination page={side} onPageChange={gåTilSide} count={totalSider} size="small" />
+            </HStack>
+          )}
         </VStack>
       </Box>
 
