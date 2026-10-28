@@ -56,6 +56,7 @@ export default function SakDetaljSide() {
     migreringsnotatEksempel,
     mapper,
     andreSaker,
+    andreSakerSide,
     saksbehandlerDetaljer,
   } = useLoaderData<typeof loader>();
   const [sak, setSak] = useState(loaderSak);
@@ -246,6 +247,8 @@ export default function SakDetaljSide() {
 
             <SakerPåSammePerson
               saker={andreSaker}
+              side={andreSakerSide.side}
+              totalSider={andreSakerSide.totalSider}
               gjeldendeSak={sak}
               innloggetNavIdent={innloggetBruker.navIdent}
             />

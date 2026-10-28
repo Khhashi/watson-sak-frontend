@@ -83,9 +83,9 @@ vi.mock("~/saker/api.server", () => ({
   søkKontrollsaker: mockSøkKontrollsaker,
 }));
 
-function lagLoaderArgs(sakId = "1") {
+function lagLoaderArgs(sakId = "1", query = "") {
   return {
-    request: new Request("http://localhost/saker/" + sakId),
+    request: new Request("http://localhost/saker/" + sakId + query),
     params: { sakId },
     context: {},
   } as unknown as Parameters<typeof import("./SakDetaljSide.server").loader>[0];
@@ -1046,6 +1046,48 @@ describe("SakDetaljSide loader — backend-sti", () => {
 
     expect(mockSøkKontrollsaker).not.toHaveBeenCalled();
     expect(resultat.andreSaker).toEqual([]);
+    expect(resultat.andreSakerSide).toEqual({ side: 1, totalSider: 0 });
+  });
+
+  it("henter den valgte siden med sidestørrelse 10", async () => {
+    mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, personIdent: "12345678901" });
+    mockHentHendelser.mockResolvedValue([]);
+    mockHentSaksbehandlere.mockResolvedValue([]);
+    mockHentFiler.mockResolvedValue([]);
+    mockHentMapper.mockResolvedValue([]);
+    mockSøkKontrollsaker.mockResolvedValue({
+      items: [],
+      page: 3,
+      size: 10,
+      totalItems: 40,
+      totalPages: 4,
+    });
+
+    const { loader } = await import("./SakDetaljSide.server");
+    const resultat = await loader(lagLoaderArgs("1", "?relaterteSaker=3"));
+
+    expect(mockSøkKontrollsaker).toHaveBeenCalledWith("mock-token", "12345678901", 3, 10);
+    expect(resultat.andreSakerSide).toEqual({ side: 3, totalSider: 4 });
+  });
+
+  it("bruker side 1 når relaterteSaker-parameteren er ugyldig", async () => {
+    mockHentKontrollsak.mockResolvedValue({ ...grunnleggendeSak, personIdent: "12345678901" });
+    mockHentHendelser.mockResolvedValue([]);
+    mockHentSaksbehandlere.mockResolvedValue([]);
+    mockHentFiler.mockResolvedValue([]);
+    mockHentMapper.mockResolvedValue([]);
+    mockSøkKontrollsaker.mockResolvedValue({
+      items: [],
+      page: 1,
+      size: 10,
+      totalItems: 0,
+      totalPages: 0,
+    });
+
+    const { loader } = await import("./SakDetaljSide.server");
+    await loader(lagLoaderArgs("1", "?relaterteSaker=ugyldig"));
+
+    expect(mockSøkKontrollsaker).toHaveBeenCalledWith("mock-token", "12345678901", 1, 10);
   });
 
   it("degraderer stille når søk etter relaterte saker gir 403", async () => {
@@ -1070,5 +1112,6 @@ describe("SakDetaljSide loader — backend-sti", () => {
     const resultat = await loader(lagLoaderArgs());
 
     expect(resultat.andreSaker).toEqual([]);
+    expect(resultat.andreSakerSide).toEqual({ side: 1, totalSider: 0 });
   });
 });
