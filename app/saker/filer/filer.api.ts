@@ -55,8 +55,13 @@ export async function action({ request, params }: ActionFunctionArgs) {
 
   const formData = await request.formData();
   const fil = formData.get("fil");
-  if (!(fil instanceof File) || fil.size === 0) {
-    throw data("Mangler fil", { status: 400 });
+  // Returneres som { message } (ikke kastet) slik at feilen vises inline i filområdet
+  // i stedet for å havne i error boundary.
+  if (!(fil instanceof File)) {
+    return data({ message: "Velg en fil som skal lastes opp." }, { status: 400 });
+  }
+  if (fil.size === 0) {
+    return data({ message: "Filen er tom og kan ikke lastes opp." }, { status: 400 });
   }
 
   if (!skalBrukeMockdata) {
