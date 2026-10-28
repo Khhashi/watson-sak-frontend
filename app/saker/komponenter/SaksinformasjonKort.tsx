@@ -446,7 +446,7 @@ export function SaksinformasjonKort({
                 <div id={ankerIdForFelt("merking")} className="w-fit">
                   <UNSAFE_Combobox
                     label="Merking"
-                    description="A-krimenhet eller andre definerte kategorier"
+                    description="A-krimenhet eller andre definerte merker"
                     size="small"
                     options={kodeverk.merker.map((merke) => ({
                       label: merkingEtikett(merke),
