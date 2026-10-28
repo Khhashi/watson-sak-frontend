@@ -31,7 +31,7 @@ export function Saksvedlegg({ filer, setFiler, fraSOmråde = false }: Props) {
         </VStack>
       ) : (
         <FileUpload.Dropzone
-          label="Last opp dokumenter (valgfritt)"
+          label="Last opp dokumenter"
           description="Legg ved filer som dokumenterer saken. Maks 50 MB per fil."
           accept={TILLATTE_FILTYPER}
           onSelect={(_, partitioned) =>
