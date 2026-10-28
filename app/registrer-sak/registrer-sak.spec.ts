@@ -102,6 +102,24 @@ test.describe("Opprett sak", () => {
     await expect(page.getByRole("link", { name: "Velg enhet" })).toBeVisible();
   });
 
+  test("flytter fokus til ErrorSummary når innsending stoppes av valideringsfeil", async ({
+    page,
+  }) => {
+    await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
+    await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
+    await expect(
+      page.getByRole("heading", { name: "Grunnleggende saksinformasjon" }),
+    ).toBeVisible();
+
+    await page.getByRole("button", { name: "Opprett sak" }).click();
+
+    const feiloppsummering = page.getByRole("heading", {
+      name: "Du må rette disse feilene før du kan gå videre",
+    });
+    await expect(feiloppsummering).toBeFocused();
+    await expect(feiloppsummering).toBeInViewport();
+  });
+
   test("kan endre kategori etter valideringsfeil på kategori og kilde", async ({ page }) => {
     await page.getByRole("searchbox", { name: "Fødsels- eller d-nummer" }).fill("12345678901");
     await page.getByLabel("Søk etter person").getByRole("button", { name: "Søk" }).click();
