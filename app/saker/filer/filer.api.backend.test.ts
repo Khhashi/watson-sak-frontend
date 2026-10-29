@@ -32,9 +32,11 @@ const sak = {
   steg: "UTREDES",
 } as KontrollsakResponse;
 
-function uploadRequest(): Request {
+function uploadRequest(innhold = "innhold", medFil = true): Request {
   const formData = new FormData();
-  formData.set("fil", new File(["innhold"], "bevis.pdf", { type: "application/pdf" }));
+  if (medFil) {
+    formData.set("fil", new File([innhold], "bevis.pdf", { type: "application/pdf" }));
+  }
   return {
     method: "POST",
     headers: new Headers(),
@@ -61,12 +63,32 @@ describe("filer.api POST — backend-sti", () => {
     await expect(actionMedBackend()).rejects.toMatchObject({ init: { status: 403 } });
     expect(mockLastOppFil).not.toHaveBeenCalled();
   });
+
+  it("returnerer feilmelding for tom fil uten å kalle backend", async () => {
+    const svar = await actionMedBackend(uploadRequest(""));
+
+    expect(svar).toMatchObject({
+      data: { message: "Filen er tom og kan ikke lastes opp." },
+      init: { status: 400 },
+    });
+    expect(mockLastOppFil).not.toHaveBeenCalled();
+  });
+
+  it("returnerer feilmelding når fil mangler", async () => {
+    const svar = await actionMedBackend(uploadRequest("", false));
+
+    expect(svar).toMatchObject({
+      data: { message: "Velg en fil som skal lastes opp." },
+      init: { status: 400 },
+    });
+    expect(mockLastOppFil).not.toHaveBeenCalled();
+  });
 });
 
-async function actionMedBackend() {
+async function actionMedBackend(request: Request = uploadRequest()) {
   const { action } = await import("./filer.api");
   return action({
-    request: uploadRequest(),
+    request,
     params: { sakId: "1" },
   } as Route.ActionArgs);
 }
