@@ -73,7 +73,7 @@ test.describe("Flytt fra Access for saksbehandler", () => {
     await page.goto("/migrering");
 
     await expect(page.getByRole("heading", { level: 1, name: "Flytt fra Access" })).toBeVisible();
-    for (const kolonne of ["PID", "Personnummer", "Opprettet i Access", "Status"]) {
+    for (const kolonne of ["PID", "Fødsels- eller D-nummer", "Opprettet i Access", "Status"]) {
       await expect(page.getByRole("columnheader", { name: kolonne })).toBeVisible();
     }
     await expect(page.getByRole("columnheader", { name: "Saksbehandler" })).toHaveCount(0);
@@ -128,7 +128,9 @@ test.describe("Flytt fra Access for saksbehandler", () => {
     await page.goto("/");
 
     await expect(
-      page.getByRole("heading", { name: "Du har saker i Access som skal flyttes!" }),
+      page.getByRole("heading", {
+        name: "Du har saker i Access som skal flyttes!",
+      }),
     ).toBeVisible();
     await page.getByRole("link", { name: "Flytt fra Access" }).first().click();
 

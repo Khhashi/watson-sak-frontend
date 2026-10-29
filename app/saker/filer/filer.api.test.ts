@@ -99,4 +99,26 @@ describe("filer.api POST", () => {
 
     expect(respons.filnavn).toBe("bevis.pdf");
   });
+
+  it("returnerer feilmelding for tom fil og legger ikke til filen", async () => {
+    const { sak, ref } = settOppAktivSak();
+    const antallFør = hentHistorikk(testRequest, sak.id).length;
+    const formData = new FormData();
+    formData.set("fil", new File([], "tom.pdf", { type: "application/pdf" }));
+
+    const svar = await action({
+      request: {
+        method: "POST",
+        headers: new Headers(),
+        formData: async () => formData,
+      } as unknown as Request,
+      params: { sakId: ref },
+    } as Route.ActionArgs);
+
+    expect(svar).toMatchObject({
+      data: { message: "Filen er tom og kan ikke lastes opp." },
+      init: { status: 400 },
+    });
+    expect(hentHistorikk(testRequest, sak.id)).toHaveLength(antallFør);
+  });
 });
