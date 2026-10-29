@@ -80,7 +80,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     deltMedSaker,
     saksdataUtilgjengelig,
     filterAlternativer: {
-      steg: ALLE_STEG.map((s) => ({ verdi: s, etikett: formaterSteg(s) })),
+      steg: [...ALLE_STEG, "AVSLUTTET" as const].map((s) => ({
+        verdi: s,
+        etikett: formaterSteg(s),
+      })),
       status: ALLE_VENTESTATUSER.map((v) => ({ verdi: v, etikett: formaterVentestatus(v) })),
     },
     aktivtFilter: {
