@@ -130,9 +130,9 @@ function erUtfyltYtelseRad(rad: {
 
 export const opprettSakSchema = z
   .object({
-    personIdent: påkrevdTekst("Fødselsnummer er påkrevd").regex(
+    personIdent: påkrevdTekst("Fødsels- eller D-nummer er påkrevd").regex(
       /^\d{11}$/,
-      "Fødselsnummer må bestå av 11 siffer",
+      "Fødsels- eller D-nummer må bestå av 11 siffer",
     ),
     kategori: påkrevdTekst("Velg kategori"),
     kilde: påkrevdTekst("Velg kilde"),

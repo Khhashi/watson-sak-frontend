@@ -1,11 +1,13 @@
 import { describe, expect, it } from "vitest";
 import {
   camelCaseTilNorsk,
+  erDnummer,
   erFnr,
   erOrganisasjonsnummer,
   erSaksnummer,
   formaterFødselsnummer,
   formaterOrganisasjonsnummer,
+  identEtikett,
   parseOrganisasjonsnumre,
   snakeCaseTilSetning,
   storFørsteBokstav,
@@ -229,5 +231,25 @@ describe("erSaksnummer", () => {
   it("avviser ikke-numeriske strenger", () => {
     expect(erSaksnummer("SAK-42")).toBe(false);
     expect(erSaksnummer("")).toBe(false);
+  });
+});
+
+describe("erDnummer", () => {
+  it("gjenkjenner D-nummer på at første siffer er 4–7", () => {
+    expect(erDnummer("41010112345")).toBe(true);
+    expect(erDnummer("710101 12345")).toBe(true);
+  });
+
+  it("avviser fødselsnummer og ugyldige verdier", () => {
+    expect(erDnummer("01010112345")).toBe(false);
+    expect(erDnummer("81010112345")).toBe(false);
+    expect(erDnummer("4101011234")).toBe(false);
+  });
+});
+
+describe("identEtikett", () => {
+  it("returnerer riktig etikett for identtypen", () => {
+    expect(identEtikett("01010112345")).toBe("Fødselsnummer");
+    expect(identEtikett("41010112345")).toBe("D-nummer");
   });
 });
