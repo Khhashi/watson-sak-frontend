@@ -149,7 +149,9 @@ export function KommentarMarkeringLeaf(props: PlateLeafProps) {
   const erAktiv = leaf.kommentarAktiv ?? (!!aktivTraadId && traadIder.includes(aktivTraadId));
   const antall = traadIder.length;
   const tastaturTraadId = leaf.kommentarTastaturTraadId;
-  const tilgjengeligNavn =
+  // Hintet er en beskrivelse, ikke navnet: tilgjengelig navn skal være den synlige,
+  // markerte teksten (WCAG 2.5.3 Label in Name), så talestyring treffer knappen.
+  const tilgjengeligBeskrivelse =
     antall > 1
       ? `${antall} kommentarer. Åpne kommentarpanelet.`
       : "Kommentar. Åpne kommentarpanelet.";
@@ -167,8 +169,8 @@ export function KommentarMarkeringLeaf(props: PlateLeafProps) {
         "data-kommentar-aktiv": erAktiv ? "true" : "false",
         role: "button",
         tabIndex: tastaturTraadId ? 0 : -1,
-        "aria-label": tilgjengeligNavn,
-        title: tilgjengeligNavn,
+        "aria-description": tilgjengeligBeskrivelse,
+        title: tilgjengeligBeskrivelse,
         onClick: () => velgTraad(),
         onKeyDownCapture: (event) => {
           if (event.key !== "Enter" && event.key !== " ") return;

@@ -236,7 +236,9 @@ describe("DokumentEditor med kommentarer", () => {
     renderEditor();
 
     const markering = await waitFor(() => {
-      const element = screen.getByRole("button", { name: "Kommentar. Åpne kommentarpanelet." });
+      const element = screen.getByRole("button", {
+        description: "Kommentar. Åpne kommentarpanelet.",
+      });
       expect(element.getAttribute("tabindex")).toBe("0");
       return element;
     });
