@@ -21,7 +21,10 @@ describe("opprettSakSchema", () => {
   });
 
   it("krever personident med 11 siffer", () => {
-    const resultat = opprettSakSchema.safeParse({ ...minimaltGyldigSkjema, personIdent: "123" });
+    const resultat = opprettSakSchema.safeParse({
+      ...minimaltGyldigSkjema,
+      personIdent: "123",
+    });
     expect(resultat.success).toBe(false);
   });
 
@@ -133,8 +136,18 @@ describe("opprettSakSchema", () => {
     const resultat = opprettSakSchema.safeParse({
       ...minimaltGyldigSkjema,
       ytelser: [
-        { type: "DAGPENGER", fraDato: "2024-01-01", tilDato: "2024-12-31", beløp: 1000 },
-        { type: undefined, fraDato: undefined, tilDato: undefined, beløp: undefined },
+        {
+          type: "DAGPENGER",
+          fraDato: "2024-01-01",
+          tilDato: "2024-12-31",
+          beløp: 1000,
+        },
+        {
+          type: undefined,
+          fraDato: undefined,
+          tilDato: undefined,
+          beløp: undefined,
+        },
       ],
     });
     expect(resultat.success).toBe(true);
@@ -337,7 +350,7 @@ describe("feilmeldinger ved manglende obligatoriske felter (via ekte skjemainnse
     const submission = parseWithZod(formData, { schema: opprettSakSchema });
     expect(submission.status).toBe("error");
     if (submission.status === "error") {
-      expect(submission.error?.personIdent).toEqual(["Fødselsnummer er påkrevd"]);
+      expect(submission.error?.personIdent).toEqual(["Fødsels- eller D-nummer er påkrevd"]);
     }
   });
 
@@ -345,7 +358,9 @@ describe("feilmeldinger ved manglende obligatoriske felter (via ekte skjemainnse
     const formData = new FormData();
     formData.set("kategori", "");
     formData.set("kilde", "");
-    const submission = parseWithZod(formData, { schema: redigerSaksinformasjonSchema });
+    const submission = parseWithZod(formData, {
+      schema: redigerSaksinformasjonSchema,
+    });
     expect(submission.status).toBe("error");
     if (submission.status === "error") {
       expect(submission.error?.kategori).toEqual(["Velg kategori"]);

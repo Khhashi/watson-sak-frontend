@@ -204,6 +204,11 @@ export default function OpprettSakSide() {
     forrigeNavigasjonstilstand.current = navigation.state;
   }, [navigation.state, lastResult, valgtKategori]);
 
+  // Settes når innsending stoppes av validering. Fokus flyttes først når
+  // feiloppsummeringen faktisk er rendret, siden Conform oppdaterer feilene
+  // i en egen render etter submit-eventet.
+  const feiloppsummeringRef = useRef<HTMLDivElement>(null);
+  const [skalFokusereFeiloppsummering, setSkalFokusereFeiloppsummering] = useState(false);
   const feilElementer = useMemo(() => {
     const elementer: Array<{ id: string; melding: string }> = [];
     for (const [navn, feil] of Object.entries(form.allErrors)) {
@@ -214,6 +219,12 @@ export default function OpprettSakSide() {
     }
     return elementer;
   }, [form.allErrors, fields]);
+
+  useEffect(() => {
+    if (!skalFokusereFeiloppsummering || !feiloppsummeringRef.current) return;
+    feiloppsummeringRef.current.focus();
+    setSkalFokusereFeiloppsummering(false);
+  }, [skalFokusereFeiloppsummering, feilElementer]);
 
   function leggTilYtelseRad() {
     setYtelseRader((rader) => [...rader, nyYtelseRad()]);
@@ -314,6 +325,8 @@ export default function OpprettSakSide() {
                   );
                   setModalSteg("bekreft");
                   sporHendelse("opprett sak bekreftelse vist");
+                } else {
+                  setSkalFokusereFeiloppsummering(true);
                 }
               }}
               noValidate
@@ -333,6 +346,7 @@ export default function OpprettSakSide() {
                 {/* ErrorSummary */}
                 {feilElementer.length > 0 && (
                   <ErrorSummary
+                    ref={feiloppsummeringRef}
                     heading="Du må rette disse feilene før du kan gå videre"
                     className="max-w-2xl"
                   >

@@ -16,7 +16,7 @@ test.describe("Flytt fra Access for leder", () => {
     await expect(page.getByRole("table")).toHaveCount(1);
     for (const kolonne of [
       "PID",
-      "Personnummer",
+      "Fødsels- eller D-nummer",
       "Opprettet i Access",
       "Status",
       "Saksbehandler",
@@ -69,7 +69,9 @@ test.describe("Flytt fra Access for leder", () => {
 
   test("lar lederen flytte en sak til en annen saksbehandler", async ({ page }) => {
     await page.getByRole("button", { name: "Endre tildeling for PID 700002" }).click();
-    const dialog = page.getByRole("dialog", { name: "Endre tildeling for PID 700002" });
+    const dialog = page.getByRole("dialog", {
+      name: "Endre tildeling for PID 700002",
+    });
     const valg = dialog.getByLabel("Ny saksbehandler");
     await expect(valg.locator("option", { hasText: "Trine Trygdesen" })).toHaveCount(0);
 

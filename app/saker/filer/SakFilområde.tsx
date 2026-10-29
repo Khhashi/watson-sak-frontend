@@ -126,16 +126,27 @@ export function SakFilområde({
   );
   const alleMapper = flatMappeliste(byggFilTre(mapper, synligeDokumenter, filer)).map((m) => m.sti);
 
+  const [klientfeil, settKlientfeil] = useState<string | null>(null);
   const feilFraServer =
-    opplastingFetcher.state === "idle" &&
+    klientfeil ??
+    (opplastingFetcher.state === "idle" &&
     opplastingFetcher.data &&
     "message" in opplastingFetcher.data
       ? opplastingFetcher.data.message
-      : null;
+      : null);
 
   function håndterFilvalg(event: React.ChangeEvent<HTMLInputElement>) {
     const fil = event.target.files?.[0];
     if (!fil) return;
+
+    // Nullstill input slik at samme fil kan lastes opp igjen
+    event.target.value = "";
+
+    if (fil.size === 0) {
+      settKlientfeil("Filen er tom og kan ikke lastes opp.");
+      return;
+    }
+    settKlientfeil(null);
 
     const formData = new FormData();
     formData.append("fil", fil);
@@ -145,8 +156,6 @@ export function SakFilområde({
       action: url,
       encType: "multipart/form-data",
     });
-    // Nullstill input slik at samme fil kan lastes opp igjen
-    event.target.value = "";
   }
 
   return (

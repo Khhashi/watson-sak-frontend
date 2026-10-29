@@ -10,7 +10,7 @@ import {
   getKildeText,
   getPersonIdent,
 } from "~/saker/visning";
-import { formaterOrganisasjonsnummer } from "~/utils/string-utils";
+import { formaterOrganisasjonsnummer, identEtikett } from "~/utils/string-utils";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
 
 interface SakDetaljerFelterProps {
@@ -45,7 +45,7 @@ export function SakDetaljerFelter({ sak, onVisIdentHistorikk }: SakDetaljerFelte
         <HStack gap="space-12" align="start" wrap>
           <VStack gap="space-2">
             <Detail className="text-ax-text-neutral-subtle" uppercase>
-              Personnummer
+              {identEtikett(visPersonIdent)}
             </Detail>
             <PersonIdentMedHistorikk
               personIdent={visPersonIdent}

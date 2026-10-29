@@ -88,6 +88,17 @@ export function erFnr(verdi: string): boolean {
 }
 
 /**
+ * Et D-nummer har 4 lagt til første siffer, så første siffer er 4–7.
+ */
+export function erDnummer(verdi: string): boolean {
+  return /^[4-7]\d{10}$/.test(verdi.replace(/\s/g, ""));
+}
+
+export function identEtikett(ident: string): "Fødselsnummer" | "D-nummer" {
+  return erDnummer(ident) ? "D-nummer" : "Fødselsnummer";
+}
+
+/**
  * Sjekker om en streng er et gyldig organisasjonsnummer (9 siffer)
  */
 export function erOrganisasjonsnummer(verdi: string): boolean {

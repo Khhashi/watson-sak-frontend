@@ -58,8 +58,18 @@ function lagSide(
 }
 
 const ansatteValg: MigreringAnsatt[] = [
-  { navIdent: "Z999001", navn: "Åse Hansen", enhetId: "4812", enhetNavn: "Avdeling Nord" },
-  { navIdent: "Z999002", navn: "Bjørn Berg", enhetId: "4813", enhetNavn: "Avdeling Sør" },
+  {
+    navIdent: "Z999001",
+    navn: "Åse Hansen",
+    enhetId: "4812",
+    enhetNavn: "Avdeling Nord",
+  },
+  {
+    navIdent: "Z999002",
+    navn: "Bjørn Berg",
+    enhetId: "4813",
+    enhetNavn: "Avdeling Sør",
+  },
 ];
 
 function lagLister(delvis: Partial<MigreringLister> = {}): MigreringLister {
@@ -118,12 +128,12 @@ beforeAll(() => {
 });
 
 describe("MigreringInnhold", () => {
-  it("viser overskrift, infotekst og tabell med PID, Personnummer, Opprettet i Access og Status", () => {
+  it("viser overskrift, infotekst og tabell med PID, Fødsels- eller D-nummer, Opprettet i Access og Status", () => {
     renderSide(lagLister({ liste: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }));
 
     expect(screen.getByRole("heading", { level: 1, name: "Flytt fra Access" })).not.toBeNull();
     expect(screen.getByText("Her ser du dine egne saker.", { exact: false })).not.toBeNull();
-    for (const navn of ["PID", "Personnummer", "Opprettet i Access", "Status"]) {
+    for (const navn of ["PID", "Fødsels- eller D-nummer", "Opprettet i Access", "Status"]) {
       expect(screen.getByRole("columnheader", { name: navn })).not.toBeNull();
     }
     expect(screen.getByText("112233 44556")).not.toBeNull();
@@ -134,7 +144,9 @@ describe("MigreringInnhold", () => {
       lagLister({ liste: lagSide([kandidat("100245", "IKKE_PABEGYNT")]) }),
     );
 
-    const knapp = screen.getByRole("button", { name: "Flytt sak med PID 100245 fra Access" });
+    const knapp = screen.getByRole("button", {
+      name: "Flytt sak med PID 100245 fra Access",
+    });
     expect((knapp as HTMLButtonElement).disabled).toBe(false);
     const form = knapp.closest("form");
     expect(form?.querySelector('input[name="legacyPid"]')).not.toBeNull();
@@ -175,12 +187,18 @@ describe("MigreringInnhold", () => {
   it("viser bare PID, ikke flytteknapp, når ansvaret ikke er bekreftet", () => {
     renderSide(
       lagLister({
-        liste: lagSide([kandidat("100245", "IKKE_PABEGYNT", null, { ansvar: { type: "UKJENT" } })]),
+        liste: lagSide([
+          kandidat("100245", "IKKE_PABEGYNT", null, {
+            ansvar: { type: "UKJENT" },
+          }),
+        ]),
       }),
     );
 
     expect(
-      screen.queryByRole("button", { name: "Flytt sak med PID 100245 fra Access" }),
+      screen.queryByRole("button", {
+        name: "Flytt sak med PID 100245 fra Access",
+      }),
     ).toBeNull();
     expect(screen.getByText("100245")).not.toBeNull();
     expect(screen.getByText("–", { selector: "td" })).not.toBeNull();
@@ -188,7 +206,11 @@ describe("MigreringInnhold", () => {
 
   it("skjuler statusendring inntil autorisasjon og faglige overganger er implementert", () => {
     // TODO SAK-67, rød sone: test autorisert manuell overgang når backend er klar.
-    renderSide(lagLister({ liste: lagSide([kandidat("100245", "UNDER_MIGRERING", 1182)]) }));
+    renderSide(
+      lagLister({
+        liste: lagSide([kandidat("100245", "UNDER_MIGRERING", 1182)]),
+      }),
+    );
     expect(screen.queryByRole("button", { name: "Merk migrering fullstendig" })).toBeNull();
   });
 
@@ -207,7 +229,9 @@ describe("MigreringInnhold", () => {
   describe("filter", () => {
     it("viser statusfilter med valgt status, men ikke avdeling og saksbehandler for saksbehandlere", () => {
       renderSide(
-        lagLister({ filter: { status: ["UNDER_MIGRERING"], enhet: null, ansvarlig: null } }),
+        lagLister({
+          filter: { status: ["UNDER_MIGRERING"], enhet: null, ansvarlig: null },
+        }),
       );
 
       const gruppe = screen.getByRole("group", { name: "Status" });
@@ -228,7 +252,9 @@ describe("MigreringInnhold", () => {
 
     it("fjerner en valgt status når den klikkes igjen", () => {
       renderSide(
-        lagLister({ filter: { status: ["UNDER_MIGRERING"], enhet: null, ansvarlig: null } }),
+        lagLister({
+          filter: { status: ["UNDER_MIGRERING"], enhet: null, ansvarlig: null },
+        }),
         "/migrering?status=UNDER_MIGRERING",
       );
 
@@ -241,19 +267,27 @@ describe("MigreringInnhold", () => {
     it("gir ledere valg for avdeling og saksbehandler som oppdaterer URL-en", () => {
       renderSide(lagLister({ erLeder: true, ansatteValg }), "/migrering?side=2");
 
-      fireEvent.change(screen.getByLabelText("Avdeling"), { target: { value: "4812" } });
+      fireEvent.change(screen.getByLabelText("Avdeling"), {
+        target: { value: "4812" },
+      });
       expect(screen.getByTestId("sok").textContent).toBe("enhet=4812");
 
-      fireEvent.change(screen.getByLabelText("Saksbehandler"), { target: { value: "Z999001" } });
+      fireEvent.change(screen.getByLabelText("Saksbehandler"), {
+        target: { value: "Z999001" },
+      });
       expect(screen.getByTestId("sok").textContent).toBe("enhet=4812&ansvarlig=Z999001");
 
-      fireEvent.change(screen.getByLabelText("Saksbehandler"), { target: { value: "" } });
+      fireEvent.change(screen.getByLabelText("Saksbehandler"), {
+        target: { value: "" },
+      });
       expect(screen.getByTestId("sok").textContent).toBe("enhet=4812");
     });
 
     it("skiller lederens egne saker fra andres med overskrifter", () => {
       const egen = (pid: string) =>
-        kandidat(pid, "IKKE_PABEGYNT", null, { ansvar: { type: "BEKREFTET", navIdent: "L1" } });
+        kandidat(pid, "IKKE_PABEGYNT", null, {
+          ansvar: { type: "BEKREFTET", navIdent: "L1" },
+        });
       const andres = (pid: string) =>
         kandidat(pid, "IKKE_PABEGYNT", null, {
           ansvar: { type: "BEKREFTET", navIdent: "Z999001" },
@@ -361,10 +395,14 @@ describe("MigreringInnhold", () => {
       expect(ansatte.getByRole("columnheader", { name: "Saksbehandler" })).not.toBeNull();
       expect(ansatte.getAllByText("Åse Hansen")).toHaveLength(2);
       expect(
-        ansatte.queryByRole("button", { name: "Flytt sak med PID 200001 fra Access" }),
+        ansatte.queryByRole("button", {
+          name: "Flytt sak med PID 200001 fra Access",
+        }),
       ).toBeNull();
       expect(
-        ansatte.getByRole("button", { name: "Flytt sak med PID 100245 fra Access" }),
+        ansatte.getByRole("button", {
+          name: "Flytt sak med PID 100245 fra Access",
+        }),
       ).not.toBeNull();
     });
 
@@ -375,7 +413,11 @@ describe("MigreringInnhold", () => {
       expect(
         ansatte.getByRole("button", { name: "Endre tildeling for PID 200001" }),
       ).not.toBeNull();
-      expect(ansatte.queryByRole("button", { name: "Endre tildeling for PID 200002" })).toBeNull();
+      expect(
+        ansatte.queryByRole("button", {
+          name: "Endre tildeling for PID 200002",
+        }),
+      ).toBeNull();
     });
 
     it("lar lederen velge en annen saksbehandler enn dagens, og sender valget", async () => {
