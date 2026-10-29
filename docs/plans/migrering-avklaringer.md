@@ -303,7 +303,7 @@ Begge branches er rebaset på oppdatert `main` og chatbot-commits er skilt ut:
   samtidig i `main`). `pnpm verify` grønn: test, lint, format, typecheck og
   unused alle `exited with code 0` (136 filer, 1243 tester).
 - Sikkerhetskopier av branchene før rebase: `backup/SAK-67-migreringsveileder-
-før-rebase` i begge repoer.
+  før-rebase` i begge repoer.
 - **Ikke gjort:** `chore/ai-veileder-chatbot`-branchene er ikke selv rebaset
   eller ryddet (backend-varianten har fortsatt sin egen `V19`-kollisjon med
   `V19__dokumentkommentarer.sql` på `main` og må få nytt versjonsnummer når

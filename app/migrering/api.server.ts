@@ -131,31 +131,29 @@ export async function hentMigreringsliste(
   const totalAntall = parsed.data.totalItems;
   const totalSider = Math.ceil(totalAntall / størrelse);
 
-  const mapped = kandidater.map(
-    (k): MigreringKandidat => ({
-      kandidatId: k.kandidatId,
-      kilde: k.kilde,
-      legacyKilde: k.kilde,
-      pid: k.legacyPid,
-      legacyPid: k.legacyPid,
-      kategori: k.kategori,
-      navn: "",
-      ansvar: k.ansvar,
-      enhet: k.enhet,
-      ansvarligNavn: k.ansvarligNavn,
-      vurdering: k.vurdering,
-      ekskluderFraStatistikk: k.ekskluderFraStatistikk,
-      referansedato: k.referansedato,
-      referansedatoFelt: k.referansedatoFelt,
-      fase: k.fase,
-      begrunnelse: k.begrunnelse,
-      kildefelter: k.grunnlag,
-      alleredeMigrertTilKontrollsakId: k.alleredeMigrertTilKontrollsakId,
-      migreringsstatus: k.migreringsstatus ?? undefined,
-      hentetTidspunkt: k.hentetTidspunkt,
-      personIdent: k.personIdent,
-    }),
-  );
+  const mapped = kandidater.map((k): MigreringKandidat => ({
+    kandidatId: k.kandidatId,
+    kilde: k.kilde,
+    legacyKilde: k.kilde,
+    pid: k.legacyPid,
+    legacyPid: k.legacyPid,
+    kategori: k.kategori,
+    navn: "",
+    ansvar: k.ansvar,
+    enhet: k.enhet,
+    ansvarligNavn: k.ansvarligNavn,
+    vurdering: k.vurdering,
+    ekskluderFraStatistikk: k.ekskluderFraStatistikk,
+    referansedato: k.referansedato,
+    referansedatoFelt: k.referansedatoFelt,
+    fase: k.fase,
+    begrunnelse: k.begrunnelse,
+    kildefelter: k.grunnlag,
+    alleredeMigrertTilKontrollsakId: k.alleredeMigrertTilKontrollsakId,
+    migreringsstatus: k.migreringsstatus ?? undefined,
+    hentetTidspunkt: k.hentetTidspunkt,
+    personIdent: k.personIdent,
+  }));
   return { kandidater: mapped, utilgjengelig, side, totalSider, totalAntall };
 }
 
