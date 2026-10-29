@@ -81,7 +81,7 @@ export function VarselBjelle() {
         }}
       >
         {antallUleste > 0 ? (
-          <Badge count={antallUleste}>
+          <Badge count={antallUleste} aria-hidden>
             <BellIcon fontSize="1.5rem" aria-hidden />
           </Badge>
         ) : (

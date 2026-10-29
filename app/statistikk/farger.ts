@@ -53,10 +53,7 @@ const SKILLE_GRADER = 1.5;
 const SKILLEFARGE = "var(--ax-bg-default)";
 
 function normaliserKode(kode: string): string {
-  return kode
-    .replace(/[–—]/g, "-")
-    .trim()
-    .toUpperCase();
+  return kode.replace(/[–—]/g, "-").trim().toUpperCase();
 }
 
 function indeksForKode(kode: string): number {
