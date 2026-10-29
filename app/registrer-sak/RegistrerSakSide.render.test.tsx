@@ -88,7 +88,7 @@ describe("Notat i Opprett sak", () => {
     ).not.toBeNull();
     expect(screen.getByRole("heading", { name: "Filer fra S-området" })).not.toBeNull();
     expect(screen.getByText("Last opp filer fra S:")).not.toBeNull();
-    expect(screen.queryByText("Last opp dokumenter (valgfritt)")).toBeNull();
+    expect(screen.queryByText("Last opp dokumenter")).toBeNull();
   });
 
   it("beholder vanlig opprett-sak-oppsett uten migrering", async () => {
@@ -96,7 +96,7 @@ describe("Notat i Opprett sak", () => {
 
     expect(await screen.findByRole("heading", { level: 1, name: "Opprett sak" })).not.toBeNull();
     expect(screen.queryByRole("heading", { name: "Filer fra S-området" })).toBeNull();
-    expect(screen.getByText("Last opp dokumenter (valgfritt)")).not.toBeNull();
+    expect(screen.getByText("Last opp dokumenter")).not.toBeNull();
   });
 
   it("viser ikke Notat for vanlige saker", async () => {
