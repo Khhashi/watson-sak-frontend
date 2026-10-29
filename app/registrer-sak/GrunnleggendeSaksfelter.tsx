@@ -138,7 +138,7 @@ export function GrunnleggendeSaksfelter({
       <div id={fields.merking.id} className="w-full max-w-[350px]">
         <UNSAFE_Combobox
           label="Merking"
-          description="A-krimenhet eller andre definerte kategorier"
+          description="A-krimenhet eller andre definerte merker"
           options={kodeverk.merker.map((merke) => ({
             value: merke,
             label: merkingEtikett(merke),

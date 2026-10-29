@@ -37,7 +37,11 @@ import {
   getTags,
 } from "~/saker/selectors";
 import type { KontrollsakResponse } from "~/saker/types.backend";
-import { formaterOrganisasjonsnummer, storFørsteBokstavPerOrd } from "~/utils/string-utils";
+import {
+  formaterOrganisasjonsnummer,
+  identEtikett,
+  storFørsteBokstavPerOrd,
+} from "~/utils/string-utils";
 import { PersonIdentHistorikkModal } from "./PersonIdentHistorikkModal";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
 import {
@@ -193,7 +197,7 @@ function SakPåSammePersonDetaljer({
         </VStack>
       </HGrid>
 
-      <SakDetaljfelt label="Personnummer">
+      <SakDetaljfelt label={identEtikett(sak.gjeldendePersonIdent ?? personIdent)}>
         <VStack gap="space-8" align="start">
           <PersonIdentMedHistorikk
             personIdent={sak.gjeldendePersonIdent ?? personIdent}

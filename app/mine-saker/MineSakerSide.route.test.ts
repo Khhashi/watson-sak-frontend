@@ -76,8 +76,8 @@ describe("MineSakerSide loader", () => {
       verdi: "UTREDNING",
       etikett: "Utredning",
     });
-    expect(resultat.filterAlternativer.steg).toHaveLength(5);
-    expect(resultat.filterAlternativer.steg).not.toContainEqual({
+    expect(resultat.filterAlternativer.steg).toHaveLength(6);
+    expect(resultat.filterAlternativer.steg).toContainEqual({
       verdi: "AVSLUTTET",
       etikett: "Avsluttet",
     });
@@ -108,7 +108,7 @@ describe("MineSakerSide loader", () => {
     expect(resultat.aktivtFilter.status).toEqual([]);
   });
 
-  it("beholder avsluttet i eksisterende filterlenker selv om det ikke vises som valg", async () => {
+  it("bruker avsluttet fra URL-en som stegfilter", async () => {
     const args = {
       request: new Request("http://localhost/mine-saker?steg=AVSLUTTET"),
       params: {},

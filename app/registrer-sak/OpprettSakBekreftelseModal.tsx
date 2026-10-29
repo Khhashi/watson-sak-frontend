@@ -2,6 +2,7 @@ import { CheckmarkCircleFillIcon } from "@navikt/aksel-icons";
 import { BodyShort, Button, HGrid, Modal, VStack } from "@navikt/ds-react";
 import { Link } from "react-router";
 import { RouteConfig } from "~/routeConfig";
+import { identEtikett } from "~/utils/string-utils";
 import { formaterBelop } from "~/saker/visning";
 import type { Kodeverk } from "~/saker/api.server";
 import { parseYtelseRader } from "./skjema-helpers";
@@ -161,7 +162,7 @@ export function OpprettSakBekreftelseModal({
             <div className="rounded-md bg-ax-bg-neutral-soft px-5 py-4">
               <HGrid columns="auto 1fr" gap="space-4 space-16">
                 <SammendragRad label="Person" verdi={`${personNavn} (${alder})`} />
-                <SammendragRad label="Personnummer" verdi={personnummer} />
+                <SammendragRad label={identEtikett(personnummer)} verdi={personnummer} />
                 <SammendragRad label="Enhet" verdi={sammendrag.enhetLabel} />
                 {sammendrag.orgnumre.length > 0 && (
                   <SammendragRad label="Orgnr" verdi={sammendrag.orgnumre.join(", ")} />

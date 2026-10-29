@@ -32,7 +32,11 @@ import { Beløpsfelt } from "~/formaterte-inputfelt/FormaterteInputfelt";
 import { merkingEtikett } from "~/saker/kategorier";
 import type { KontrollsakResponse } from "~/saker/types.backend";
 import { formaterIsoTilNorskDato, getPersonIdent } from "~/saker/visning";
-import { formaterOrganisasjonsnummer, parseOrganisasjonsnumre } from "~/utils/string-utils";
+import {
+  formaterOrganisasjonsnummer,
+  identEtikett,
+  parseOrganisasjonsnumre,
+} from "~/utils/string-utils";
 import { PersonIdentMedHistorikk } from "./PersonIdentMedHistorikk";
 import { ResponsivEndreKnapp } from "./ResponsivEndreKnapp";
 import { SakDetaljerFelter } from "./SakDetaljerFelter";
@@ -166,7 +170,11 @@ export function SaksinformasjonKort({
   );
   const utgangspunkt = useMemo(() => lagRedigeringsdata(sak), [sak]);
   const ytelseAlternativer = useMemo(
-    () => kodeverk.ytelseTyper.map((ytelse) => ({ value: ytelse.kode, label: ytelse.beskrivelse })),
+    () =>
+      kodeverk.ytelseTyper.map((ytelse) => ({
+        value: ytelse.kode,
+        label: ytelse.beskrivelse,
+      })),
     [kodeverk.ytelseTyper],
   );
   const misbrukstypeBeskrivelseMap = useMemo(
@@ -267,7 +275,10 @@ export function SaksinformasjonKort({
       const nyeYtelser = gjeldende.ytelser.filter(
         (_, gjeldendeIndeks) => gjeldendeIndeks !== indeks,
       );
-      return { ...gjeldende, ytelser: nyeYtelser.length > 0 ? nyeYtelser : [{}] };
+      return {
+        ...gjeldende,
+        ytelser: nyeYtelser.length > 0 ? nyeYtelser : [{}],
+      };
     });
   }
 
@@ -315,7 +326,7 @@ export function SaksinformasjonKort({
 
               <VStack gap="space-1">
                 <Detail className="text-ax-text-neutral-subtle" uppercase>
-                  Personnummer
+                  {identEtikett(visPersonIdent)}
                 </Detail>
                 <PersonIdentMedHistorikk
                   personIdent={visPersonIdent}
@@ -446,7 +457,7 @@ export function SaksinformasjonKort({
                 <div id={ankerIdForFelt("merking")} className="w-fit">
                   <UNSAFE_Combobox
                     label="Merking"
-                    description="A-krimenhet eller andre definerte kategorier"
+                    description="A-krimenhet eller andre definerte merker"
                     size="small"
                     options={kodeverk.merker.map((merke) => ({
                       label: merkingEtikett(merke),
@@ -462,7 +473,10 @@ export function SaksinformasjonKort({
                       setLokaleVerdier((gjeldende) => {
                         const finnes = gjeldende.merking.includes(option);
                         if (isSelected && !finnes) {
-                          return { ...gjeldende, merking: [...gjeldende.merking, option] };
+                          return {
+                            ...gjeldende,
+                            merking: [...gjeldende.merking, option],
+                          };
                         }
                         if (!isSelected) {
                           return {

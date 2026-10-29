@@ -43,12 +43,33 @@ function lagKontrollsak(overrides: Partial<KontrollsakResponse> = {}): Kontrolls
 }
 
 describe("SakDetaljerFelter", () => {
-  it("viser personnummer, kategori og kilde", () => {
+  it("viser fødselsnummer, kategori og kilde", () => {
     render(<SakDetaljerFelter sak={lagKontrollsak()} onVisIdentHistorikk={vi.fn()} />);
 
     expect(screen.getByText("123456 78901")).toBeDefined();
     expect(screen.getByText("SAMLIV", { exact: false })).toBeDefined();
     expect(screen.getByText("ANNET", { exact: false })).toBeDefined();
+  });
+
+  it("viser etiketten Fødselsnummer for fødselsnummer", () => {
+    render(<SakDetaljerFelter sak={lagKontrollsak()} onVisIdentHistorikk={vi.fn()} />);
+
+    expect(screen.getByText("Fødselsnummer")).toBeDefined();
+    expect(screen.queryByText("Personnummer")).toBeNull();
+  });
+
+  it("viser etiketten D-nummer for D-nummer", () => {
+    render(
+      <SakDetaljerFelter
+        sak={lagKontrollsak({
+          personIdent: "41010112345",
+          gjeldendePersonIdent: null,
+        })}
+        onVisIdentHistorikk={vi.fn()}
+      />,
+    );
+
+    expect(screen.getByText("D-nummer")).toBeDefined();
   });
 
   it("viser ytelsestabell med ytelse, periode og beløp", () => {
@@ -81,7 +102,9 @@ describe("SakDetaljerFelter", () => {
     const kilde = screen.getByText("Kilde", { exact: true });
     const anmeldtBelop = screen.getByText("Anmeldt beløp", { exact: true });
     const politidistrikt = screen.getByText("Politidistrikt", { exact: true });
-    const saksreferanse = screen.getByText("Politiets saksreferanse", { exact: true });
+    const saksreferanse = screen.getByText("Politiets saksreferanse", {
+      exact: true,
+    });
     expect(
       kilde.compareDocumentPosition(anmeldtBelop) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();

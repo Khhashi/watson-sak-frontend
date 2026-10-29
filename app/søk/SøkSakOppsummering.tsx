@@ -16,6 +16,7 @@ import { AvkortetTag } from "~/komponenter/AvkortetTag";
 import { sporHendelse } from "~/analytics/analytics";
 import { Kort } from "~/komponenter/Kort";
 import { RouteConfig } from "~/routeConfig";
+import { identEtikett } from "~/utils/string-utils";
 import { getSaksreferanse } from "~/saker/id";
 import { getKategoriText, getOpprettetDato } from "~/saker/selectors";
 import type { KontrollsakResponse } from "~/saker/types.backend";
@@ -122,7 +123,7 @@ export function SøkSakOppsummering({ sak }: SøkSakOppsummeringProps) {
 
         <HGrid columns={{ xs: 1, md: "2fr 1fr" }} gap="space-16">
           <VStack gap="space-6">
-            <Felt label="Personnummer">
+            <Felt label={identEtikett(getPersonIdent(sak))}>
               <HStack gap="space-1" align="center">
                 <BodyShort>{getPersonIdent(sak)}</BodyShort>
                 <CopyButton size="xsmall" copyText={getPersonIdent(sak)} />

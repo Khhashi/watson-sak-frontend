@@ -51,6 +51,7 @@ const standardFilterAlternativer = {
     { verdi: "FORVALTNING", etikett: "Forvaltning" },
     { verdi: "STRAFFERETTSLIG_VURDERING", etikett: "Strafferettslig vurdering" },
     { verdi: "POLITI", etikett: "Politi" },
+    { verdi: "AVSLUTTET", etikett: "Avsluttet" },
   ],
   status: [
     { verdi: "INGEN", etikett: "Aktiv" },
@@ -131,7 +132,7 @@ describe("MineSakerInnhold", () => {
     ).toBeDefined();
     expect(screen.getByRole("button", { name: "Opprettet" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Utredning" })).toBeDefined();
-    expect(screen.queryByRole("button", { name: "Avsluttet" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Avsluttet" })).toBeDefined();
     expect(screen.getByRole("button", { name: "Aktiv" })).toBeDefined();
     expect(screen.getByRole("button", { name: "I bero" })).toBeDefined();
   });
@@ -181,7 +182,9 @@ describe("MineSakerInnhold", () => {
     const opprettetChip = screen.getByRole("button", { name: "Opprettet" });
     expect(opprettetChip.getAttribute("aria-pressed")).toBe("true");
 
-    expect(screen.queryByRole("button", { name: "Avsluttet" })).toBeNull();
+    expect(screen.getByRole("button", { name: "Avsluttet" }).getAttribute("aria-pressed")).toBe(
+      "false",
+    );
   });
 
   it("viser 'Delt med meg'-seksjon når det finnes delt-med-saker", () => {
