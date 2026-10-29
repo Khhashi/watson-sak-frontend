@@ -4,6 +4,7 @@ import { MagnifyingGlassIcon } from "@navikt/aksel-icons";
 import { Link } from "react-router";
 import { FødselsnummerSøkefelt } from "~/formaterte-inputfelt/FormaterteInputfelt";
 import { RouteConfig } from "~/routeConfig";
+import { identEtikett } from "~/utils/string-utils";
 import { INGEN_TILGANG_TIL_Å_OPPRETTE_SAK_MELDING } from "./feilmeldinger";
 import type { PersonOppslagResultat } from "./person-oppslag.mock.server";
 
@@ -80,7 +81,7 @@ export function PersonOppslag({
         onSubmit={onPersonOppslag}
       >
         <FødselsnummerSøkefelt
-          label="Fødsels- eller d-nummer"
+          label="Fødsels- eller D-nummer"
           hideLabel={false}
           name="fnr"
           value={søkeFnr}
@@ -125,7 +126,7 @@ export function PersonOppslag({
           <LocalAlert.Header>
             <LocalAlert.Title as="h2">Personen ble ikke funnet</LocalAlert.Title>
           </LocalAlert.Header>
-          <LocalAlert.Content>Sjekk at fødselsnummeret er riktig.</LocalAlert.Content>
+          <LocalAlert.Content>Sjekk at fødsels- eller D-nummeret er riktig.</LocalAlert.Content>
         </LocalAlert>
       )}
 
@@ -147,7 +148,7 @@ export function PersonOppslag({
                   {person.navn}
                 </BodyShort>
                 <BodyShort size="small" className="text-ax-text-neutral-subtle">
-                  Personnummer: {person.personnummer} · {person.alder} år
+                  {identEtikett(person.personnummer)}: {person.personnummer} · {person.alder} år
                   {legacyPid && ` · PID: ${legacyPid}`}
                 </BodyShort>
               </VStack>
@@ -155,7 +156,7 @@ export function PersonOppslag({
             {søktMedHistoriskIdent && (
               <LocalAlert status="warning">
                 <LocalAlert.Content>
-                  Fødsels- eller d-nummeret du søkte med er historisk. Saken opprettes på gjeldende
+                  Fødsels- eller D-nummeret du søkte med er historisk. Saken opprettes på gjeldende
                   identifikator: <strong>{person.personnummer}</strong>.
                 </LocalAlert.Content>
               </LocalAlert>

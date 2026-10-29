@@ -191,7 +191,7 @@ describe("SakerPåSammePerson", () => {
     expect(screen.getByText(/50\s000/)).toBeDefined();
     expect(screen.getByText("Ytelse")).toBeDefined();
     expect(screen.getByText("Kilde")).toBeDefined();
-    expect(screen.getByText("Personnummer")).toBeDefined();
+    expect(screen.getByText("Fødselsnummer")).toBeDefined();
   });
 
   it("beholder øvrige saksopplysninger i utvidet visning", async () => {
