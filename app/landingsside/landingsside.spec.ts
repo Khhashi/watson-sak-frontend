@@ -76,6 +76,28 @@ test.describe("Landingsside", () => {
     await expect(page.getByRole("link", { name: "Se alle saker" })).toBeVisible();
   });
 
+  test("kan rulle sakslisten horisontalt på smal skjerm", async ({ page }) => {
+    await page.setViewportSize({ width: 900, height: 900 });
+    await page.reload({ waitUntil: "networkidle" });
+
+    const saksliste = page.getByRole("region", {
+      name: "Saksliste – rull horisontalt for flere kolonner",
+    });
+    await expect(saksliste).toBeVisible();
+
+    const mål = await saksliste.evaluate((element) => ({
+      bredde: element.clientWidth,
+      innholdsbredde: element.scrollWidth,
+    }));
+
+    expect(mål.innholdsbredde).toBeGreaterThan(mål.bredde);
+    const rulleposisjon = await saksliste.evaluate((element) => {
+      element.scrollLeft = element.scrollWidth;
+      return element.scrollLeft;
+    });
+    expect(rulleposisjon).toBeGreaterThan(0);
+  });
+
   test("kan markere et varsel som lest", async ({ page }) => {
     await expect(page.getByRole("heading", { name: "Sak #103 må vurderes" })).toBeVisible();
 

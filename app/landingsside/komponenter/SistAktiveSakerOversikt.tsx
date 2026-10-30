@@ -25,11 +25,18 @@ export function SistAktiveSakerOversikt({ saker }: { saker: KontrollsakResponse[
           </Link>
         </HStack>
 
-        <Saksliste
-          rader={rader}
-          tomTekst="Du har ingen aktive saker."
-          tilbake={{ to: RouteConfig.INDEX, label: "Forsiden" }}
-        />
+        <div
+          className="min-w-0 overflow-x-auto [&_table]:w-full"
+          role="region"
+          aria-label="Saksliste – rull horisontalt for flere kolonner"
+          tabIndex={0}
+        >
+          <Saksliste
+            rader={rader}
+            tomTekst="Du har ingen aktive saker."
+            tilbake={{ to: RouteConfig.INDEX, label: "Forsiden" }}
+          />
+        </div>
       </VStack>
     </Kort>
   );
