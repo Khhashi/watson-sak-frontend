@@ -62,7 +62,7 @@ export function AppSidebar() {
         id="sidebar-nav"
         aria-label="Hovedmeny"
         className={`shrink-0 border-r border-ax-border-neutral-subtle bg-ax-bg-neutral-soft flex flex-col transition-[width] duration-200 ease-in-out ${
-          erKollapset ? "w-16" : "w-56"
+          erKollapset ? "w-16" : "w-56 max-[767px]:w-16"
         }`}
       >
         <ul className="flex flex-col list-none m-0 p-0 pt-4 flex-1">
@@ -84,7 +84,7 @@ export function AppSidebar() {
                 </span>
                 <span
                   className={`whitespace-nowrap transition-opacity duration-200 ${
-                    erKollapset ? "opacity-0" : "opacity-100"
+                    erKollapset ? "opacity-0" : "opacity-100 max-[767px]:sr-only"
                   }`}
                 >
                   {label}
@@ -94,13 +94,9 @@ export function AppSidebar() {
 
             return (
               <li key={to}>
-                {erKollapset ? (
-                  <Tooltip content={label} placement="right">
-                    <span>{lenkInnhold}</span>
-                  </Tooltip>
-                ) : (
-                  lenkInnhold
-                )}
+                <Tooltip content={label} placement="right">
+                  <span>{lenkInnhold}</span>
+                </Tooltip>
               </li>
             );
           })}
@@ -123,7 +119,7 @@ export function AppSidebar() {
               aria-label={erKollapset ? "Vis meny" : "Skjul meny"}
               aria-expanded={!erKollapset}
               aria-controls="sidebar-nav"
-              className="flex items-center justify-center w-10 h-10 rounded-full border border-ax-border-neutral-subtle bg-ax-bg-neutral-soft text-ax-text-neutral hover:bg-ax-bg-neutral-moderate-hover transition-colors cursor-pointer"
+              className="flex items-center justify-center w-10 h-10 rounded-full border border-ax-border-neutral-subtle bg-ax-bg-neutral-soft text-ax-text-neutral hover:bg-ax-bg-neutral-moderate-hover transition-colors cursor-pointer max-[767px]:hidden"
             >
               {erKollapset ? (
                 <ChevronRightIcon fontSize="1.5rem" title="Vis meny" />
