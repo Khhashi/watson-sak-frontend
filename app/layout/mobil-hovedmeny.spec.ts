@@ -6,8 +6,13 @@ test("viser en smal hovedmeny på mobil og full meny på større skjermer", asyn
 
   const hovedmeny = page.getByRole("navigation", { name: "Hovedmeny" });
   await expect(hovedmeny).toBeVisible();
-  await expect(page.getByRole("link", { name: "Mine saker" })).toBeVisible();
-  await expect(hovedmeny).toHaveCSS("width", "64px");
+  const mineSakerLenke = page.getByRole("link", { name: "Mine saker" });
+  await expect(mineSakerLenke).toBeVisible();
+  await expect(mineSakerLenke.getByText("Mine saker")).toHaveCSS("position", "static");
+  await expect(
+    page.getByRole("link", { name: "Ufordelte saker" }).getByText("Ufordelte saker"),
+  ).toHaveCSS("white-space", "normal");
+  await expect(hovedmeny).toHaveCSS("width", "96px");
 
   await page.setViewportSize({ width: 1280, height: 900 });
   await expect(hovedmeny).toHaveCSS("width", "224px");
