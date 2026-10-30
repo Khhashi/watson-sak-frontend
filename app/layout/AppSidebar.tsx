@@ -63,7 +63,7 @@ export function AppSidebar() {
         aria-label="Hovedmeny"
         className={`shrink-0 border-r border-ax-border-neutral-subtle bg-ax-bg-neutral-soft flex flex-col transition-[width] duration-200 ease-in-out ${
           erKollapset ? "w-16" : "w-56"
-        }`}
+        } max-[767px]:w-24`}
       >
         <ul className="flex flex-col list-none m-0 p-0 pt-4 flex-1">
           {synligeLenker.map(({ to, label, icon: Icon }) => {
@@ -72,20 +72,20 @@ export function AppSidebar() {
                 to={to}
                 end={to === RouteConfig.INDEX}
                 className={({ isActive }) =>
-                  `flex items-center py-3 text-base no-underline overflow-hidden transition-colors border-l-4 ${
+                  `flex items-center py-3 text-base no-underline overflow-hidden transition-colors border-l-4 max-[767px]:flex-col max-[767px]:gap-1 max-[767px]:px-1 max-[767px]:text-center max-[767px]:text-xs ${
                     isActive
                       ? "bg-ax-bg-accent-soft text-ax-text-accent font-semibold border-ax-border-accent"
                       : "text-ax-text-neutral hover:bg-ax-bg-neutral-moderate-hover border-transparent"
                   }`
                 }
               >
-                <span className="flex items-center justify-center w-[calc(4rem-4px)] shrink-0">
+                <span className="flex items-center justify-center w-[calc(4rem-4px)] shrink-0 max-[767px]:w-full">
                   <Icon fontSize="1.5rem" aria-hidden={true} />
                 </span>
                 <span
                   className={`whitespace-nowrap transition-opacity duration-200 ${
-                    erKollapset ? "opacity-0" : "opacity-100"
-                  }`}
+                    erKollapset ? "opacity-0 max-[767px]:opacity-100" : "opacity-100"
+                  } max-[767px]:whitespace-normal max-[767px]:leading-tight`}
                 >
                   {label}
                 </span>
@@ -94,18 +94,14 @@ export function AppSidebar() {
 
             return (
               <li key={to}>
-                {erKollapset ? (
-                  <Tooltip content={label} placement="right">
-                    <span>{lenkInnhold}</span>
-                  </Tooltip>
-                ) : (
-                  lenkInnhold
-                )}
+                <Tooltip content={label} placement="right">
+                  <span>{lenkInnhold}</span>
+                </Tooltip>
               </li>
             );
           })}
         </ul>
-        <div className="sticky bottom-0 p-2 flex flex-col justify-start gap-2 pl-[calc((4rem-2.5rem)/2)] bg-ax-bg-neutral-soft">
+        <div className="sticky bottom-0 p-2 flex flex-col justify-start gap-2 pl-[calc((4rem-2.5rem)/2)] bg-ax-bg-neutral-soft max-[767px]:items-center max-[767px]:pl-0">
           <Tooltip content="Innstillinger" placement="right">
             <button
               type="button"
@@ -123,7 +119,7 @@ export function AppSidebar() {
               aria-label={erKollapset ? "Vis meny" : "Skjul meny"}
               aria-expanded={!erKollapset}
               aria-controls="sidebar-nav"
-              className="flex items-center justify-center w-10 h-10 rounded-full border border-ax-border-neutral-subtle bg-ax-bg-neutral-soft text-ax-text-neutral hover:bg-ax-bg-neutral-moderate-hover transition-colors cursor-pointer"
+              className="flex items-center justify-center w-10 h-10 rounded-full border border-ax-border-neutral-subtle bg-ax-bg-neutral-soft text-ax-text-neutral hover:bg-ax-bg-neutral-moderate-hover transition-colors cursor-pointer max-[767px]:hidden"
             >
               {erKollapset ? (
                 <ChevronRightIcon fontSize="1.5rem" title="Vis meny" />
