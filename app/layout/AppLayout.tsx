@@ -65,11 +65,17 @@ export default function RootLayout() {
 
   return (
     <div className="flex flex-col min-h-screen">
+      <a
+        href="#maincontent"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-2 focus:left-2 focus:z-50 focus:bg-ax-bg-default focus:p-3"
+      >
+        Hopp til hovedinnhold
+      </a>
       <AppHeader />
       <InfoBanner />
       <div className="flex flex-1">
         <AppSidebar />
-        <main id="maincontent" className="min-w-0 flex-1">
+        <main id="maincontent" tabIndex={-1} className="min-w-0 flex-1 outline-none">
           {fullbredde ? (
             <Outlet />
           ) : (
