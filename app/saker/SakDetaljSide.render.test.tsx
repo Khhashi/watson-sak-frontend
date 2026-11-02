@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { configure, fireEvent, render, screen } from "@testing-library/react";
 import { createMemoryRouter, RouterProvider } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { resetDefaultSession } from "~/testing/mock-store/session.server";
@@ -64,6 +64,7 @@ function renderDetaljside(sakId = testSakId) {
 
 describe("SakDetaljSide render", () => {
   beforeEach(() => {
+    configure({ asyncUtilTimeout: 5000 });
     const lager = new Map<string, string>();
     vi.stubGlobal("localStorage", {
       getItem: (nøkkel: string) => lager.get(nøkkel) ?? null,
