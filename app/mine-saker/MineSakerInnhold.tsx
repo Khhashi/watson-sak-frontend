@@ -104,6 +104,7 @@ export function MineSakerInnhold({
       const gjeldende = neste.getAll(key);
       neste.delete(key);
       neste.delete("side");
+      neste.delete("deltSide");
 
       if (gjeldende.includes(verdi)) {
         for (const v of gjeldende.filter((v) => v !== verdi)) {

@@ -216,6 +216,39 @@ describe("MineSakerInnhold", () => {
     expect(screen.queryByRole("heading", { name: "Delt med meg" })).toBeNull();
   });
 
+  it("viser delte saker side for side", () => {
+    const delteSaker = Array.from({ length: 25 }, (_, indeks) =>
+      lagKontrollsak({ id: 1001 + indeks }),
+    );
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/",
+          element: (
+            <MineSakerInnhold
+              saker={[]}
+              deltMedSaker={delteSaker}
+              detaljSti="/saker"
+              filterAlternativer={standardFilterAlternativer}
+              aktivtFilter={standardAktivtFilter}
+            />
+          ),
+        },
+      ],
+      { initialEntries: ["/?deltSide=2"] },
+    );
+    render(<RouterProvider router={router} />);
+
+    expect(screen.getAllByRole("link", { name: /^#\d+$/ }).map((link) => link.textContent)).toEqual(
+      ["#1021", "#1022", "#1023", "#1024", "#1025"],
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "1" }));
+
+    expect(router.state.location.search).toContain("deltSide=1");
+    expect(screen.getAllByRole("link", { name: /^#\d+$/ })).toHaveLength(20);
+  });
+
   describe("sidedeling", () => {
     // 25 saker der sak 1 er nyest, slik at standardsorteringen (opprettet, synkende) gir id 1–25.
     const mangeSaker = Array.from({ length: 25 }, (_, indeks) =>
