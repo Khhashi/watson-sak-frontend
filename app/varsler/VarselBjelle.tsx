@@ -69,6 +69,7 @@ export function VarselBjelle() {
     <>
       <InternalHeader.Button
         ref={knappRef}
+        className="max-[767px]:px-2"
         type="button"
         isActive={erÅpen}
         aria-label={antallUleste > 0 ? `Varsler, ${antallUleste} uleste` : "Varsler, ingen uleste"}
