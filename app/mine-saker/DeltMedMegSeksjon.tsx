@@ -9,16 +9,27 @@ import { ANTALL_PER_SIDE, paginerElementer } from "~/utils/paginering";
 
 type Props = {
   saker: KontrollsakResponse[];
+  paginering?: {
+    side: number;
+    totalSider: number;
+    totalAntall: number;
+  };
   detaljSti: string;
 };
 
-export function DeltMedMegSeksjon({ saker, detaljSti }: Props) {
+export function DeltMedMegSeksjon({ saker, paginering, detaljSti }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   if (saker.length === 0) return null;
 
   const valgtSide = Number.parseInt(searchParams.get("deltSide") ?? "1", 10) || 1;
-  const paginerteSaker = paginerElementer(saker, valgtSide, ANTALL_PER_SIDE);
+  const paginerteSaker = paginering
+    ? {
+        aktivSide: paginering.side,
+        totalSider: paginering.totalSider,
+        elementer: saker,
+      }
+    : paginerElementer(saker, valgtSide, ANTALL_PER_SIDE);
 
   function gåTilSide(side: number) {
     setSearchParams((forrige) => {

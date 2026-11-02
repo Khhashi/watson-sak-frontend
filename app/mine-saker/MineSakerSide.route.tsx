@@ -9,7 +9,10 @@ import { RouteConfig } from "~/routeConfig";
 import { hentMineSaker } from "~/saker/mock-alle-saker.server";
 import { formaterSteg } from "~/saker/visning";
 import { ANTALL_PER_SIDE } from "~/utils/paginering";
-import { hentParEllerUtilgjengelig } from "~/utils/backend-utilgjengelig.server";
+import {
+  erBackendUtilgjengelig,
+  hentParEllerUtilgjengelig,
+} from "~/utils/backend-utilgjengelig.server";
 import type { KontrollsakResponse, KontrollsakStatus } from "~/saker/types.backend";
 import type { Route } from "./+types/MineSakerSide.route";
 import { MineSakerInnhold } from "./MineSakerInnhold";
@@ -28,6 +31,7 @@ export const handle = { bredPageBlock: true };
 
 const STANDARD_KOLONNE = "opprettet" as const;
 const STANDARD_RETNING: Sorteringsretning = "desc";
+const ANTALL_TILKNYTTEDE_PER_API_SIDE = 200;
 const BACKEND_SORT_FELT = {
   saksid: "id",
   opprettet: "opprettet",
@@ -63,6 +67,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   const url = new URL(request.url);
   const side = parseSidenummer(url.searchParams.get("side"));
+  const deltSide = parseSidenummer(url.searchParams.get("deltSide"));
   const harFilterParams = url.searchParams.has("steg") || url.searchParams.has("status");
 
   const stegFilter = harFilterParams ? parseSteg(url.searchParams.getAll("steg")) : [];
@@ -76,14 +81,15 @@ export async function loader({ request }: Route.LoaderArgs) {
 
   let saker: KontrollsakResponse[];
   let sakerPaginering: { side: number; totalSider: number; totalAntall: number } | undefined;
-  let deltMedSaker: KontrollsakResponse[];
+  let deltMedSaker: KontrollsakResponse[] = [];
+  let deltMedPaginering: { side: number; totalSider: number; totalAntall: number } | undefined;
   let saksdataUtilgjengelig = false;
   if (!skalBrukeMockdata) {
     const token = await getBackendOboToken(request);
     const felles = {
       token,
       page: 1,
-      size: 200,
+      size: ANTALL_TILKNYTTEDE_PER_API_SIDE,
       steg: stegFilter.length > 0 ? stegFilter : undefined,
       status: blokkerendeStatus.length > 0 ? blokkerendeStatus : undefined,
       utenStatus: harIngenStatus ? true : undefined,
@@ -111,9 +117,54 @@ export async function loader({ request }: Route.LoaderArgs) {
         totalSider: mineSakerResultat.totalPages,
         totalAntall: mineSakerResultat.totalItems,
       };
-      deltMedSaker = tilknyttedeSakerResultat.items.filter(
-        (sak) => sak.saksbehandlere?.eier?.navIdent !== innloggetBruker.navIdent,
+
+      const antallDeltMedMeg = Math.max(
+        0,
+        tilknyttedeSakerResultat.totalItems - mineSakerResultat.totalItems,
       );
+      const totalDeltSider = Math.ceil(antallDeltMedMeg / ANTALL_PER_SIDE);
+      const aktivDeltSide = Math.min(deltSide, Math.max(totalDeltSider, 1));
+      const deltFraIndeks = (aktivDeltSide - 1) * ANTALL_PER_SIDE;
+      const delteSaker: KontrollsakResponse[] = [];
+      let apiSide = 1;
+      let apiResultat = tilknyttedeSakerResultat;
+
+      while (
+        delteSaker.length < deltFraIndeks + ANTALL_PER_SIDE &&
+        apiSide <= apiResultat.totalPages
+      ) {
+        delteSaker.push(
+          ...apiResultat.items.filter(
+            (sak) => sak.saksbehandlere?.eier?.navIdent !== innloggetBruker.navIdent,
+          ),
+        );
+        if (delteSaker.length >= deltFraIndeks + ANTALL_PER_SIDE) break;
+        apiSide += 1;
+        if (apiSide <= apiResultat.totalPages) {
+          try {
+            apiResultat = await hentKontrollsaker({
+              ...felles,
+              page: apiSide,
+              tilknyttet: "MEG",
+            });
+          } catch (feil) {
+            if (!erBackendUtilgjengelig(feil)) throw feil;
+            saker = [];
+            deltMedSaker = [];
+            saksdataUtilgjengelig = true;
+            break;
+          }
+        }
+      }
+
+      if (!saksdataUtilgjengelig) {
+        deltMedSaker = delteSaker.slice(deltFraIndeks, deltFraIndeks + ANTALL_PER_SIDE);
+        deltMedPaginering = {
+          side: aktivDeltSide,
+          totalSider: totalDeltSider,
+          totalAntall: antallDeltMedMeg,
+        };
+      }
     }
   } else {
     const alleSaker = hentMineSaker(request, innloggetBruker.navIdent, innloggetBruker.name);
@@ -125,6 +176,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     saker,
     sakerPaginering,
     deltMedSaker,
+    deltMedPaginering,
     saksdataUtilgjengelig,
     filterAlternativer: {
       steg: [...ALLE_STEG, "AVSLUTTET" as const].map((s) => ({
@@ -145,6 +197,7 @@ export default function MineSakerSide() {
     saker,
     sakerPaginering,
     deltMedSaker,
+    deltMedPaginering,
     filterAlternativer,
     aktivtFilter,
     saksdataUtilgjengelig,
@@ -157,6 +210,7 @@ export default function MineSakerSide() {
         saker={saker}
         sakerPaginering={sakerPaginering}
         deltMedSaker={deltMedSaker}
+        deltMedPaginering={deltMedPaginering}
         saksdataUtilgjengelig={saksdataUtilgjengelig}
         detaljSti={RouteConfig.SAKER_DETALJ.replace("/:sakId", "")}
         filterAlternativer={filterAlternativer}

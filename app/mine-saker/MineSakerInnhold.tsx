@@ -41,6 +41,7 @@ type Props = {
   saker: KontrollsakResponse[];
   sakerPaginering?: Paginering;
   deltMedSaker: KontrollsakResponse[];
+  deltMedPaginering?: Paginering;
   detaljSti: string;
   filterAlternativer: {
     steg: FilterAlternativ[];
@@ -57,6 +58,7 @@ export function MineSakerInnhold({
   saker,
   sakerPaginering,
   deltMedSaker,
+  deltMedPaginering,
   detaljSti,
   filterAlternativer,
   aktivtFilter,
@@ -202,7 +204,13 @@ export function MineSakerInnhold({
           </div>
         )}
       </VStack>
-      {!saksdataUtilgjengelig && <DeltMedMegSeksjon saker={deltMedSaker} detaljSti={detaljSti} />}
+      {!saksdataUtilgjengelig && (
+        <DeltMedMegSeksjon
+          saker={deltMedSaker}
+          paginering={deltMedPaginering}
+          detaljSti={detaljSti}
+        />
+      )}
     </section>
   );
 }
