@@ -35,6 +35,13 @@ const tomSideResponse = {
   totalPages: 0,
 };
 
+function lagSideResponse(
+  items: unknown[],
+  { page, size, totalItems, totalPages }: Omit<typeof tomSideResponse, "items">,
+) {
+  return { items, page, size, totalItems, totalPages };
+}
+
 describe("MineSakerSide loader — backend-sti", () => {
   afterEach(() => {
     vi.clearAllMocks();
@@ -132,6 +139,29 @@ describe("MineSakerSide loader — backend-sti", () => {
     );
     expect(JSON.stringify(mockHentKontrollsaker.mock.calls)).not.toContain("Z999999");
   }, 15000);
+
+  it("henter valgt side fra backend og returnerer backendens sidetall", async () => {
+    const sak = { id: 21, saksbehandlere: { eier: { navIdent: "Z999999" } } };
+    mockHentKontrollsaker
+      .mockResolvedValueOnce(
+        lagSideResponse([sak], { page: 2, size: 20, totalItems: 21, totalPages: 2 }),
+      )
+      .mockResolvedValueOnce(tomSideResponse);
+    const { loader } = await import("./MineSakerSide.route");
+
+    const result = await loader({
+      request: new Request("http://localhost/mine-saker?side=2"),
+      params: {},
+      context: {},
+    } as Parameters<typeof loader>[0]);
+
+    expect(mockHentKontrollsaker).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({ page: 2, size: 20, ansvarlig: "MEG" }),
+    );
+    expect(result.saker).toEqual([sak]);
+    expect(result.sakerPaginering).toEqual({ side: 2, totalSider: 2, totalAntall: 21 });
+  });
 
   it("returnerer utilgjengelig tilstand og ingen saker når tilgangssjekken feiler", async () => {
     const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
