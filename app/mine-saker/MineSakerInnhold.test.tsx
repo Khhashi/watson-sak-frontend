@@ -260,6 +260,33 @@ describe("MineSakerInnhold", () => {
       expect(lenker[19].textContent).toBe("#20");
     });
 
+    it("viser saker og sidetall fra backend for valgt side", () => {
+      const sakFraBackend = mangeSaker[20];
+      const router = createMemoryRouter(
+        [
+          {
+            path: "/",
+            element: (
+              <MineSakerInnhold
+                saker={[sakFraBackend]}
+                sakerPaginering={{ side: 2, totalSider: 2, totalAntall: 21 }}
+                deltMedSaker={[]}
+                detaljSti="/saker"
+                filterAlternativer={standardFilterAlternativer}
+                aktivtFilter={standardAktivtFilter}
+              />
+            ),
+          },
+        ],
+        { initialEntries: ["/?side=2"] },
+      );
+      render(<RouterProvider router={router} />);
+
+      expect(synligeSakslenker().map((lenke) => lenke.textContent)).toEqual(["#21"]);
+      expect(screen.getByText("21 saker")).toBeDefined();
+      expect(screen.getByRole("button", { name: "2" }).getAttribute("aria-current")).toBe("true");
+    });
+
     it("viser resten av sakene når side=2", () => {
       renderMedSider("?side=2");
 

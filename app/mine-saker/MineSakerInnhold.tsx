@@ -31,8 +31,15 @@ type FilterAlternativ = {
   etikett: string;
 };
 
+type Paginering = {
+  side: number;
+  totalSider: number;
+  totalAntall: number;
+};
+
 type Props = {
   saker: KontrollsakResponse[];
+  sakerPaginering?: Paginering;
   deltMedSaker: KontrollsakResponse[];
   detaljSti: string;
   filterAlternativer: {
@@ -48,6 +55,7 @@ type Props = {
 
 export function MineSakerInnhold({
   saker,
+  sakerPaginering,
   deltMedSaker,
   detaljSti,
   filterAlternativer,
@@ -56,18 +64,25 @@ export function MineSakerInnhold({
 }: Props) {
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const sorteringskolonne = parseKolonne(searchParams.get("sorter"));
+  const sorteringskolonne = parseKolonne(searchParams.get("sorter"), sakerPaginering !== undefined);
   const sorteringsretning = parseRetning(searchParams.get("retning"));
 
   const sorterteSaker = useMemo(
-    () => sorterSaker(saker, sorteringskolonne, sorteringsretning),
-    [saker, sorteringskolonne, sorteringsretning],
+    () => (sakerPaginering ? saker : sorterSaker(saker, sorteringskolonne, sorteringsretning)),
+    [saker, sakerPaginering, sorteringskolonne, sorteringsretning],
   );
 
   const valgtSide = Number.parseInt(searchParams.get("side") ?? "1", 10) || 1;
   const paginerteSaker = useMemo(
-    () => paginerElementer(sorterteSaker, valgtSide, ANTALL_PER_SIDE),
-    [sorterteSaker, valgtSide],
+    () =>
+      sakerPaginering
+        ? {
+            aktivSide: sakerPaginering.side,
+            totalSider: sakerPaginering.totalSider,
+            elementer: saker,
+          }
+        : paginerElementer(sorterteSaker, valgtSide, ANTALL_PER_SIDE),
+    [saker, sakerPaginering, sorterteSaker, valgtSide],
   );
 
   function gåTilSide(side: number) {
@@ -131,7 +146,7 @@ export function MineSakerInnhold({
         ) : (
           <div className="flex flex-col gap-6 xl:flex-row xl:items-start xl:gap-8">
             <div className="min-w-0 flex-1 xl:order-first">
-              <AntallTreffEtikett antall={sorterteSaker.length} />
+              <AntallTreffEtikett antall={sakerPaginering?.totalAntall ?? sorterteSaker.length} />
               <div className="overflow-x-auto [&_table]:w-full">
                 <Saksliste
                   rader={paginerteSaker.elementer.map((sak) =>
@@ -143,7 +158,9 @@ export function MineSakerInnhold({
                     kolonne: sorteringskolonne,
                     retning: sorteringsretning === "asc" ? "stigende" : "synkende",
                     onSort: (kolonne) => sorterPåKolonne(kolonne as AlleSakerKolonne),
-                    sorterbare: [...sorteringskolonner],
+                    sorterbare: sakerPaginering
+                      ? sorteringskolonner.filter((kolonne) => kolonne !== "misbrukstype")
+                      : [...sorteringskolonner],
                   }}
                 />
               </div>
@@ -189,9 +206,13 @@ export function MineSakerInnhold({
   );
 }
 
-function parseKolonne(verdi: string | null): AlleSakerKolonne {
-  return sorteringskolonner.includes(verdi as AlleSakerKolonne)
-    ? (verdi as AlleSakerKolonne)
+function parseKolonne(verdi: string | null, serverPaginert: boolean): AlleSakerKolonne {
+  const støtterBackendSortering = (
+    kolonne: AlleSakerKolonne,
+  ): kolonne is Exclude<AlleSakerKolonne, "misbrukstype"> => kolonne !== "misbrukstype";
+  const kolonne = sorteringskolonner.find((alternativ) => alternativ === verdi);
+  return kolonne && (!serverPaginert || støtterBackendSortering(kolonne))
+    ? kolonne
     : STANDARD_KOLONNE;
 }
 
