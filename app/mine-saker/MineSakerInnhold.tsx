@@ -41,6 +41,7 @@ type Props = {
   saker: KontrollsakResponse[];
   sakerPaginering?: Paginering;
   deltMedSaker: KontrollsakResponse[];
+  deltMedPaginering?: Paginering;
   detaljSti: string;
   filterAlternativer: {
     steg: FilterAlternativ[];
@@ -57,6 +58,7 @@ export function MineSakerInnhold({
   saker,
   sakerPaginering,
   deltMedSaker,
+  deltMedPaginering,
   detaljSti,
   filterAlternativer,
   aktivtFilter,
@@ -104,6 +106,7 @@ export function MineSakerInnhold({
       const gjeldende = neste.getAll(key);
       neste.delete(key);
       neste.delete("side");
+      neste.delete("deltSide");
 
       if (gjeldende.includes(verdi)) {
         for (const v of gjeldende.filter((v) => v !== verdi)) {
@@ -201,7 +204,13 @@ export function MineSakerInnhold({
           </div>
         )}
       </VStack>
-      {!saksdataUtilgjengelig && <DeltMedMegSeksjon saker={deltMedSaker} detaljSti={detaljSti} />}
+      {!saksdataUtilgjengelig && (
+        <DeltMedMegSeksjon
+          saker={deltMedSaker}
+          paginering={deltMedPaginering}
+          detaljSti={detaljSti}
+        />
+      )}
     </section>
   );
 }

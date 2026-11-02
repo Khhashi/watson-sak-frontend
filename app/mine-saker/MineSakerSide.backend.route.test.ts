@@ -163,6 +163,73 @@ describe("MineSakerSide loader — backend-sti", () => {
     expect(result.sakerPaginering).toEqual({ side: 2, totalSider: 2, totalAntall: 21 });
   });
 
+  it("henter nok backend-sider til å vise delt-saker etter første API-side", async () => {
+    const egenSak = { id: 1, saksbehandlere: { eier: { navIdent: "Z999999" } } };
+    const deltSak = (id: number) => ({
+      id,
+      saksbehandlere: { eier: { navIdent: "Z888888" } },
+    });
+    const førsteTilknyttetSide = [
+      ...Array.from({ length: 180 }, (_, index) => ({ ...egenSak, id: index + 1 })),
+      ...Array.from({ length: 20 }, (_, index) => deltSak(1001 + index)),
+    ];
+    mockHentKontrollsaker
+      .mockResolvedValueOnce(
+        lagSideResponse([egenSak], { page: 1, size: 20, totalItems: 180, totalPages: 9 }),
+      )
+      .mockResolvedValueOnce(
+        lagSideResponse(førsteTilknyttetSide, {
+          page: 1,
+          size: 200,
+          totalItems: 205,
+          totalPages: 2,
+        }),
+      )
+      .mockResolvedValueOnce(
+        lagSideResponse(
+          Array.from({ length: 5 }, (_, index) => deltSak(2001 + index)),
+          { page: 2, size: 200, totalItems: 205, totalPages: 2 },
+        ),
+      );
+    const { loader } = await import("./MineSakerSide.route");
+
+    const result = await loader({
+      request: new Request("http://localhost/mine-saker?deltSide=2"),
+      params: {},
+      context: {},
+    } as Parameters<typeof loader>[0]);
+
+    expect(mockHentKontrollsaker).toHaveBeenNthCalledWith(
+      3,
+      expect.objectContaining({ page: 2, size: 200, tilknyttet: "MEG" }),
+    );
+    expect(result.deltMedSaker.map((sak) => sak.id)).toEqual([2001, 2002, 2003, 2004, 2005]);
+    expect(result.deltMedPaginering).toEqual({ side: 2, totalSider: 2, totalAntall: 25 });
+  });
+
+  it("viser utilgjengelig tilstand hvis en senere side for delte saker feiler", async () => {
+    const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
+    mockHentKontrollsaker
+      .mockResolvedValueOnce(
+        lagSideResponse([], { page: 1, size: 20, totalItems: 1, totalPages: 1 }),
+      )
+      .mockResolvedValueOnce(
+        lagSideResponse([], { page: 1, size: 200, totalItems: 25, totalPages: 2 }),
+      )
+      .mockRejectedValueOnce(new BackendUtilgjengeligError());
+    const { loader } = await import("./MineSakerSide.route");
+
+    const result = await loader({
+      request: new Request("http://localhost/mine-saker?deltSide=2"),
+      params: {},
+      context: {},
+    } as Parameters<typeof loader>[0]);
+
+    expect(result.saksdataUtilgjengelig).toBe(true);
+    expect(result.saker).toEqual([]);
+    expect(result.deltMedSaker).toEqual([]);
+  });
+
   it("returnerer utilgjengelig tilstand og ingen saker når tilgangssjekken feiler", async () => {
     const { BackendUtilgjengeligError } = await import("~/utils/backend-utilgjengelig.server");
     mockHentKontrollsaker.mockRejectedValue(new BackendUtilgjengeligError());
@@ -205,11 +272,16 @@ describe("MineSakerSide loader — backend-sti", () => {
         opprettetAv: { navIdent: "Z000000", navn: "Test", enhet: "4812" },
       },
     });
-    const minSak = { ...tomSideResponse, items: [lagSakMedEier(1, "Z999999")] };
-    const tilknyttedeSaker = {
-      ...tomSideResponse,
-      items: [lagSakMedEier(1, "Z999999"), lagSakMedEier(2, "Z888888")],
-    };
+    const minSak = lagSideResponse([lagSakMedEier(1, "Z999999")], {
+      page: 1,
+      size: 20,
+      totalItems: 1,
+      totalPages: 1,
+    });
+    const tilknyttedeSaker = lagSideResponse(
+      [lagSakMedEier(1, "Z999999"), lagSakMedEier(2, "Z888888")],
+      { page: 1, size: 200, totalItems: 2, totalPages: 1 },
+    );
     mockHentKontrollsaker.mockResolvedValueOnce(minSak).mockResolvedValueOnce(tilknyttedeSaker);
 
     const { loader } = await import("./MineSakerSide.route");

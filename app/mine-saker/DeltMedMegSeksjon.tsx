@@ -1,17 +1,35 @@
-import { Heading, HStack, VStack } from "@navikt/ds-react";
+import { Heading, HStack, Pagination, VStack } from "@navikt/ds-react";
 import { PersonGroupIcon } from "@navikt/aksel-icons";
+import { useSearchParams } from "react-router";
 import type { KontrollsakResponse } from "~/saker/types.backend";
 import { mapKontrollsakTilSakslisteRad } from "~/saker/saksliste/adaptere";
 import { Saksliste } from "~/saker/saksliste/Saksliste";
 import { RouteConfig } from "~/routeConfig";
 
+type Paginering = {
+  side: number;
+  totalSider: number;
+  totalAntall: number;
+};
+
 type Props = {
   saker: KontrollsakResponse[];
+  paginering?: Paginering;
   detaljSti: string;
 };
 
-export function DeltMedMegSeksjon({ saker, detaljSti }: Props) {
+export function DeltMedMegSeksjon({ saker, paginering, detaljSti }: Props) {
+  const [, setSearchParams] = useSearchParams();
+
   if (saker.length === 0) return null;
+
+  function gåTilSide(side: number) {
+    setSearchParams((forrige) => {
+      const neste = new URLSearchParams(forrige);
+      neste.set("deltSide", String(side));
+      return neste;
+    });
+  }
 
   return (
     <section aria-labelledby="delt-med-meg-overskrift">
@@ -27,6 +45,16 @@ export function DeltMedMegSeksjon({ saker, detaljSti }: Props) {
           tomTekst="Ingen saker er delt med deg."
           tilbake={{ to: RouteConfig.MINE_SAKER, label: "Mine saker" }}
         />
+        {paginering && paginering.totalSider > 1 && (
+          <HStack justify="center">
+            <Pagination
+              page={paginering.side}
+              onPageChange={gåTilSide}
+              count={paginering.totalSider}
+              size="small"
+            />
+          </HStack>
+        )}
       </VStack>
     </section>
   );
