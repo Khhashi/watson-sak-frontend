@@ -202,6 +202,34 @@ describe("MineSakerInnhold", () => {
     expect(screen.getByRole("heading", { name: "Delt med meg" })).toBeDefined();
   });
 
+  it("oppdaterer URL-side for saker delt med meg", () => {
+    const deltSak = lagKontrollsak({ id: 999 });
+    const router = createMemoryRouter(
+      [
+        {
+          path: "/",
+          element: (
+            <MineSakerInnhold
+              saker={[]}
+              deltMedSaker={[deltSak]}
+              deltMedPaginering={{ side: 2, totalSider: 2, totalAntall: 21 }}
+              detaljSti="/saker"
+              filterAlternativer={standardFilterAlternativer}
+              aktivtFilter={standardAktivtFilter}
+            />
+          ),
+        },
+      ],
+      { initialEntries: ["/?deltSide=2"] },
+    );
+    render(<RouterProvider router={router} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "1" }));
+
+    expect(router.state.location.search).toContain("deltSide=1");
+    expect(router.state.location.search).not.toContain("side=");
+  });
+
   it("skjuler 'Delt med meg'-seksjon når ingen saker er delt", () => {
     renderMedRouter(
       <MineSakerInnhold
@@ -268,6 +296,33 @@ describe("MineSakerInnhold", () => {
       expect(lenker[0].textContent).toBe("#21");
     });
 
+    it("viser saker og sidetall fra backend for valgt side", () => {
+      const sakFraBackend = mangeSaker[20];
+      const router = createMemoryRouter(
+        [
+          {
+            path: "/",
+            element: (
+              <MineSakerInnhold
+                saker={[sakFraBackend]}
+                sakerPaginering={{ side: 2, totalSider: 2, totalAntall: 21 }}
+                deltMedSaker={[]}
+                detaljSti="/saker"
+                filterAlternativer={standardFilterAlternativer}
+                aktivtFilter={standardAktivtFilter}
+              />
+            ),
+          },
+        ],
+        { initialEntries: ["/?side=2"] },
+      );
+      render(<RouterProvider router={router} />);
+
+      expect(synligeSakslenker().map((lenke) => lenke.textContent)).toEqual(["#21"]);
+      expect(screen.getByText("21 saker")).toBeDefined();
+      expect(screen.getByRole("button", { name: "2" }).getAttribute("aria-current")).toBe("true");
+    });
+
     it("oppdaterer side i URL-en ved sidebytte", () => {
       const router = renderMedSider();
 
@@ -288,11 +343,12 @@ describe("MineSakerInnhold", () => {
     });
 
     it("går tilbake til første side ved filtrering", () => {
-      const router = renderMedSider("?side=2");
+      const router = renderMedSider("?side=2&deltSide=3");
 
       fireEvent.click(screen.getByRole("button", { name: "Utredning" }));
 
       expect(new URLSearchParams(router.state.location.search).has("side")).toBe(false);
+      expect(new URLSearchParams(router.state.location.search).has("deltSide")).toBe(false);
     });
   });
 });
