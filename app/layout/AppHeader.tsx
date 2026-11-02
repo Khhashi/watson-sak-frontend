@@ -66,15 +66,24 @@ export function AppHeader() {
   const watsonSakUrl = hentWatsonSakUrl(miljø);
   const visMiljøtag = miljø !== "prod";
   const miljøtagVariant = miljø === "demo" ? "alt2" : miljø === "dev" ? "alt1" : "alt3";
+  const mobilMiljø =
+    miljø === "local-mock"
+      ? "mock"
+      : miljø === "local-backend"
+        ? "lokal"
+        : miljø === "local-dev"
+          ? "dev"
+          : miljø;
 
   return (
     <InternalHeader>
-      <InternalHeader.Title as="h1">
-        <div className="flex items-center gap-2">
+      <InternalHeader.Title as="h1" className="max-[767px]:px-2 max-[767px]:text-lg">
+        <div className="flex items-center gap-2 max-[767px]:gap-1">
           <Link to={RouteConfig.INDEX}>Watson Sak</Link>
           {visMiljøtag && (
             <Tag variant={miljøtagVariant} size="small">
-              {miljø}
+              <span className="max-[767px]:hidden">{miljø}</span>
+              <span className="hidden max-[767px]:inline">{mobilMiljø}</span>
             </Tag>
           )}
         </div>
@@ -86,7 +95,7 @@ export function AppHeader() {
         action={RouteConfig.SØK}
         role="search"
         aria-label="Hurtigsøk"
-        className="flex items-center self-stretch"
+        className="flex min-w-0 items-center self-stretch max-[767px]:w-24 [&_.aksel-search]:w-full [&_.aksel-search__wrapper]:w-full [&_.aksel-search__wrapper-inner]:w-full [&_.aksel-search__input]:w-full [&_.aksel-search__input]:min-w-0"
         ref={skjemaRef}
         data-hurtigsøk-skjema
         onSubmit={(event) => {
@@ -122,7 +131,7 @@ export function AppHeader() {
       <VarselBjelle />
       <ActionMenu>
         <ActionMenu.Trigger>
-          <InternalHeader.Button>
+          <InternalHeader.Button className="max-[767px]:px-2">
             <MenuGridIcon fontSize="1.5rem" title="Systemer og oppslagsverk" />
           </InternalHeader.Button>
         </ActionMenu.Trigger>
@@ -164,7 +173,17 @@ export function AppHeader() {
         </ActionMenu.Content>
       </ActionMenu>
 
-      <InternalHeader.User name={innloggetBruker?.name ?? "Saksbehandler"} />
+      <InternalHeader.User
+        className="max-[767px]:px-2"
+        name={
+          <>
+            <span className="max-[767px]:sr-only">{innloggetBruker?.name ?? "Saksbehandler"}</span>
+            <span className="hidden max-[767px]:inline" aria-hidden="true">
+              {(innloggetBruker?.name ?? "Saksbehandler").charAt(0)}
+            </span>
+          </>
+        }
+      />
       {visEndCredits && <EndCredits onLukk={lukkEndCredits} />}
     </InternalHeader>
   );
